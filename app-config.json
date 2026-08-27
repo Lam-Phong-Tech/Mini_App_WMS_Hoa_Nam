@@ -1,18 +1,14 @@
 {
   "app": {
-    "title": "Quản lý kho",
+    "title": "Hoa_Nam_Product",
     "textColor": {
       "light": "black",
       "dark": "white"
     },
     "statusBar": "transparent",
-    "headerColor": "#F8F7FA",
     "actionBarHidden": true,
     "hideIOSSafeAreaBottom": true,
     "hideAndroidBottomNavigationBar": false
-  },
-  "template": {
-    "name": "warehouse-scanner"
   },
   "listCSS": [],
   "listSyncJS": [],

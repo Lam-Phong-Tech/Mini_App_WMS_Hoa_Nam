@@ -36,10 +36,3 @@ Thumbs.db
 
 # Production build
 www/
-
-# Local tool caches and portable backups
-.vite/
-.tmp/
-.codex-remote-attachments/
-undefined/
-__pycache__/
