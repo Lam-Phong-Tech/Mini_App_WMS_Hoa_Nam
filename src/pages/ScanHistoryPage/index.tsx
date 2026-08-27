@@ -7,7 +7,12 @@ import { AppButton } from "@/components/ui/Button";
 import { Icon } from "@/components/ui/Icon";
 import { PageContainer } from "@/components/ui/Page";
 import { WmsModal } from "@/components/ui/WmsModal";
-import { WmsCard, WmsPageHeader } from "@/components/ui/WmsRuntime";
+import {
+  WmsCard,
+  WmsField,
+  WmsInput,
+  WmsPageHeader,
+} from "@/components/ui/WmsRuntime";
 import { getErrorMessage } from "@/constants/error-messages";
 import {
   getMiniAppInboundDocuments,
@@ -178,17 +183,22 @@ export default function ScanHistoryPage() {
     <PageContainer className="space-y-4">
       <WmsPageHeader eyebrow="Theo phiếu" title="Lịch sử chứng từ" />
 
-      <section className="wms-history-search-card">
-        <label className="flex min-h-11 items-center gap-2 px-3">
-          <Icon name="search" size={18} className="text-slate-400" />
-          <input
+      <WmsField label="Tìm kiếm chứng từ">
+        <span className="relative block">
+          <Icon
+            aria-hidden="true"
+            className="pointer-events-none absolute left-3 top-1/2 z-10 -translate-y-1/2 text-[var(--wms-text-muted)]"
+            name="search"
+            size={18}
+          />
+          <WmsInput
             value={keyword}
             onChange={(event) => setKeyword(event.target.value)}
             placeholder="Tìm mã phiếu, tên phiếu hoặc kho"
-            className="wms-history-search-input min-w-0 flex-1 bg-transparent text-sm font-medium placeholder:text-slate-400"
+            className="pl-10"
           />
-        </label>
-      </section>
+        </span>
+      </WmsField>
 
       <section className="space-y-3">
         <div className="flex gap-2 overflow-x-auto pb-1">

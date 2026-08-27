@@ -78,6 +78,18 @@ export default function ApprovalQueuePage() {
   const [hasMoreInbound, setHasMoreInbound] = useState(false);
   const [hasMoreOutbound, setHasMoreOutbound] = useState(false);
   const [isLoadingMore, setIsLoadingMore] = useState(false);
+  const [selectedInboundIds, setSelectedInboundIds] = useState<Set<string>>(
+    () => new Set(),
+  );
+  const [selectedOutboundIds, setSelectedOutboundIds] = useState<Set<string>>(
+    () => new Set(),
+  );
+  const [isBatchApproving, setIsBatchApproving] = useState(false);
+  const [batchProgress, setBatchProgress] = useState<{
+    current: number;
+    total: number;
+  }>();
+  const [batchSuccess, setBatchSuccess] = useState<string>();
   const mountedRef = useRef(true);
   const activeLoadIdRef = useRef(0);
 
@@ -89,6 +101,7 @@ export default function ApprovalQueuePage() {
       setIsLoading(true);
       setError(undefined);
       setApproveError(undefined);
+      setBatchSuccess(undefined);
 
       try {
         const result = await getApprovalQueueDocuments({
@@ -147,6 +160,16 @@ export default function ApprovalQueuePage() {
     activeFolder === "INBOUND"
       ? approvalSessions.length
       : outboundApprovalDocuments.length;
+  const activeSelectedCount =
+    activeFolder === "INBOUND"
+      ? approvalSessions.filter((session) =>
+          selectedInboundIds.has(session.receiptId),
+        ).length
+      : outboundApprovalDocuments.filter((document) =>
+          selectedOutboundIds.has(getOutboundDocumentId(document)),
+        ).length;
+  const isAllActiveSelected =
+    activeFolderCount > 0 && activeSelectedCount === activeFolderCount;
   const scannedTotal = useMemo(
     () =>
       approvalSessions.reduce(
@@ -161,16 +184,52 @@ export default function ApprovalQueuePage() {
     [approvalSessions, outboundApprovalDocuments],
   );
 
+  const approveInbound = async (session: ReceiptSession) => {
+    await approveInboundReceipt(session.receiptId);
+    invalidateApprovalQueueCache("INBOUND");
+    setApprovalSessions((current) =>
+      current.filter((item) => item.receiptId !== session.receiptId),
+    );
+    setSelectedInboundIds((current) => {
+      const next = new Set(current);
+      next.delete(session.receiptId);
+      return next;
+    });
+  };
+
+  const approveOutbound = async (document: OutboundDocumentSummary) => {
+    const documentId = getOutboundDocumentId(document);
+    if (!documentId) throw new Error("Không xác định được mã phiếu xuất.");
+
+    const latest = await getOutboundDocumentDetailWithMeta(documentId);
+    await postIssueOutboundDocument({
+      documentId,
+      ifMatch: latest.ifMatch || latest.document?.version || document.version,
+    });
+    if ((document as OutboundApprovalDocument).local_outbound_id) {
+      clearOutboundSession(
+        (document as OutboundApprovalDocument).local_outbound_id || "",
+      );
+    }
+    invalidateApprovalQueueCache("OUTBOUND");
+    setOutboundApprovals((current) =>
+      current.filter((item) => getOutboundDocumentId(item) !== documentId),
+    );
+    setSelectedOutboundIds((current) => {
+      const next = new Set(current);
+      next.delete(documentId);
+      return next;
+    });
+  };
+
   const handleApproveInbound = async (session: ReceiptSession) => {
+    if (isBatchApproving) return;
     setApproveError(undefined);
+    setBatchSuccess(undefined);
     setApprovingId(session.receiptId);
 
     try {
-      await approveInboundReceipt(session.receiptId);
-      invalidateApprovalQueueCache("INBOUND");
-      setApprovalSessions((current) =>
-        current.filter((item) => item.receiptId !== session.receiptId),
-      );
+      await approveInbound(session);
     } catch (requestError) {
       setApproveError(getReceiptErrorMessage(requestError));
     } finally {
@@ -180,30 +239,124 @@ export default function ApprovalQueuePage() {
 
   const handleApproveOutbound = async (document: OutboundDocumentSummary) => {
     const documentId = getOutboundDocumentId(document);
-    if (!documentId) return;
+    if (!documentId || isBatchApproving) return;
 
     setApproveError(undefined);
+    setBatchSuccess(undefined);
     setApprovingOutboundId(documentId);
 
     try {
-      const latest = await getOutboundDocumentDetailWithMeta(documentId);
-      await postIssueOutboundDocument({
-        documentId,
-        ifMatch: latest.ifMatch || latest.document?.version || document.version,
-      });
-      if ((document as OutboundApprovalDocument).local_outbound_id) {
-        clearOutboundSession(
-          (document as OutboundApprovalDocument).local_outbound_id || "",
-        );
-      }
-      invalidateApprovalQueueCache("OUTBOUND");
-      setOutboundApprovals((current) =>
-        current.filter((item) => getOutboundDocumentId(item) !== documentId),
-      );
+      await approveOutbound(document);
     } catch (requestError) {
       setApproveError(getOutboundApprovalErrorMessage(requestError));
     } finally {
       setApprovingOutboundId(undefined);
+    }
+  };
+
+  const toggleActiveSelection = (id: string) => {
+    if (isBatchApproving) return;
+
+    const update = (current: Set<string>) => {
+      const next = new Set(current);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    };
+
+    if (activeFolder === "INBOUND") setSelectedInboundIds(update);
+    else setSelectedOutboundIds(update);
+  };
+
+  const toggleSelectAllActive = () => {
+    if (isBatchApproving) return;
+    const shouldSelectAll = !isAllActiveSelected;
+
+    if (activeFolder === "INBOUND") {
+      setSelectedInboundIds(
+        shouldSelectAll
+          ? new Set(approvalSessions.map((session) => session.receiptId))
+          : new Set(),
+      );
+      return;
+    }
+
+    setSelectedOutboundIds(
+      shouldSelectAll
+        ? new Set(
+            outboundApprovalDocuments
+              .map(getOutboundDocumentId)
+              .filter(Boolean),
+          )
+        : new Set(),
+    );
+  };
+
+  const handleBatchApprove = async () => {
+    const inboundBatch = approvalSessions.filter((session) =>
+      selectedInboundIds.has(session.receiptId),
+    );
+    const outboundBatch = outboundApprovalDocuments.filter((document) =>
+      selectedOutboundIds.has(getOutboundDocumentId(document)),
+    );
+    const selectedDocuments =
+      activeFolder === "INBOUND" ? inboundBatch : outboundBatch;
+    if (selectedDocuments.length === 0 || isBatchApproving) return;
+
+    setApproveError(undefined);
+    setBatchSuccess(undefined);
+    setIsBatchApproving(true);
+    setBatchProgress({ current: 0, total: selectedDocuments.length });
+    const failures: string[] = [];
+    let completed = 0;
+
+    for (const document of selectedDocuments) {
+      setBatchProgress({
+        current: completed + 1,
+        total: selectedDocuments.length,
+      });
+
+      try {
+        if (activeFolder === "INBOUND") {
+          const session = document as ReceiptSession;
+          setApprovingId(session.receiptId);
+          await approveInbound(session);
+        } else {
+          const outbound = document as OutboundDocumentSummary;
+          setApprovingOutboundId(getOutboundDocumentId(outbound));
+          await approveOutbound(outbound);
+        }
+        completed += 1;
+      } catch (requestError) {
+        const documentName =
+          activeFolder === "INBOUND"
+            ? (document as ReceiptSession).documentNo ||
+              (document as ReceiptSession).receiptName
+            : getOutboundDocumentCode(document as OutboundDocumentSummary);
+        const message =
+          activeFolder === "INBOUND"
+            ? getReceiptErrorMessage(requestError)
+            : getOutboundApprovalErrorMessage(requestError);
+        failures.push(`${documentName}: ${message}`);
+      } finally {
+        setApprovingId(undefined);
+        setApprovingOutboundId(undefined);
+      }
+    }
+
+    setIsBatchApproving(false);
+    setBatchProgress(undefined);
+    if (completed > 0) {
+      setBatchSuccess(
+        `Đã phê duyệt ${completed}/${selectedDocuments.length} phiếu ${
+          activeFolder === "INBOUND" ? "nhập" : "xuất"
+        }.`,
+      );
+    }
+    if (failures.length > 0) {
+      setApproveError(
+        `Không duyệt được ${failures.length} phiếu. ${failures.join(" · ")}`,
+      );
     }
   };
 
@@ -326,6 +479,16 @@ export default function ApprovalQueuePage() {
           </div>
         )}
 
+        {batchSuccess && (
+          <div className="mb-3">
+            <WmsNotice
+              tone="success"
+              title="Duyệt hàng loạt hoàn tất"
+              description={batchSuccess}
+            />
+          </div>
+        )}
+
         <div className="mb-3 grid grid-cols-2 gap-2">
           <FolderButton
             active={activeFolder === "INBOUND"}
@@ -346,13 +509,47 @@ export default function ApprovalQueuePage() {
         </div>
 
         {activeFolderCount > 0 && (
-          <div className="mb-3">
-            <WmsNotice
-              tone="info"
-              title="Duyệt mới cập nhật tồn"
-              description="Phiếu nhập chỉ cộng tồn sau Post Receipt; phiếu xuất chỉ trừ tồn sau Post Issue."
-            />
-          </div>
+          <>
+            <div className="mb-3">
+              <WmsNotice
+                tone="info"
+                title="Duyệt mới cập nhật tồn"
+                description="Phiếu nhập chỉ cộng tồn sau Post Receipt; phiếu xuất chỉ trừ tồn sau Post Issue."
+              />
+            </div>
+            <section className="mb-3 rounded-[var(--wms-radius-card)] border border-[var(--wms-divider)] bg-[var(--wms-surface)] p-3 shadow-sm">
+              <div className="flex items-center justify-between gap-3">
+                <label className="flex min-h-11 min-w-0 cursor-pointer items-center gap-2 text-[13px] font-semibold text-[var(--wms-text-strong)]">
+                  <input
+                    aria-label={`Chọn tất cả phiếu ${activeFolder === "INBOUND" ? "nhập" : "xuất"} đang hiển thị`}
+                    checked={isAllActiveSelected}
+                    className="h-5 w-5 shrink-0 rounded border-[var(--wms-divider)] accent-[var(--wms-primary)]"
+                    disabled={isBatchApproving}
+                    type="checkbox"
+                    onChange={toggleSelectAllActive}
+                  />
+                  <span>Chọn tất cả ({activeFolderCount})</span>
+                </label>
+                {activeSelectedCount > 0 && (
+                  <span className="shrink-0 rounded-full bg-[var(--wms-primary-soft)] px-2.5 py-1 text-[11px] font-semibold text-[var(--wms-primary-strong)]">
+                    Đã chọn {activeSelectedCount}
+                  </span>
+                )}
+              </div>
+              <AppButton
+                className="mt-2"
+                disabled={activeSelectedCount === 0}
+                fullWidth
+                icon="check-circle"
+                loading={isBatchApproving}
+                onClick={handleBatchApprove}
+              >
+                {batchProgress
+                  ? `Đang duyệt ${batchProgress.current}/${batchProgress.total}`
+                  : `Duyệt ${activeSelectedCount} phiếu ${activeFolder === "INBOUND" ? "nhập" : "xuất"}`}
+              </AppButton>
+            </section>
+          </>
         )}
 
         {!isLoading && activeFolderCount === 0 ? (
@@ -395,6 +592,11 @@ export default function ApprovalQueuePage() {
                     }
                     onApprove={() => handleApproveInbound(session)}
                     isApproving={approvingId === session.receiptId}
+                    isSelected={selectedInboundIds.has(session.receiptId)}
+                    isBatchApproving={isBatchApproving}
+                    onToggleSelect={() =>
+                      toggleActiveSelection(session.receiptId)
+                    }
                   />
                 ))}
               </>
@@ -416,6 +618,11 @@ export default function ApprovalQueuePage() {
                       }
                       onApprove={() => handleApproveOutbound(document)}
                       isApproving={approvingOutboundId === documentId}
+                      isSelected={selectedOutboundIds.has(documentId)}
+                      isBatchApproving={isBatchApproving}
+                      onToggleSelect={() =>
+                        documentId && toggleActiveSelection(documentId)
+                      }
                     />
                   );
                 })}
@@ -459,9 +666,7 @@ async function getApprovalQueueDocuments(options: {
     return inFlight;
   }
 
-  const request = fetchApprovalQueueDocuments(
-    options.folder,
-  ).then((result) => {
+  const request = fetchApprovalQueueDocuments(options.folder).then((result) => {
     approvalQueueCache[options.folder] = {
       ...result,
       loadedAt: Date.now(),
@@ -602,11 +807,17 @@ function OutboundApprovalCard({
   onOpen,
   onApprove,
   isApproving,
+  isSelected,
+  isBatchApproving,
+  onToggleSelect,
 }: {
   document: OutboundDocumentSummary;
   onOpen: () => void;
   onApprove: () => void;
   isApproving: boolean;
+  isSelected: boolean;
+  isBatchApproving: boolean;
+  onToggleSelect: () => void;
 }) {
   const expectedQty = getOutboundExpectedQty(document);
   const scannedQty = getOutboundScannedQty(document);
@@ -616,6 +827,12 @@ function OutboundApprovalCard({
 
   return (
     <article className="wms-card p-4">
+      <ApprovalSelection
+        checked={isSelected}
+        disabled={isBatchApproving}
+        label="Chọn phiếu xuất"
+        onChange={onToggleSelect}
+      />
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
           <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-[var(--wms-warning-text)]">
@@ -651,6 +868,7 @@ function OutboundApprovalCard({
         <AppButton
           fullWidth
           icon="package-minus"
+          disabled={isBatchApproving}
           loading={isApproving}
           onClick={onApprove}
         >
@@ -666,11 +884,17 @@ function ApprovalCard({
   onOpen,
   onApprove,
   isApproving,
+  isSelected,
+  isBatchApproving,
+  onToggleSelect,
 }: {
   session: ReceiptSession;
   onOpen: () => void;
   onApprove: () => void;
   isApproving: boolean;
+  isSelected: boolean;
+  isBatchApproving: boolean;
+  onToggleSelect: () => void;
 }) {
   const scannedQty = session.scannedQty ?? session.items.length;
   const expectedQty = session.expectedQty || 0;
@@ -680,6 +904,12 @@ function ApprovalCard({
 
   return (
     <article className="wms-card p-4">
+      <ApprovalSelection
+        checked={isSelected}
+        disabled={isBatchApproving}
+        label="Chọn phiếu nhập"
+        onChange={onToggleSelect}
+      />
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
           <p className="text-[11px] font-black uppercase tracking-[0.08em] text-[#69758A]">
@@ -715,6 +945,7 @@ function ApprovalCard({
         <AppButton
           fullWidth
           icon="check-circle"
+          disabled={isBatchApproving}
           loading={isApproving}
           onClick={onApprove}
         >
@@ -722,6 +953,31 @@ function ApprovalCard({
         </AppButton>
       </div>
     </article>
+  );
+}
+
+function ApprovalSelection({
+  checked,
+  disabled,
+  label,
+  onChange,
+}: {
+  checked: boolean;
+  disabled: boolean;
+  label: string;
+  onChange: () => void;
+}) {
+  return (
+    <label className="mb-3 flex min-h-6 w-fit cursor-pointer items-center gap-2 text-[12px] font-medium text-[var(--wms-text-muted)]">
+      <input
+        checked={checked}
+        className="h-5 w-5 rounded border-[var(--wms-divider)] accent-[var(--wms-primary)]"
+        disabled={disabled}
+        type="checkbox"
+        onChange={onChange}
+      />
+      <span>{label}</span>
+    </label>
   );
 }
 

@@ -5,7 +5,7 @@ import ErrorState from "@/components/ErrorState";
 import { AppButton } from "@/components/ui/Button";
 import { Icon, type IconName } from "@/components/ui/Icon";
 import { WmsModal } from "@/components/ui/WmsModal";
-import { WmsInput, WmsNotice } from "@/components/ui/WmsRuntime";
+import { WmsField, WmsInput, WmsNotice } from "@/components/ui/WmsRuntime";
 import { SCAN_CONTEXT_CONFIG } from "@/constants/scan.constants";
 import { useBarcodeScanner } from "@/hooks/useBarcodeScanner";
 import { useScanRequest } from "@/hooks/useScanRequest";
@@ -1065,14 +1065,16 @@ export default function ScannerPage() {
               description={notice}
             />
           )}
-          <WmsInput
-            value={manualCode}
-            placeholder="Mã sản phẩm / mã tem"
-            onChange={(event) => {
-              setManualCode(event.target.value);
-              if (showManualNotice) setNotice(undefined);
-            }}
-          />
+          <WmsField label="Mã sản phẩm / mã tem">
+            <WmsInput
+              value={manualCode}
+              placeholder="Nhập mã cần kiểm tra"
+              onChange={(event) => {
+                setManualCode(event.target.value);
+                if (showManualNotice) setNotice(undefined);
+              }}
+            />
+          </WmsField>
           <div className="grid grid-cols-2 gap-3">
             <AppButton fullWidth variant="secondary" onClick={closeManualEntry}>
               Hủy

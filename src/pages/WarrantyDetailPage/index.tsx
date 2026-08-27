@@ -473,11 +473,10 @@ export default function WarrantyDetailPage() {
             ) : (
               <>
                 {requiresConfirmedDefect && (
-                  <div className="space-y-2">
-                    <label className="text-[12px] font-black text-[#06142A]">
-                      Kết quả kiểm tra{" "}
-                      <span className="text-[#CF2E14]">Bắt buộc</span>
-                    </label>
+                  <WmsField
+                    label="Kết quả kiểm tra"
+                    helperText="Cần nhập trước khi chuyển sang sửa chữa hoặc hoàn tất sau kiểm tra."
+                  >
                     <WmsTextArea
                       className="min-h-24"
                       value={confirmedDefect}
@@ -486,17 +485,15 @@ export default function WarrantyDetailPage() {
                         setConfirmedDefect(event.target.value)
                       }
                     />
-                    <p className="text-[11px] font-medium text-[#69758A]">
-                      Bắt buộc nhập để chuyển sang sửa chữa hoặc hoàn tất sau
-                      kiểm tra.
-                    </p>
-                  </div>
+                  </WmsField>
                 )}
-                <WmsInput
-                  value={statusNote}
-                  placeholder={statusNotePlaceholder(currentStatus)}
-                  onChange={(event) => setStatusNote(event.target.value)}
-                />
+                <WmsField label="Ghi chú xử lý">
+                  <WmsInput
+                    value={statusNote}
+                    placeholder={statusNotePlaceholder(currentStatus)}
+                    onChange={(event) => setStatusNote(event.target.value)}
+                  />
+                </WmsField>
                 {nextStatuses.some((status) =>
                   requiresExplicitStatusNote(
                     currentStatus,

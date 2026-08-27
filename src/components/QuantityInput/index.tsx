@@ -1,5 +1,5 @@
 import { AppButton } from "@/components/ui/Button";
-import { WmsInput } from "@/components/ui/WmsRuntime";
+import { WmsField, WmsInput } from "@/components/ui/WmsRuntime";
 
 interface QuantityInputProps {
   value: number;
@@ -12,10 +12,7 @@ export default function QuantityInput({ value, onChange }: QuantityInputProps) {
   };
 
   return (
-    <div>
-      <label className="wms-field-label mb-2 block text-[12px] font-semibold">
-        Số lượng
-      </label>
+    <WmsField label="Số lượng">
       <div className="flex items-center gap-2">
         <AppButton
           aria-label="Giảm số lượng"
@@ -41,6 +38,6 @@ export default function QuantityInput({ value, onChange }: QuantityInputProps) {
           +
         </AppButton>
       </div>
-    </div>
+    </WmsField>
   );
 }

@@ -33,6 +33,20 @@
   --wms-motion-normal: 220ms;
   --wms-ease: cubic-bezier(0.4, 0, 0.2, 1);
   --wms-focus-ring: 0 0 0 3px rgba(115, 103, 240, 0.22);
+  --wms-field-height: 50px;
+  --wms-field-radius: 8px;
+  --wms-field-border: rgba(47, 43, 61, 0.2);
+  --wms-field-border-hover: rgba(47, 43, 61, 0.34);
+  --wms-field-border-focus: var(--wms-primary);
+  --wms-field-border-error: var(--wms-danger);
+  --wms-field-bg: var(--wms-surface);
+  --wms-field-disabled-bg: rgba(47, 43, 61, 0.05);
+  --wms-field-readonly-bg: var(--wms-surface-subtle);
+  --wms-field-placeholder: var(--wms-text-muted);
+  --wms-field-label: var(--wms-text-muted);
+  --wms-field-label-focus: var(--wms-primary);
+  --wms-field-label-error: var(--wms-danger);
+  --wms-field-helper: var(--wms-text-muted);
 
   /* Compatibility aliases now resolve to X tokens; no parallel palette remains. */
   --wms-ink: var(--wms-text-strong);
@@ -395,12 +409,57 @@ body.wms-modal-open {
   background: rgba(255, 255, 255, 0.78);
 }
 
+.wms-field {
+  --wms-field-label-bg: var(--wms-surface);
+  position: relative;
+  padding-top: 8px;
+}
+
+.wms-field-label {
+  position: absolute;
+  z-index: 1;
+  top: 0;
+  left: 10px;
+  display: block;
+  max-width: calc(100% - 20px);
+  overflow: hidden;
+  padding: 0 4px;
+  background: var(--wms-field-label-bg);
+  color: var(--wms-field-label);
+  font-size: 12px;
+  font-weight: 500;
+  line-height: 16px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  pointer-events: none;
+  transition: color var(--wms-motion-fast) var(--wms-ease);
+}
+
+.wms-field:focus-within .wms-field-label {
+  color: var(--wms-field-label-focus);
+}
+
+.wms-field-helper {
+  display: block;
+  margin-top: 5px;
+  color: var(--wms-field-helper);
+  font-size: 12px;
+  font-weight: 400;
+  line-height: 18px;
+}
+
+.wms-field-helper--error {
+  color: var(--wms-danger);
+}
+
 .wms-field-control {
   display: block;
   width: 100%;
-  border: 1px solid rgba(47, 43, 61, 0.2);
-  border-radius: var(--wms-radius-control);
-  background: var(--wms-surface);
+  min-width: 0;
+  min-height: var(--wms-field-height);
+  border: 1px solid var(--wms-field-border);
+  border-radius: var(--wms-field-radius);
+  background: var(--wms-field-bg);
   color: var(--wms-text-strong);
   font-size: 15px;
   font-weight: 400;
@@ -414,46 +473,68 @@ body.wms-modal-open {
 
 .wms-input,
 .wms-select {
-  min-height: 44px;
+  height: var(--wms-field-height);
+  padding: 0 14px;
 }
 
 .wms-textarea {
-  min-height: 96px;
+  min-height: 104px;
+  padding: 13px 14px;
   resize: vertical;
 }
 
 .wms-select {
+  appearance: none;
+  padding-right: 42px;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='20' height='20' viewBox='0 0 24 24' fill='none' stroke='%232f2b3d' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 14px center;
+  background-size: 20px;
   font-weight: 500;
 }
 
 .wms-field-control::placeholder {
-  color: var(--wms-text-muted);
+  color: var(--wms-field-placeholder);
+  opacity: 1;
 }
 
 .wms-field-control:hover:not(:disabled) {
-  border-color: rgba(47, 43, 61, 0.34);
+  border-color: var(--wms-field-border-hover);
 }
 
-.wms-field-control:focus,
-.wms-field-control:focus-visible {
-  border-color: var(--wms-primary);
+.wms-field-control:focus:not(:disabled),
+.wms-field-control:focus-visible:not(:disabled) {
+  border-color: var(--wms-field-border-focus);
   box-shadow: var(--wms-focus-ring);
 }
 
 .wms-field-control:disabled {
   cursor: not-allowed;
   border-color: var(--wms-divider);
-  background: rgba(47, 43, 61, 0.05);
+  background: var(--wms-field-disabled-bg);
   color: var(--wms-text-muted);
+}
+
+.wms-field-control[readonly] {
+  cursor: default;
+  border-color: var(--wms-field-border);
+  background: var(--wms-field-readonly-bg);
+  color: var(--wms-text);
 }
 
 .wms-input--error,
 .wms-field--error .wms-field-control {
-  border-color: var(--wms-danger);
+  border-color: var(--wms-field-border-error);
+}
+
+.wms-field--error .wms-field-label,
+.wms-field--error:focus-within .wms-field-label {
+  color: var(--wms-field-label-error);
 }
 
 .wms-field--error .wms-field-control:focus,
 .wms-field--error .wms-field-control:focus-visible {
+  border-color: var(--wms-field-border-error);
   box-shadow: 0 0 0 3px rgba(234, 84, 85, 0.16);
 }
 
@@ -844,25 +925,6 @@ body.wms-modal-open {
   box-shadow: var(--wms-shadow-card) !important;
 }
 
-.wms-flow-page textarea,
-.wms-flow-page select,
-.wms-page textarea,
-.wms-page select {
-  min-height: 44px;
-  border-color: var(--wms-divider) !important;
-  border-radius: var(--wms-radius-control) !important;
-  color: var(--wms-text-strong) !important;
-  box-shadow: none;
-}
-
-.wms-flow-page textarea:focus,
-.wms-flow-page select:focus,
-.wms-page textarea:focus,
-.wms-page select:focus {
-  border-color: var(--wms-primary) !important;
-  box-shadow: var(--wms-focus-ring) !important;
-}
-
 .wms-sticky-action {
   position: sticky;
   bottom: 0;
@@ -945,31 +1007,6 @@ body.wms-modal-open {
 .wms-scanner-round-action--default {
   border-color: rgba(255, 255, 255, 0.24);
   background: rgba(255, 255, 255, 0.14);
-}
-
-.wms-history-search-card {
-  border: 1px solid rgba(47, 43, 61, 0.2);
-  border-radius: var(--wms-radius-control);
-  background: var(--wms-surface);
-  color: var(--wms-text-strong);
-  transition:
-    border-color var(--wms-motion-fast) var(--wms-ease),
-    box-shadow var(--wms-motion-fast) var(--wms-ease);
-}
-
-.wms-history-search-card:hover {
-  border-color: rgba(47, 43, 61, 0.34);
-}
-
-.wms-history-search-card:focus-within {
-  border-color: var(--wms-primary);
-  box-shadow: var(--wms-focus-ring);
-}
-
-.wms-history-search-input {
-  min-height: 44px;
-  color: var(--wms-text-strong);
-  outline: none;
 }
 
 .wms-flow-steps {

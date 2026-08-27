@@ -482,14 +482,16 @@ export default function WarrantyReceivePage() {
             description={`${defectError} Bạn vẫn có thể nhập mô tả thủ công.`}
           />
         )}
-        <WmsInput
-          value={defectSearch}
-          placeholder={
-            isLoadingDefects ? "Đang tải bệnh/lỗi..." : "Tìm bệnh/lỗi"
-          }
-          disabled={isLoadingDefects || defects.length === 0}
-          onChange={(event) => setDefectSearch(event.target.value)}
-        />
+        <WmsField label="Tìm bệnh/lỗi">
+          <WmsInput
+            value={defectSearch}
+            placeholder={
+              isLoadingDefects ? "Đang tải bệnh/lỗi..." : "Nhập tên hoặc mã lỗi"
+            }
+            disabled={isLoadingDefects || defects.length === 0}
+            onChange={(event) => setDefectSearch(event.target.value)}
+          />
+        </WmsField>
         {!isLoadingDefects && visibleDefects.length > 0 && (
           <div className="max-h-52 space-y-2 overflow-y-auto rounded-[var(--wms-radius-card)] border border-[var(--wms-divider)] bg-[var(--wms-surface-subtle)] p-2">
             {visibleDefects.map((defect) => {

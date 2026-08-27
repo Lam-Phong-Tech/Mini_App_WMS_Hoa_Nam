@@ -9,6 +9,7 @@ import {
   WmsNotice,
   WmsPageHeader,
   WmsSelect,
+  WmsTextArea,
 } from "@/components/ui/WmsRuntime";
 import { DEFAULT_WAREHOUSE } from "@/constants/default-warehouse";
 import {
@@ -503,40 +504,42 @@ export default function DocumentContextPage() {
           </div>
         </section>
 
-        <section className="rounded-[22px] border border-[#D6E0EC] bg-white p-4 shadow-[0_12px_30px_rgba(15,23,42,0.05)]">
-          <div className="flex items-start justify-between gap-3">
-            <div>
-              <p className="text-[11px] font-medium text-[#8C98AA]">
-                {meta.warehouseLabel}
-              </p>
-              <h2 className="mt-1 text-[15px] font-black text-[#06142A]">
-                {warehouseName}
-              </h2>
+        {context === "WARRANTY_ITEM" && (
+          <section className="rounded-[22px] border border-[#D6E0EC] bg-white p-4 shadow-[0_12px_30px_rgba(15,23,42,0.05)]">
+            <div className="flex items-start justify-between gap-3">
+              <div>
+                <p className="text-[11px] font-medium text-[#8C98AA]">
+                  {meta.warehouseLabel}
+                </p>
+                <h2 className="mt-1 text-[15px] font-black text-[#06142A]">
+                  {warehouseName}
+                </h2>
+              </div>
+              <span className="grid h-11 w-11 place-items-center rounded-[var(--wms-radius-control)] bg-[var(--wms-primary)] text-white">
+                <Icon name={meta.icon} size={21} strokeWidth={2.5} />
+              </span>
             </div>
-            <span className="grid h-11 w-11 place-items-center rounded-[var(--wms-radius-control)] bg-[var(--wms-primary)] text-white">
-              <Icon name={meta.icon} size={21} strokeWidth={2.5} />
-            </span>
-          </div>
 
-          <div className="mt-4 divide-y divide-[#E6ECF3] text-[12px]">
-            <DocumentInfoRow label="Mục đích" value={meta.purpose} />
-            <DocumentInfoRow
-              label="Mã phiếu"
-              value={documentId || "Chưa chọn"}
-            />
-            <DocumentInfoRow
-              label="Trạng thái"
-              value={canStart ? "Cho phép quét" : "Cần chọn phiếu"}
-            />
-          </div>
+            <div className="mt-4 divide-y divide-[#E6ECF3] text-[12px]">
+              <DocumentInfoRow label="Mục đích" value={meta.purpose} />
+              <DocumentInfoRow
+                label="Mã phiếu"
+                value={documentId || "Chưa chọn"}
+              />
+              <DocumentInfoRow
+                label="Trạng thái"
+                value={canStart ? "Cho phép quét" : "Cần chọn phiếu"}
+              />
+            </div>
 
-          <div className="mt-3 h-1.5 overflow-hidden rounded-full bg-[#E8EEF6]">
-            <div
-              className="h-full rounded-full bg-[var(--wms-primary)]"
-              style={{ width: `${progressValue}%` }}
-            />
-          </div>
-        </section>
+            <div className="mt-3 h-1.5 overflow-hidden rounded-full bg-[#E8EEF6]">
+              <div
+                className="h-full rounded-full bg-[var(--wms-primary)]"
+                style={{ width: `${progressValue}%` }}
+              />
+            </div>
+          </section>
+        )}
 
         {context === "OUTBOUND" && (
           <section className="rounded-[22px] border border-[#D6E0EC] bg-white p-4 shadow-[0_12px_30px_rgba(15,23,42,0.05)]">
@@ -610,25 +613,13 @@ export default function DocumentContextPage() {
                 />
               )}
 
-              {warehouseId && (
-                <div className="rounded-2xl border border-[#D6E0EC] bg-[#F8FAFD] p-3">
-                  <p className="text-[11px] font-black uppercase tracking-[0.06em] text-[#69758A]">
-                    Kho xuất mặc định
-                  </p>
-                  <p className="mt-1 truncate text-[13px] font-black text-[#06142A]">
-                    {warehouseName}
-                  </p>
-                  <p className="mt-0.5 text-[11px] font-medium text-[#69758A]">
-                    App tự dùng kho tổng từ WMS, không cần chọn kho.
-                  </p>
-                </div>
-              )}
-
-              <WmsInput
-                value={outboundName}
-                placeholder="Tên ca / ghi nhớ, ví dụ: Xuất hàng chiều nay"
-                onChange={(event) => setOutboundName(event.target.value)}
-              />
+              <WmsField label="Tên phiếu xuất">
+                <WmsInput
+                  value={outboundName}
+                  placeholder="Tên ca / ghi nhớ, ví dụ: Xuất hàng chiều nay"
+                  onChange={(event) => setOutboundName(event.target.value)}
+                />
+              </WmsField>
 
               <WmsField
                 label="Nhóm đối tượng xuất"
@@ -759,13 +750,16 @@ export default function DocumentContextPage() {
                 </WmsSelect>
               </WmsField>
 
-              <WmsInput
-                value={recipientStreetAddress}
-                placeholder="Số nhà, tên đường, ghi chú địa chỉ"
-                onChange={(event) =>
-                  setRecipientStreetAddress(event.target.value)
-                }
-              />
+              <WmsField label="Địa chỉ chi tiết">
+                <WmsTextArea
+                  rows={3}
+                  value={recipientStreetAddress}
+                  placeholder="Số nhà, tên đường, ghi chú địa chỉ"
+                  onChange={(event) =>
+                    setRecipientStreetAddress(event.target.value)
+                  }
+                />
+              </WmsField>
 
               <WmsField
                 label="Số lượng cần quét"
@@ -778,7 +772,7 @@ export default function DocumentContextPage() {
                   type="number"
                   value={outboundExpectedQty}
                   error={Boolean(outboundFormErrors.expectedQty)}
-                  placeholder="Số lượng cần quét *"
+                  placeholder="Số lượng cần quét"
                   onChange={(event) => {
                     setOutboundExpectedQty(event.target.value);
                     setOutboundFormErrors((current) => ({
@@ -788,11 +782,13 @@ export default function DocumentContextPage() {
                   }}
                 />
               </WmsField>
-              <WmsInput
-                value={outboundNote}
-                placeholder="Ghi chú"
-                onChange={(event) => setOutboundNote(event.target.value)}
-              />
+              <WmsField label="Ghi chú">
+                <WmsInput
+                  value={outboundNote}
+                  placeholder="Thông tin bổ sung nếu có"
+                  onChange={(event) => setOutboundNote(event.target.value)}
+                />
+              </WmsField>
 
               <AppButton
                 fullWidth
@@ -810,15 +806,13 @@ export default function DocumentContextPage() {
 
         {context !== "OUTBOUND" && (isEditingDocument || !canStart) ? (
           <section className="rounded-[20px] border border-[#D6E0EC] bg-white p-3">
-            <label className="text-[12px] font-black text-[#06142A]">
-              Chọn phiếu
-            </label>
-            <WmsInput
-              className="mt-2"
-              value={manualDocumentId}
-              placeholder={meta.documentPlaceholder}
-              onChange={(event) => setManualDocumentId(event.target.value)}
-            />
+            <WmsField label="Chọn phiếu">
+              <WmsInput
+                value={manualDocumentId}
+                placeholder={meta.documentPlaceholder}
+                onChange={(event) => setManualDocumentId(event.target.value)}
+              />
+            </WmsField>
           </section>
         ) : null}
 

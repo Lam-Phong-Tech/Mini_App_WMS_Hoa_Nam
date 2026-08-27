@@ -157,15 +157,6 @@ export default function ReceiptCreatePage() {
                 onChange={(event) => setName(event.target.value)}
               />
             </WmsField>
-
-            <div className="rounded-[var(--wms-radius-card)] border border-[var(--wms-divider)] bg-[var(--wms-surface-subtle)] p-3">
-              <p className="text-[11px] font-semibold uppercase tracking-[0.06em] text-[var(--wms-text-muted)]">
-                Kho nhận
-              </p>
-              <p className="mt-1 truncate text-[13px] font-semibold text-[var(--wms-text-strong)]">
-                {selectedWarehouse?.name || "Đang lấy kho mặc định..."}
-              </p>
-            </div>
           </WmsCard>
 
           <WmsNotice
