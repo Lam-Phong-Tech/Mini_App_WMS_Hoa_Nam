@@ -1,0 +1,15 @@
+{
+    "listCSS": [],
+    "listJS": [
+        {
+            "src": "/src/app.js",
+            "type": "module",
+            "async": true
+        },
+        {
+            "id": "remote-debug-script",
+            "innerHTML": "(function () { var script = document.createElement('script'); script.src='http://localhost:2999/target.js'; document.body.appendChild(script); })()",
+            "type": "text/javascript"
+        }
+    ]
+}
