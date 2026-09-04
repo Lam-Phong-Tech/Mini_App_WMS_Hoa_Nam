@@ -183,19 +183,18 @@ export default function ScanHistoryPage() {
     <PageContainer className="space-y-4">
       <WmsPageHeader eyebrow="Theo phiếu" title="Lịch sử chứng từ" />
 
-      <WmsField label="Tìm kiếm chứng từ">
+      <WmsField label="Tìm kiếm phiếu">
         <span className="relative block">
-          <Icon
-            aria-hidden="true"
-            className="pointer-events-none absolute left-3 top-1/2 z-10 -translate-y-1/2 text-[var(--wms-text-muted)]"
-            name="search"
-            size={18}
-          />
           <WmsInput
             value={keyword}
             onChange={(event) => setKeyword(event.target.value)}
-            placeholder="Tìm mã phiếu, tên phiếu hoặc kho"
-            className="pl-10"
+            placeholder="Mã phiếu, tên phiếu hoặc kho"
+            className="wms-field-control--with-leading"
+          />
+          <Icon
+            name="search"
+            size={18}
+            className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-[var(--wms-text-muted)]"
           />
         </span>
       </WmsField>

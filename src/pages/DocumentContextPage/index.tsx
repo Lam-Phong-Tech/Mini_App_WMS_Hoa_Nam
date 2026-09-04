@@ -9,7 +9,6 @@ import {
   WmsNotice,
   WmsPageHeader,
   WmsSelect,
-  WmsTextArea,
 } from "@/components/ui/WmsRuntime";
 import { DEFAULT_WAREHOUSE } from "@/constants/default-warehouse";
 import {
@@ -486,59 +485,61 @@ export default function DocumentContextPage() {
           labels={["Thông tin", "Quét mã", "Kiểm tra", "Gửi duyệt"]}
         />
 
-        <section className={`rounded-[18px] border p-3 ${meta.toneClass}`}>
-          <div className="flex items-center justify-between gap-3">
-            <div className="min-w-0">
-              <p className="text-[11px] font-black uppercase tracking-[0.08em]">
-                {meta.documentLabel}
-              </p>
-              <p className="mt-1 truncate text-[14px] font-black text-[#06142A]">
-                {documentId || "Chưa chọn phiếu"}
-              </p>
-            </div>
-            <span
-              className={`shrink-0 rounded-full px-3 py-1.5 text-[10px] font-black ${meta.badgeClass}`}
-            >
-              {meta.status}
-            </span>
-          </div>
-        </section>
-
         {context === "WARRANTY_ITEM" && (
-          <section className="rounded-[22px] border border-[#D6E0EC] bg-white p-4 shadow-[0_12px_30px_rgba(15,23,42,0.05)]">
-            <div className="flex items-start justify-between gap-3">
-              <div>
-                <p className="text-[11px] font-medium text-[#8C98AA]">
-                  {meta.warehouseLabel}
-                </p>
-                <h2 className="mt-1 text-[15px] font-black text-[#06142A]">
-                  {warehouseName}
-                </h2>
+          <>
+            <section className={`rounded-[18px] border p-3 ${meta.toneClass}`}>
+              <div className="flex items-center justify-between gap-3">
+                <div className="min-w-0">
+                  <p className="text-[11px] font-black uppercase tracking-[0.08em]">
+                    {meta.documentLabel}
+                  </p>
+                  <p className="mt-1 truncate text-[14px] font-black text-[#06142A]">
+                    {documentId || "Chưa chọn phiếu"}
+                  </p>
+                </div>
+                <span
+                  className={`shrink-0 rounded-full px-3 py-1.5 text-[10px] font-black ${meta.badgeClass}`}
+                >
+                  {meta.status}
+                </span>
               </div>
-              <span className="grid h-11 w-11 place-items-center rounded-[var(--wms-radius-control)] bg-[var(--wms-primary)] text-white">
-                <Icon name={meta.icon} size={21} strokeWidth={2.5} />
-              </span>
-            </div>
+            </section>
 
-            <div className="mt-4 divide-y divide-[#E6ECF3] text-[12px]">
-              <DocumentInfoRow label="Mục đích" value={meta.purpose} />
-              <DocumentInfoRow
-                label="Mã phiếu"
-                value={documentId || "Chưa chọn"}
-              />
-              <DocumentInfoRow
-                label="Trạng thái"
-                value={canStart ? "Cho phép quét" : "Cần chọn phiếu"}
-              />
-            </div>
+            <section className="rounded-[22px] border border-[#D6E0EC] bg-white p-4 shadow-[0_12px_30px_rgba(15,23,42,0.05)]">
+              <div className="flex items-start justify-between gap-3">
+                <div>
+                  <p className="text-[11px] font-medium text-[#8C98AA]">
+                    {meta.warehouseLabel}
+                  </p>
+                  <h2 className="mt-1 text-[15px] font-black text-[#06142A]">
+                    {warehouseName}
+                  </h2>
+                </div>
+                <span className="grid h-11 w-11 place-items-center rounded-[var(--wms-radius-control)] bg-[var(--wms-primary)] text-white">
+                  <Icon name={meta.icon} size={21} strokeWidth={2.5} />
+                </span>
+              </div>
 
-            <div className="mt-3 h-1.5 overflow-hidden rounded-full bg-[#E8EEF6]">
-              <div
-                className="h-full rounded-full bg-[var(--wms-primary)]"
-                style={{ width: `${progressValue}%` }}
-              />
-            </div>
-          </section>
+              <div className="mt-4 divide-y divide-[#E6ECF3] text-[12px]">
+                <DocumentInfoRow label="Mục đích" value={meta.purpose} />
+                <DocumentInfoRow
+                  label="Mã phiếu"
+                  value={documentId || "Chưa chọn"}
+                />
+                <DocumentInfoRow
+                  label="Trạng thái"
+                  value={canStart ? "Cho phép quét" : "Cần chọn phiếu"}
+                />
+              </div>
+
+              <div className="mt-3 h-1.5 overflow-hidden rounded-full bg-[#E8EEF6]">
+                <div
+                  className="h-full rounded-full bg-[var(--wms-primary)]"
+                  style={{ width: `${progressValue}%` }}
+                />
+              </div>
+            </section>
+          </>
         )}
 
         {context === "OUTBOUND" && (
@@ -613,10 +614,10 @@ export default function DocumentContextPage() {
                 />
               )}
 
-              <WmsField label="Tên phiếu xuất">
+              <WmsField label="Tên phiếu / ghi nhớ">
                 <WmsInput
                   value={outboundName}
-                  placeholder="Tên ca / ghi nhớ, ví dụ: Xuất hàng chiều nay"
+                  placeholder="Ví dụ: Xuất hàng chiều nay"
                   onChange={(event) => setOutboundName(event.target.value)}
                 />
               </WmsField>
@@ -751,8 +752,7 @@ export default function DocumentContextPage() {
               </WmsField>
 
               <WmsField label="Địa chỉ chi tiết">
-                <WmsTextArea
-                  rows={3}
+                <WmsInput
                   value={recipientStreetAddress}
                   placeholder="Số nhà, tên đường, ghi chú địa chỉ"
                   onChange={(event) =>
@@ -772,7 +772,7 @@ export default function DocumentContextPage() {
                   type="number"
                   value={outboundExpectedQty}
                   error={Boolean(outboundFormErrors.expectedQty)}
-                  placeholder="Số lượng cần quét"
+                  placeholder="Ví dụ: 10"
                   onChange={(event) => {
                     setOutboundExpectedQty(event.target.value);
                     setOutboundFormErrors((current) => ({
@@ -785,7 +785,7 @@ export default function DocumentContextPage() {
               <WmsField label="Ghi chú">
                 <WmsInput
                   value={outboundNote}
-                  placeholder="Thông tin bổ sung nếu có"
+                  placeholder="Thông tin cần lưu ý khi xuất"
                   onChange={(event) => setOutboundNote(event.target.value)}
                 />
               </WmsField>

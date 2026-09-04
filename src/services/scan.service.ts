@@ -13,6 +13,7 @@ import {
   getWmsLinkContext,
 } from "@/services/wms-link-context";
 import { resolveWmsContext } from "@/services/wms-context.service";
+import { markWarehouseDashboardChanged } from "@/services/warehouse-dashboard-cache";
 import { getStoredWarehouseStaff } from "@/services/zalo-auth.service";
 import { generateClientScanId } from "@/utils/generateClientScanId";
 import type {
@@ -1749,8 +1750,11 @@ export async function postIssueOutboundDocument({
     },
   );
 
+  const document = unwrapEnvelopeData(response.data);
+  markWarehouseDashboardChanged();
+
   return {
-    document: unwrapEnvelopeData(response.data),
+    document,
     ifMatch:
       normalizeIfMatch(response.headers.get("ETag")) ||
       normalizeIfMatch(response.data.data?.version),

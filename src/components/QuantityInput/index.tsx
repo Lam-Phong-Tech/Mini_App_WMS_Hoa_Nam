@@ -12,32 +12,32 @@ export default function QuantityInput({ value, onChange }: QuantityInputProps) {
   };
 
   return (
-    <WmsField label="Số lượng">
-      <div className="flex items-center gap-2">
+    <div className="flex items-center gap-2">
         <AppButton
           aria-label="Giảm số lượng"
-          className="h-11 w-11 shrink-0 !px-0"
+          className="h-[50px] w-[50px] shrink-0 !px-0"
           variant="secondary"
           onClick={() => setSafeValue(value - 1)}
         >
           -
         </AppButton>
-        <WmsInput
-          type="number"
-          min={1}
-          value={String(value)}
-          onChange={(event) => setSafeValue(Number(event.target.value))}
-          className="min-w-0 text-center"
-        />
+        <WmsField className="min-w-0 flex-1" label="Số lượng">
+          <WmsInput
+            type="number"
+            min={1}
+            value={String(value)}
+            onChange={(event) => setSafeValue(Number(event.target.value))}
+            className="min-w-0 text-center"
+          />
+        </WmsField>
         <AppButton
           aria-label="Tăng số lượng"
-          className="h-11 w-11 shrink-0 !px-0"
+          className="h-[50px] w-[50px] shrink-0 !px-0"
           variant="secondary"
           onClick={() => setSafeValue(value + 1)}
         >
           +
         </AppButton>
-      </div>
-    </WmsField>
+    </div>
   );
 }

@@ -11,12 +11,18 @@ import {
 import QuantityStepper from "@/components/common/quantity-stepper";
 import { useCartStore } from "@/stores/cart.store";
 import { useCreateOrder } from "@/services/order/order.mutations";
-import { Button, Input, Text, useSnackbar } from "zmp-ui";
+import { Button, Text, useSnackbar } from "zmp-ui";
 import { copy } from "@/constants/copy";
 import { formatCurrency } from "@/utils/format";
 import { calculateCartItemPrice, calculateCartTotal } from "@/utils/cart";
 import { cn } from "@/utils/cn";
 import { getPhoneNumber } from "zmp-sdk";
+import {
+  WmsChoiceControl,
+  WmsField,
+  WmsInput,
+  WmsTextArea,
+} from "@/components/ui/WmsRuntime";
 
 type DeliveryMethod = "delivery" | "pickup";
 type DeliverySpeed = "STANDARD" | "EXPRESS" | "EXACT_TIME";
@@ -192,12 +198,16 @@ export default function CheckoutPage() {
                 {copy.checkout.phoneNumberLabel}
               </div>
               <div className="flex gap-2">
-                <Input
-                  value={phoneNumber}
-                  onChange={(e) => setPhoneNumber(e.target.value)}
-                  placeholder={copy.checkout.phoneNumberPlaceholder}
-                  className="flex-1"
-                />
+                <WmsField
+                  className="min-w-0 flex-1"
+                  label={copy.checkout.phoneNumberLabel}
+                >
+                  <WmsInput
+                    value={phoneNumber}
+                    onChange={(e) => setPhoneNumber(e.target.value)}
+                    placeholder={copy.checkout.phoneNumberPlaceholder}
+                  />
+                </WmsField>
                 <Button
                   onClick={handleGetPhoneFromZalo}
                   disabled={isFetchingPhone}
@@ -336,27 +346,42 @@ export default function CheckoutPage() {
 
         <div className="mx-3.5 mt-3 flex flex-col gap-3 rounded-lg bg-white px-4 py-4">
           <div className="text-large-m">{copy.checkout.cardMessageLabel}</div>
-          <Input.TextArea
-            value={cardMessage}
-            onChange={(e) => setCardMessage(e.target.value.slice(0, 200))}
-            maxLength={200}
-            showCount
-            placeholder={copy.checkout.cardMessagePlaceholder}
-            className="h-20"
-          />
-          <Input
-            value={senderName}
-            onChange={(e) => setSenderName(e.target.value)}
-            placeholder={copy.checkout.senderNameLabel}
-            disabled={hideSenderName}
-          />
-          <label className="flex cursor-pointer items-center gap-2">
-            <input
+          <WmsField
+            label={copy.checkout.cardMessageLabel}
+            helper={`${cardMessage.length}/200`}
+          >
+            <WmsTextArea
+              value={cardMessage}
+              onChange={(e) => setCardMessage(e.target.value.slice(0, 200))}
+              maxLength={200}
+              placeholder={copy.checkout.cardMessagePlaceholder}
+              className="min-h-20"
+            />
+          </WmsField>
+          <WmsField label={copy.checkout.senderNameLabel}>
+            <WmsInput
+              value={senderName}
+              onChange={(e) => setSenderName(e.target.value)}
+              placeholder="Tên hiển thị trên thiệp"
+              disabled={hideSenderName}
+            />
+          </WmsField>
+          <label className="wms-choice flex cursor-pointer items-center gap-2">
+            <WmsChoiceControl
               type="checkbox"
               checked={hideSenderName}
               onChange={(e) => setHideSenderName(e.target.checked)}
-              className="h-4 w-4 accent-primary"
             />
+            <span
+              aria-hidden="true"
+              className={`grid h-5 w-5 place-items-center rounded border ${
+                hideSenderName
+                  ? "border-[var(--wms-primary)] bg-[var(--wms-primary)] text-white"
+                  : "border-[var(--wms-divider)] bg-white"
+              }`}
+            >
+              {hideSenderName ? "✓" : ""}
+            </span>
             <span className="text-xsmall text-text-secondary">
               {copy.checkout.hideSenderName}
             </span>

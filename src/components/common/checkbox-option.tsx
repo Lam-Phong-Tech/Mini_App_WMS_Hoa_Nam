@@ -1,5 +1,6 @@
 import { VariantOption } from "@/types/product.types";
 import { formatCurrency } from "@/utils/format";
+import { WmsChoiceControl } from "@/components/ui/WmsRuntime";
 
 interface CheckboxOptionProps {
   option: VariantOption;
@@ -19,16 +20,15 @@ export default function CheckboxOption({
   return (
     <label
       htmlFor={id}
-      className="flex cursor-pointer items-center justify-between rounded-lg py-2 transition"
+      className="wms-choice flex cursor-pointer items-center justify-between rounded-lg py-2 transition"
     >
-      <input
+      <WmsChoiceControl
         id={id}
         type="checkbox"
         name={groupName}
         value={option.id}
         checked={isSelected}
         onChange={() => onSelect(option.id)}
-        className="hidden"
       />
 
       <div className="flex items-center gap-2">

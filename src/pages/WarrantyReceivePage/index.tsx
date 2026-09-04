@@ -486,7 +486,9 @@ export default function WarrantyReceivePage() {
           <WmsInput
             value={defectSearch}
             placeholder={
-              isLoadingDefects ? "Đang tải bệnh/lỗi..." : "Nhập tên hoặc mã lỗi"
+              isLoadingDefects
+                ? "Đang tải bệnh/lỗi..."
+                : "Nhập tên hoặc mã lỗi"
             }
             disabled={isLoadingDefects || defects.length === 0}
             onChange={(event) => setDefectSearch(event.target.value)}

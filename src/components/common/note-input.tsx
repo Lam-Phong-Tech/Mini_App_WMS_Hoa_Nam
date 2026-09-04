@@ -1,6 +1,5 @@
-import { Input, Text } from "zmp-ui";
 import { copy } from "@/constants/copy";
-import { cn } from "@/utils/cn";
+import { WmsField, WmsTextArea } from "@/components/ui/WmsRuntime";
 
 interface NoteInputProps {
   value?: string;
@@ -17,27 +16,20 @@ export default function NoteInput({
   onChange,
   label,
   maxLength,
-  hideLabel,
+  hideLabel: _hideLabel,
   placeholder,
   className,
 }: NoteInputProps) {
   const MAX = maxLength ?? 40;
   return (
-    <div className={cn("m-3 space-y-1", className)}>
-      {!hideLabel && (
-        <Text size="xSmall" className="text-text-primary">
-          {label ?? copy.product.note}
-        </Text>
-      )}
-
-      <Input.TextArea
+    <WmsField className={`m-3 ${className ?? ""}`} label={label ?? copy.product.note}>
+      <WmsTextArea
         value={value}
         onChange={(e) => onChange?.(e.target.value.slice(0, MAX))}
         maxLength={MAX}
         placeholder={placeholder ?? copy.product.notePlaceholder}
-        showCount
-        className="h-24 w-full"
+        className="min-h-24"
       />
-    </div>
+    </WmsField>
   );
 }

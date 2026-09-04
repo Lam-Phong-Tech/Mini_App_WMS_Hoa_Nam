@@ -129,26 +129,39 @@ export function WmsNotice({
 
 export function WmsField({
   label,
+  required = false,
   error,
-  helperText,
+  helper,
+  className = "",
   children,
 }: {
   label: string;
   required?: boolean;
   error?: string;
-  helperText?: ReactNode;
+  helper?: string;
+  className?: string;
   children: ReactNode;
 }) {
+  const message = error || helper;
+
   return (
-    <label className={`wms-field block${error ? "wms-field--error" : ""}`}>
-      <span className="wms-field-label">{label}</span>
-      {children}
-      {(error || helperText) && (
+    <label
+      className={`wms-field${error ? " wms-field--error" : ""} ${className}`}
+      data-required={required || undefined}
+    >
+      <span className="wms-field__outline">
+        <span className="wms-field-label">
+          {label}
+          {required && <span className="wms-field-label__required"> *</span>}
+        </span>
+        {children}
+      </span>
+      {message && (
         <span
-          className={`wms-field-helper${error ? "wms-field-helper--error" : ""}`}
+          className={`wms-field-message${error ? " wms-field-message--error" : ""}`}
           role={error ? "alert" : undefined}
         >
-          {error || helperText}
+          {message}
         </span>
       )}
     </label>
@@ -158,13 +171,9 @@ export function WmsField({
 export const WmsInput = forwardRef<
   HTMLInputElement,
   React.InputHTMLAttributes<HTMLInputElement> & { error?: boolean }
->(function WmsInput(
-  { error = false, className = "", "aria-invalid": ariaInvalid, ...props },
-  ref,
-) {
+>(function WmsInput({ error = false, className = "", ...props }, ref) {
   return (
     <input
-      aria-invalid={error || ariaInvalid ? true : undefined}
       className={`wms-field-control wms-field-control--outlined wms-input ${
         error ? "wms-input--error" : ""
       } ${className}`}
@@ -177,13 +186,9 @@ export const WmsInput = forwardRef<
 export const WmsTextArea = forwardRef<
   HTMLTextAreaElement,
   TextareaHTMLAttributes<HTMLTextAreaElement> & { error?: boolean }
->(function WmsTextArea(
-  { error = false, className = "", "aria-invalid": ariaInvalid, ...props },
-  ref,
-) {
+>(function WmsTextArea({ error = false, className = "", ...props }, ref) {
   return (
     <textarea
-      aria-invalid={error || ariaInvalid ? true : undefined}
       className={`wms-field-control wms-field-control--outlined wms-textarea ${
         error ? "wms-input--error" : ""
       } ${className}`}
@@ -197,23 +202,29 @@ export const WmsSelect = forwardRef<
   HTMLSelectElement,
   SelectHTMLAttributes<HTMLSelectElement> & { error?: boolean }
 >(function WmsSelect(
-  {
-    error = false,
-    className = "",
-    children,
-    "aria-invalid": ariaInvalid,
-    ...props
-  },
+  { error = false, className = "", children, ...props },
   ref,
 ) {
   return (
     <select
-      aria-invalid={error || ariaInvalid ? true : undefined}
       className={`wms-field-control wms-field-control--outlined wms-select ${error ? "wms-input--error" : ""} ${className}`}
       ref={ref}
       {...props}
     >
       {children}
     </select>
+  );
+});
+
+export const WmsChoiceControl = forwardRef<
+  HTMLInputElement,
+  React.InputHTMLAttributes<HTMLInputElement>
+>(function WmsChoiceControl({ className = "", ...props }, ref) {
+  return (
+    <input
+      className={`wms-choice-control ${className}`}
+      ref={ref}
+      {...props}
+    />
   );
 });

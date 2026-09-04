@@ -1,11 +1,12 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Button, Input, Text, useSnackbar } from "zmp-ui";
+import { Button, Text, useSnackbar } from "zmp-ui";
 import { copy } from "@/constants/copy";
 import { cn } from "@/utils/cn";
 import DeliverySchedulePicker from "@/components/common/delivery-schedule-picker";
 import { useCreateCustomRequest } from "@/services/custom-request/custom-request.mutations";
 import { CloseIcon } from "@/components/common/vectors";
+import { WmsField, WmsInput, WmsTextArea } from "@/components/ui/WmsRuntime";
 
 const OCCASION_OPTIONS = [
   "Sinh nhật",
@@ -21,7 +22,7 @@ const OCCASION_OPTIONS = [
 
 const SIZE_OPTIONS = ["Nhỏ", "Vừa", "Lớn"];
 
-function FormField({
+function SelectionGroup({
   label,
   children,
 }: {
@@ -157,61 +158,61 @@ export default function CustomRequestPage() {
         </div>
 
         <div className="mx-3.5 mt-4 flex flex-col gap-4 rounded-xl bg-white p-4">
-          <FormField label={copy.custom.occasion}>
+          <SelectionGroup label={copy.custom.occasion}>
             <ChipGroup
               options={OCCASION_OPTIONS}
               value={occasion}
               onChange={setOccasion}
             />
-          </FormField>
+          </SelectionGroup>
 
-          <FormField label={copy.custom.recipient}>
-            <Input
+          <WmsField label={copy.custom.recipient}>
+            <WmsInput
               value={recipient}
               onChange={(e) => setRecipient(e.target.value)}
               placeholder={copy.custom.recipientPlaceholder}
             />
-          </FormField>
+          </WmsField>
 
-          <FormField label={copy.custom.budget}>
-            <Input
+          <WmsField label={copy.custom.budget}>
+            <WmsInput
               value={budget}
               onChange={(e) => setBudget(e.target.value)}
               placeholder={copy.custom.budgetPlaceholder}
             />
-          </FormField>
+          </WmsField>
 
-          <FormField label={copy.custom.size}>
+          <SelectionGroup label={copy.custom.size}>
             <ChipGroup options={SIZE_OPTIONS} value={size} onChange={setSize} />
-          </FormField>
+          </SelectionGroup>
         </div>
 
         <div className="mx-3.5 mt-3 flex flex-col gap-4 rounded-xl bg-white p-4">
-          <FormField label={copy.custom.flowerType}>
-            <Input
+          <WmsField label={copy.custom.flowerType}>
+            <WmsInput
               value={flowerType}
               onChange={(e) => setFlowerType(e.target.value)}
               placeholder={copy.custom.flowerTypePlaceholder}
             />
-          </FormField>
+          </WmsField>
 
-          <FormField label={copy.custom.colorPreference}>
-            <Input
+          <WmsField label={copy.custom.colorPreference}>
+            <WmsInput
               value={colorPreference}
               onChange={(e) => setColorPreference(e.target.value)}
               placeholder={copy.custom.colorPreferencePlaceholder}
             />
-          </FormField>
+          </WmsField>
 
-          <FormField label={copy.custom.stylePreference}>
-            <Input
+          <WmsField label={copy.custom.stylePreference}>
+            <WmsInput
               value={stylePreference}
               onChange={(e) => setStylePreference(e.target.value)}
               placeholder={copy.custom.stylePreferencePlaceholder}
             />
-          </FormField>
+          </WmsField>
 
-          <FormField label={copy.custom.referenceImage}>
+          <SelectionGroup label={copy.custom.referenceImage}>
             <div className="flex flex-col gap-2">
               <div className="text-xxxsmall text-text-disabled">
                 {copy.custom.referenceImageHint}
@@ -242,12 +243,13 @@ export default function CustomRequestPage() {
               )}
               {referenceImages.length < 3 && (
                 <div className="flex gap-2">
-                  <Input
-                    value={imageUrlInput}
-                    onChange={(e) => setImageUrlInput(e.target.value)}
-                    placeholder="Dán link ảnh mẫu"
-                    className="flex-1"
-                  />
+                  <WmsField className="min-w-0 flex-1" label="Link ảnh mẫu">
+                    <WmsInput
+                      value={imageUrlInput}
+                      onChange={(e) => setImageUrlInput(e.target.value)}
+                      placeholder="Dán link ảnh mẫu"
+                    />
+                  </WmsField>
                   <Button
                     onClick={handleAddImage}
                     className="!w-fit rounded-lg !bg-neutral100 px-3 !text-text-primary"
@@ -257,18 +259,20 @@ export default function CustomRequestPage() {
                 </div>
               )}
             </div>
-          </FormField>
+          </SelectionGroup>
 
-          <FormField label={copy.custom.cardMessage}>
-            <Input.TextArea
+          <WmsField
+            label={copy.custom.cardMessage}
+            helper={`${cardMessage.length}/200`}
+          >
+            <WmsTextArea
               value={cardMessage}
               onChange={(e) => setCardMessage(e.target.value.slice(0, 200))}
               maxLength={200}
-              showCount
               placeholder={copy.custom.cardMessagePlaceholder}
-              className="h-20"
+              className="min-h-20"
             />
-          </FormField>
+          </WmsField>
         </div>
 
         <div className="mx-3.5 mt-3 flex flex-col gap-4 rounded-xl bg-white p-4">
@@ -281,24 +285,26 @@ export default function CustomRequestPage() {
             onTimeSlotChange={setDeliveryTimeSlot}
           />
 
-          <FormField label={copy.custom.deliveryAddress}>
-            <Input
+          <WmsField label={copy.custom.deliveryAddress}>
+            <WmsInput
               value={deliveryAddress}
               onChange={(e) => setDeliveryAddress(e.target.value)}
               placeholder={copy.custom.deliveryAddressPlaceholder}
             />
-          </FormField>
+          </WmsField>
 
-          <FormField label={copy.custom.specialRequest}>
-            <Input.TextArea
+          <WmsField
+            label={copy.custom.specialRequest}
+            helper={`${specialRequest.length}/200`}
+          >
+            <WmsTextArea
               value={specialRequest}
               onChange={(e) => setSpecialRequest(e.target.value.slice(0, 200))}
               maxLength={200}
-              showCount
               placeholder={copy.custom.specialRequestPlaceholder}
-              className="h-20"
+              className="min-h-20"
             />
-          </FormField>
+          </WmsField>
         </div>
       </div>
 

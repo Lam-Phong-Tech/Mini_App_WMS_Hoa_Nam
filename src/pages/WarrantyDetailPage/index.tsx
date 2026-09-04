@@ -475,7 +475,7 @@ export default function WarrantyDetailPage() {
                 {requiresConfirmedDefect && (
                   <WmsField
                     label="Kết quả kiểm tra"
-                    helperText="Cần nhập trước khi chuyển sang sửa chữa hoặc hoàn tất sau kiểm tra."
+                    helper="Bắt buộc nhập để chuyển sang sửa chữa hoặc hoàn tất sau kiểm tra."
                   >
                     <WmsTextArea
                       className="min-h-24"
@@ -487,7 +487,7 @@ export default function WarrantyDetailPage() {
                     />
                   </WmsField>
                 )}
-                <WmsField label="Ghi chú xử lý">
+                <WmsField label="Ghi chú chuyển trạng thái">
                   <WmsInput
                     value={statusNote}
                     placeholder={statusNotePlaceholder(currentStatus)}

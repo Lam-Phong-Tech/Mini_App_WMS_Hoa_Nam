@@ -1068,7 +1068,7 @@ export default function ScannerPage() {
           <WmsField label="Mã sản phẩm / mã tem">
             <WmsInput
               value={manualCode}
-              placeholder="Nhập mã cần kiểm tra"
+              placeholder="Nhập QR, barcode hoặc serial"
               onChange={(event) => {
                 setManualCode(event.target.value);
                 if (showManualNotice) setNotice(undefined);

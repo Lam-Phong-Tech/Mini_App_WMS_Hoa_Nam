@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Input, List, Text } from "zmp-ui";
+import { List, Text } from "zmp-ui";
 import { copy } from "@/constants/copy";
 import SearchBar from "@/components/common/search-bar";
 import { MapPinIcon, MapPinIconSolid } from "@/components/common/vectors";
@@ -50,13 +50,12 @@ export default function SelectLocationPage() {
   return (
     <div className="header-margin flex h-full flex-col gap-2 bg-background">
       <div className="px-4 pb-3 pt-4">
-        <div className="relative w-full">
-          <input
-            className={`placeholder:text-inactive h-10 w-full max-w-[70%] rounded-lg bg-neutral100 pl-10 text-large outline-none`}
-            placeholder="Tìm kiếm địa điểm"
-          />
-          <MapPinIcon className="absolute left-3 top-1/2 size-5 -translate-y-1/2" />
-        </div>
+        <SearchBar
+          label="Tìm kiếm địa điểm"
+          value={searchQuery}
+          onChange={(event) => setSearchQuery(event.target.value)}
+          placeholder="Nhập tên hoặc địa chỉ"
+        />
       </div>
       <div className="flex items-center justify-between px-4">
         <div className="text-small text-text-secondary">

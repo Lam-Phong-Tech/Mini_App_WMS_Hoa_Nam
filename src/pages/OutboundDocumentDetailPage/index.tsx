@@ -235,22 +235,13 @@ export default function OutboundDocumentDetailPage() {
         />
       )}
 
-      <div className="grid grid-cols-2 gap-2">
-        <AppButton
-          fullWidth
-          variant="secondary"
-          onClick={() => navigate(backUrl)}
-        >
-          {openedFromApprovals ? "Duyệt phiếu xuất" : "Lịch sử"}
-        </AppButton>
-        <AppButton
-          fullWidth
-          icon="package-minus"
-          onClick={() => navigate("/documents/OUTBOUND")}
-        >
-          Tạo phiên xuất mới
-        </AppButton>
-      </div>
+      <AppButton
+        fullWidth
+        icon="package-minus"
+        onClick={() => navigate("/documents/OUTBOUND")}
+      >
+        Tạo phiên xuất mới
+      </AppButton>
     </PageContainer>
   );
 }

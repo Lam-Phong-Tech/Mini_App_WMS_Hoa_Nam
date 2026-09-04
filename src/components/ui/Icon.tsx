@@ -30,14 +30,12 @@ export type IconName =
   | "database"
   | "list-check"
   | "spark"
-  | "keyboard";
+  | "keyboard"
+  | "calendar"
+  | "info";
 
 const paths: Record<IconName, string[]> = {
-  home: [
-    "M3 10.5 12 3l9 7.5",
-    "M5 9.5V21h14V9.5",
-    "M9.5 21v-6h5v6",
-  ],
+  home: ["M3 10.5 12 3l9 7.5", "M5 9.5V21h14V9.5", "M9.5 21v-6h5v6"],
   scan: [
     "M4 7V5a1 1 0 0 1 1-1h2",
     "M17 4h2a1 1 0 0 1 1 1v2",
@@ -46,10 +44,7 @@ const paths: Record<IconName, string[]> = {
     "M7 12h10",
   ],
   history: ["M3 12a9 9 0 1 0 3-6.7", "M3 4v5h5", "M12 7v6l4 2"],
-  user: [
-    "M20 21a8 8 0 0 0-16 0",
-    "M12 13a5 5 0 1 0 0-10 5 5 0 0 0 0 10Z",
-  ],
+  user: ["M20 21a8 8 0 0 0-16 0", "M12 13a5 5 0 1 0 0-10 5 5 0 0 0 0 10Z"],
   "package-plus": [
     "M21 8.5 12 3 3 8.5 12 14l9-5.5Z",
     "M3 8.5V16l9 5 9-5V8.5",
@@ -76,20 +71,16 @@ const paths: Record<IconName, string[]> = {
     "M3 8.5V16l9 5 9-5V8.5",
     "M12 14v7",
   ],
-  warehouse: [
-    "M3 21V8l9-5 9 5v13",
-    "M7 21v-7h10v7",
-    "M9 10h6",
-  ],
+  warehouse: ["M3 21V8l9-5 9 5v13", "M7 21v-7h10v7", "M9 10h6"],
   "chevron-right": ["m9 18 6-6-6-6"],
   "chevron-left": ["m15 18-6-6 6-6"],
   "check-circle": ["M22 11.1V12a10 10 0 1 1-5.9-9.1", "m9 11 3 3L22 4"],
-  "alert-triangle": [
-    "m12 3 10 18H2L12 3Z",
-    "M12 9v4",
-    "M12 17h.01",
+  "alert-triangle": ["m12 3 10 18H2L12 3Z", "M12 9v4", "M12 17h.01"],
+  "x-circle": [
+    "M12 22a10 10 0 1 0 0-20 10 10 0 0 0 0 20Z",
+    "m15 9-6 6",
+    "m9 9 6 6",
   ],
-  "x-circle": ["M12 22a10 10 0 1 0 0-20 10 10 0 0 0 0 20Z", "m15 9-6 6", "m9 9 6 6"],
   clock: ["M12 22a10 10 0 1 0 0-20 10 10 0 0 0 0 20Z", "M12 6v6l4 2"],
   copy: [
     "M8 8h10a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2V10a2 2 0 0 1 2-2Z",
@@ -106,19 +97,9 @@ const paths: Record<IconName, string[]> = {
     "M20 17H10a4 4 0 0 1-4-4v-1",
     "m9 15-3-3-3 3",
   ],
-  image: [
-    "M4 5h16v14H4z",
-    "m4 15 4-4 4 4 3-3 5 5",
-    "M9 9h.01",
-  ],
+  image: ["M4 5h16v14H4z", "m4 15 4-4 4 4 3-3 5 5", "M9 9h.01"],
   "log-out": ["M10 17l5-5-5-5", "M15 12H3", "M21 3v18"],
-  trash: [
-    "M3 6h18",
-    "M8 6V4h8v2",
-    "M6 6l1 15h10l1-15",
-    "M10 11v6",
-    "M14 11v6",
-  ],
+  trash: ["M3 6h18", "M8 6V4h8v2", "M6 6l1 15h10l1-15", "M10 11v6", "M14 11v6"],
   filter: ["M4 5h16", "M7 12h10", "M10 19h4"],
   refresh: [
     "M21 12a9 9 0 0 1-15.2 6.5",
@@ -151,6 +132,13 @@ const paths: Record<IconName, string[]> = {
     "M18 10h.01",
     "M7 14h10",
   ],
+  calendar: [
+    "M4 5h16a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2Z",
+    "M16 3v4",
+    "M8 3v4",
+    "M2 10h20",
+  ],
+  info: ["M12 22a10 10 0 1 0 0-20 10 10 0 0 0 0 20Z", "M12 10v6", "M12 7h.01"],
 };
 
 export function Icon({

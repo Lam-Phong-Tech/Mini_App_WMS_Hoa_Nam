@@ -69,12 +69,12 @@ export default function WarehouseApp() {
                 key={item.to}
                 to={item.to}
                 className={({ isActive }) =>
-                  `wms-bottom-nav__item flex flex-col items-center justify-center px-1 text-center text-[10px] font-medium ${
+                  `wms-bottom-nav__item flex flex-col items-center justify-center px-1 text-center text-[12px] font-medium ${
                     isActive ? "wms-bottom-nav__item--active" : ""
                   }`
                 }
               >
-                <Icon name={item.icon} size={20} />
+                <Icon name={item.icon} size={24} strokeWidth={2.15} />
                 <div className="mt-1">{item.label}</div>
               </NavLink>
             ))}

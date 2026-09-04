@@ -7,7 +7,12 @@ import { AppButton } from "@/components/ui/Button";
 import { Icon } from "@/components/ui/Icon";
 import { InfoRow } from "@/components/ui/InfoRow";
 import { PageContainer } from "@/components/ui/Page";
-import { WmsCard, WmsNotice, WmsPageHeader } from "@/components/ui/WmsRuntime";
+import {
+  WmsCard,
+  WmsChoiceControl,
+  WmsNotice,
+  WmsPageHeader,
+} from "@/components/ui/WmsRuntime";
 import { useScanSessionStore } from "@/stores/scan-session.store";
 import type { ScanContext, ScanHistoryItem } from "@/types/scan.types";
 
@@ -321,7 +326,7 @@ function OperationConfirmPage({
         description="Xác nhận chỉ ghi nhận yêu cầu nhập/xuất/bảo hành. Tồn chỉ thay đổi sau đúng approval/Post từ backend."
       />
 
-      <label className="flex min-h-12 items-center gap-3 rounded-2xl border border-[#D6E0EC] bg-white px-3 text-[12px] font-medium text-[#44536A]">
+      <label className="wms-choice flex min-h-12 items-center gap-3 rounded-2xl border border-[#D6E0EC] bg-white px-3 text-[12px] font-medium text-[#44536A]">
         <span
           className={`grid h-6 w-6 place-items-center rounded-md border ${
             checked
@@ -331,9 +336,8 @@ function OperationConfirmPage({
         >
           {checked && <Icon name="check-circle" size={16} strokeWidth={3} />}
         </span>
-        <input
+        <WmsChoiceControl
           checked={checked}
-          className="sr-only"
           type="checkbox"
           onChange={(event) => onCheckedChange(event.target.checked)}
         />

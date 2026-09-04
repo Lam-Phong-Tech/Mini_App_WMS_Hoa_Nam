@@ -1,5 +1,5 @@
 import { useMemo } from "react";
-import { cn } from "@/utils/cn";
+import { WmsField, WmsSelect } from "@/components/ui/WmsRuntime";
 
 const TIME_SLOTS = [
   "08:00 - 10:00",
@@ -46,67 +46,38 @@ export default function DeliverySchedulePicker({
   onDateChange,
   onTimeSlotChange,
   daysAhead = 5,
-  className,
+  className = "",
 }: DeliverySchedulePickerProps) {
   const dateOptions = useMemo(() => buildDateOptions(daysAhead), [daysAhead]);
 
   return (
-    <div className={cn("flex flex-col gap-3", className)}>
-      <div className="flex flex-col gap-2">
-        <div className="text-small-m text-text-primary">{dateLabel}</div>
-        <div className="no-scrollbar flex gap-2 overflow-x-auto">
-          {dateOptions.map((option) => {
-            const isSelected = option.value === selectedDate;
-            return (
-              <button
-                key={option.value}
-                type="button"
-                onClick={() => onDateChange(option.value)}
-                className={cn(
-                  "flex flex-shrink-0 flex-col items-center gap-0.5 rounded-lg border px-3 py-1.5",
-                  isSelected
-                    ? "border-primary bg-primary text-white"
-                    : "border-border-primary bg-white text-text-secondary",
-                )}
-              >
-                <span className="text-xsmall">{option.label}</span>
-                <span
-                  className={cn(
-                    "text-xxxsmall",
-                    isSelected ? "text-white/80" : "text-text-disabled",
-                  )}
-                >
-                  {option.weekday}
-                </span>
-              </button>
-            );
-          })}
-        </div>
-      </div>
+    <div className={`flex flex-col gap-3 ${className}`}>
+      <WmsField label={dateLabel}>
+        <WmsSelect
+          value={selectedDate}
+          onChange={(event) => onDateChange(event.target.value)}
+        >
+          {dateOptions.map((option) => (
+            <option key={option.value} value={option.value}>
+              {option.label} · {option.weekday}
+            </option>
+          ))}
+        </WmsSelect>
+      </WmsField>
 
-      <div className="flex flex-col gap-2">
-        <div className="text-small-m text-text-primary">{timeSlotLabel}</div>
-        <div className="grid grid-cols-3 gap-2">
-          {TIME_SLOTS.map((slot) => {
-            const isSelected = slot === selectedTimeSlot;
-            return (
-              <button
-                key={slot}
-                type="button"
-                onClick={() => onTimeSlotChange(slot)}
-                className={cn(
-                  "rounded-lg border px-2 py-2 text-xsmall",
-                  isSelected
-                    ? "border-primary bg-primary text-white"
-                    : "border-border-primary bg-white text-text-secondary",
-                )}
-              >
-                {slot}
-              </button>
-            );
-          })}
-        </div>
-      </div>
+      <WmsField label={timeSlotLabel}>
+        <WmsSelect
+          value={selectedTimeSlot}
+          onChange={(event) => onTimeSlotChange(event.target.value)}
+        >
+          <option value="">Chọn khung giờ</option>
+          {TIME_SLOTS.map((slot) => (
+            <option key={slot} value={slot}>
+              {slot}
+            </option>
+          ))}
+        </WmsSelect>
+      </WmsField>
     </div>
   );
 }

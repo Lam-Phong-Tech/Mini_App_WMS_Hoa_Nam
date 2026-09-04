@@ -1,12 +1,25 @@
 import { forwardRef, useState } from "react";
 import { CloseIcon, SearchIcon } from "@/components/common/vectors";
+import { WmsField, WmsInput } from "@/components/ui/WmsRuntime";
 
 type SearchBarProps = React.InputHTMLAttributes<HTMLInputElement> & {
   clearable?: boolean;
+  label?: string;
 };
 
 const SearchBar = forwardRef<HTMLInputElement, SearchBarProps>(
-  ({ clearable = false, value, onChange, className, ...props }, ref) => {
+  (
+    {
+      clearable = false,
+      label = "Tìm kiếm",
+      value,
+      onChange,
+      className,
+      placeholder,
+      ...props
+    },
+    ref,
+  ) => {
     const isControlled = value !== undefined;
     const [innerValue, setInnerValue] = useState("");
 
@@ -26,30 +39,35 @@ const SearchBar = forwardRef<HTMLInputElement, SearchBarProps>(
     };
 
     return (
-      <div className="relative w-full">
-        <input
-          ref={ref}
-          value={currentValue}
-          onChange={handleChange}
-          className={`bg-section placeholder:text-inactive h-10 w-full rounded-lg pl-10 ${
-            clearable ? "pr-10" : "pr-3"
-          } text-large outline-none ${className ?? ""}`}
-          placeholder="Tìm kiếm"
-          {...props}
-        />
+      <WmsField label={label}>
+        <span className="relative block w-full">
+          <WmsInput
+            ref={ref}
+            value={currentValue}
+            onChange={handleChange}
+            className={`wms-field-control--with-leading ${
+              clearable ? "wms-field-control--with-trailing" : ""
+            } ${className ?? ""}`}
+            placeholder={placeholder ?? "Nhập từ khóa"}
+            {...props}
+          />
 
-        <SearchIcon className="absolute left-2 top-2 text-icon-tertiary" />
+          <SearchIcon className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-icon-tertiary" />
 
-        {clearable && currentValue && (
-          <button
-            type="button"
-            onClick={handleClear}
-            className="absolute right-1 top-1/2 flex h-3.5 w-3.5 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full bg-primary text-white shadow-sm transition hover:bg-primary/80 active:scale-95"
-          >
-            <CloseIcon color="white" size={10} strokeWidth={3} />
-          </button>
-        )}
-      </div>
+          {clearable && currentValue && (
+            <button
+              aria-label="Xóa từ khóa"
+              type="button"
+              onClick={handleClear}
+              className="absolute right-0 top-1/2 grid h-11 w-11 -translate-y-1/2 place-items-center text-[var(--wms-text-muted)] transition-colors hover:text-[var(--wms-primary)]"
+            >
+              <span className="grid h-5 w-5 place-items-center rounded-full bg-[var(--wms-primary)] text-white">
+                <CloseIcon color="white" size={10} strokeWidth={3} />
+              </span>
+            </button>
+          )}
+        </span>
+      </WmsField>
     );
   },
 );
