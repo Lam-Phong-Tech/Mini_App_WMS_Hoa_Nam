@@ -15,12 +15,24 @@
     "Samsung >= 5"
   ],
   "scripts": {
-    "login": "zmp login",
-    "start": "zmp start",
-    "deploy": "zmp deploy"
+    "login": "npx --yes zmp-cli login",
+    "start": "npx --yes zmp-cli start",
+    "deploy": "npx --yes zmp-cli deploy",
+    "start:backend-preview": "npx --yes zmp-cli start --mode backend-preview",
+    "build:dev-preview": "npx --yes zmp-cli build --mode dev-preview",
+    "predeploy:dev-preview": "npm run build:dev-preview",
+    "deploy:dev-preview": "npx --yes zmp-cli deploy --testing --passive --mode dev-preview --desc \"DEV preview - mock catalogue only\"",
+    "build:backend-preview": "npx --yes zmp-cli build --mode backend-preview",
+    "predeploy:backend-preview": "npm run build:backend-preview",
+    "deploy:backend-preview": "npx --yes zmp-cli deploy --testing --passive --mode backend-preview --desc \"Backend preview - public catalogue adapter\"",
+    "build": "npx --yes zmp-cli build",
+    "typecheck": "tsc --noEmit -p tsconfig.json",
+    "lint": "eslint src --max-warnings=0",
+    "test": "vitest run"
   },
   "dependencies": {
     "jotai": "^2.12.1",
+    "lucide-react": "^1.37.0",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
     "zmp-sdk": "latest",
@@ -29,6 +41,8 @@
   "devDependencies": {
     "@types/react": "^18.3.1",
     "@types/react-dom": "^18.3.0",
+    "@typescript-eslint/eslint-plugin": "^8.68.0",
+    "@typescript-eslint/parser": "^8.68.0",
     "@vitejs/plugin-react": "^4.3.1",
     "autoprefixer": "^10.4.19",
     "cross-env": "^7.0.3",
@@ -37,7 +51,9 @@
     "postcss-preset-env": "^6.7.0",
     "sass": "^1.76.0",
     "tailwindcss": "^3.4.3",
+    "typescript": "^5.7.3",
     "vite": "^5.2.13",
+    "vitest": "^2.1.9",
     "zmp-vite-plugin": "latest"
   }
 }

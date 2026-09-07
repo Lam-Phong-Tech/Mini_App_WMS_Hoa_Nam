@@ -1,0 +1,1116 @@
+openapi: 3.1.0
+info:
+  title: Hoa Nam Public Product Viewer API
+  version: 1.0.0-g0
+  description: |
+    G0 public-contract baseline only. All product reads are limited at the server boundary
+    to PUBLISHED records with approved public availability IN_STOCK or PREORDER. PREORDER is a
+    requestable public state only; it contains no inventory quantity or internal stock status.
+    This API contains no prices, inventory quantities,
+    internal catalogue data, CRM/ERP integration, outbox, queue, retry worker, notification,
+    or Lead-management lifecycle.
+servers:
+  - url: https://api.example.invalid
+    description: Placeholder only; environment values are configured outside this document.
+tags:
+  - name: public-config
+  - name: catalogue
+  - name: quote
+  - name: health
+paths:
+  /api/v1/public/config:
+    get:
+      tags: [public-config]
+      operationId: getPublicConfig
+      summary: Get public operational configuration without secrets.
+      parameters:
+        - $ref: '#/components/parameters/XRequestId'
+      responses:
+        '200':
+          description: Public config retrieved.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ConfigEnvelope'
+        '503':
+          $ref: '#/components/responses/ServiceUnavailable'
+  /api/v1/public/home:
+    get:
+      tags: [catalogue]
+      operationId: getHome
+      summary: Get public home domains and non-empty content sections.
+      description: Empty or unavailable featured/category sections are omitted; clients must not render empty sections.
+      parameters:
+        - $ref: '#/components/parameters/XRequestId'
+      responses:
+        '200':
+          description: Home payload retrieved.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HomeEnvelope'
+        '429':
+          $ref: '#/components/responses/RateLimited'
+        '503':
+          $ref: '#/components/responses/ServiceUnavailable'
+  /api/v1/public/categories:
+    get:
+      tags: [catalogue]
+      operationId: listCategories
+      summary: List public categories.
+      parameters:
+        - $ref: '#/components/parameters/XRequestId'
+        - $ref: '#/components/parameters/Domain'
+      responses:
+        '200':
+          description: Categories retrieved.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CategoriesEnvelope'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '429':
+          $ref: '#/components/responses/RateLimited'
+        '503':
+          $ref: '#/components/responses/ServiceUnavailable'
+  /api/v1/public/products:
+    get:
+      tags: [catalogue]
+      operationId: listPublicProducts
+      summary: Search, filter, sort, and page public products.
+      description: |
+        Search trims whitespace, is case-insensitive and Vietnamese-diacritic-insensitive.
+        Exact normalized model or approved item-code matches rank before fuzzy name/category/tag/use-case matches.
+        `spec.<code>` stands for one or more literal dynamic query names such as `spec.voltage`.
+        The server accepts only registered filterable spec codes and values.
+      parameters:
+        - $ref: '#/components/parameters/XRequestId'
+        - $ref: '#/components/parameters/Q'
+        - $ref: '#/components/parameters/Domain'
+        - $ref: '#/components/parameters/Category'
+        - $ref: '#/components/parameters/PowerSource'
+        - $ref: '#/components/parameters/Feature'
+        - $ref: '#/components/parameters/SpecFilter'
+        - $ref: '#/components/parameters/Sort'
+        - $ref: '#/components/parameters/Cursor'
+        - $ref: '#/components/parameters/Limit'
+      responses:
+        '200':
+          description: Cursor page of public product cards.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProductListEnvelope'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '429':
+          $ref: '#/components/responses/RateLimited'
+        '503':
+          $ref: '#/components/responses/ServiceUnavailable'
+  /api/v1/public/products/{slug}:
+    get:
+      tags: [catalogue]
+      operationId: getPublicProduct
+      summary: Get one public product family and optional public detail.
+      description: A missing, unpublished, or unavailable product returns PRODUCT_NOT_FOUND to avoid disclosing internal state. The Mini App presents Product Unavailable.
+      parameters:
+        - $ref: '#/components/parameters/XRequestId'
+        - $ref: '#/components/parameters/ProductSlug'
+      responses:
+        '200':
+          description: Public product detail retrieved.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProductDetailEnvelope'
+        '404':
+          $ref: '#/components/responses/ProductNotFound'
+        '429':
+          $ref: '#/components/responses/RateLimited'
+        '503':
+          $ref: '#/components/responses/ServiceUnavailable'
+  /api/v1/public/products/{slug}/related:
+    get:
+      tags: [catalogue]
+      operationId: listRelatedPublicProducts
+      summary: List public related products for an eligible product.
+      parameters:
+        - $ref: '#/components/parameters/XRequestId'
+        - $ref: '#/components/parameters/ProductSlug'
+        - $ref: '#/components/parameters/Cursor'
+        - $ref: '#/components/parameters/Limit'
+      responses:
+        '200':
+          description: Cursor page of related public product cards.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProductListEnvelope'
+        '404':
+          $ref: '#/components/responses/ProductNotFound'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '429':
+          $ref: '#/components/responses/RateLimited'
+        '503':
+          $ref: '#/components/responses/ServiceUnavailable'
+  /api/v1/public/facets:
+    get:
+      tags: [catalogue]
+      operationId: getPublicFacets
+      summary: Get dynamic public facets for the current search context.
+      description: Only facets/options with public eligible results are returned. No facet represents a database column or stock quantity.
+      parameters:
+        - $ref: '#/components/parameters/XRequestId'
+        - $ref: '#/components/parameters/Q'
+        - $ref: '#/components/parameters/Domain'
+        - $ref: '#/components/parameters/Category'
+        - $ref: '#/components/parameters/PowerSource'
+        - $ref: '#/components/parameters/Feature'
+        - $ref: '#/components/parameters/SpecFilter'
+      responses:
+        '200':
+          description: Public facets retrieved.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FacetsEnvelope'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '429':
+          $ref: '#/components/responses/RateLimited'
+        '503':
+          $ref: '#/components/responses/ServiceUnavailable'
+  /api/v1/public/health/version:
+    get:
+      tags: [health]
+      operationId: getPublicHealthVersion
+      summary: Get safe public API/version compatibility information.
+      parameters:
+        - $ref: '#/components/parameters/XRequestId'
+      responses:
+        '200':
+          description: Public version state retrieved.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HealthVersionEnvelope'
+        '503':
+          $ref: '#/components/responses/ServiceUnavailable'
+  /api/v1/public/quote-requests:
+    post:
+      tags: [quote]
+      operationId: createQuoteRequest
+      summary: Validate and minimally persist one public quote request.
+      description: |
+        This endpoint accepts a currently public IN_STOCK or PREORDER product/variant and stops after
+        minimal persistence and acknowledgement. It does not create an order,
+        CRM/ERP record, notification, queue message, outbox event, retry job, or lifecycle state.
+        The source is server-derived as ZALO_MINI_APP; it is not accepted in the body.
+      parameters:
+        - $ref: '#/components/parameters/XRequestId'
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/QuoteRequestInput'
+      responses:
+        '201':
+          description: Minimal quote record created and acknowledged.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/QuoteAcceptedEnvelope'
+        '200':
+          description: Equivalent replay of an already accepted idempotent request.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/QuoteAcceptedEnvelope'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '409':
+          description: Product availability changed or idempotency key has a different payload.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+        '429':
+          $ref: '#/components/responses/RateLimited'
+        '503':
+          $ref: '#/components/responses/ServiceUnavailable'
+components:
+  parameters:
+    XRequestId:
+      name: X-Request-ID
+      in: header
+      required: false
+      description: Optional non-secret client correlation ID. The server always returns its request ID in meta.
+      schema:
+        type: string
+        minLength: 1
+        maxLength: 128
+    IdempotencyKey:
+      name: Idempotency-Key
+      in: header
+      required: true
+      description: Opaque 16–128 character submission key. Reuse only for a retry of the same normalized quote payload.
+      schema:
+        type: string
+        minLength: 16
+        maxLength: 128
+        pattern: '^[A-Za-z0-9._~-]+$'
+    ProductSlug:
+      name: slug
+      in: path
+      required: true
+      schema:
+        type: string
+        minLength: 1
+        maxLength: 180
+        pattern: '^[a-z0-9]+(?:-[a-z0-9]+)*$'
+    Q:
+      name: q
+      in: query
+      required: false
+      description: Trimmed search phrase. Whitespace-only input behaves as absent.
+      schema:
+        type: string
+        maxLength: 160
+    Domain:
+      name: domain
+      in: query
+      required: false
+      schema:
+        $ref: '#/components/schemas/DomainCode'
+    Category:
+      name: category
+      in: query
+      required: false
+      description: Approved stable category code.
+      schema:
+        type: string
+        minLength: 2
+        maxLength: 80
+        pattern: '^[A-Z][A-Z0-9_]*$'
+    PowerSource:
+      name: power_source
+      in: query
+      required: false
+      schema:
+        $ref: '#/components/schemas/PowerSource'
+    Feature:
+      name: feature
+      in: query
+      required: false
+      description: Repeat this parameter for multiple public feature codes.
+      style: form
+      explode: true
+      schema:
+        type: array
+        items:
+          type: string
+          minLength: 1
+          maxLength: 80
+          pattern: '^[A-Z][A-Z0-9_]*$'
+    SpecFilter:
+      name: spec.<code>
+      in: query
+      required: false
+      description: |
+        Dynamic query-name template. Send the literal registered spec code, for example
+        spec.voltage=20V. Unknown/non-filterable codes or unsupported values return INVALID_FILTER.
+      schema:
+        type: string
+        maxLength: 160
+    Sort:
+      name: sort
+      in: query
+      required: false
+      schema:
+        $ref: '#/components/schemas/ProductSort'
+    Cursor:
+      name: cursor
+      in: query
+      required: false
+      description: Opaque server-issued cursor. Do not parse, construct, or reuse with different filters/sort.
+      schema:
+        type: string
+        minLength: 1
+        maxLength: 1024
+    Limit:
+      name: limit
+      in: query
+      required: false
+      schema:
+        type: integer
+        default: 20
+        minimum: 1
+        maximum: 50
+  responses:
+    BadRequest:
+      description: Validation, cursor, or filter error.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorEnvelope'
+    ProductNotFound:
+      description: Product is missing or not public; internal state is intentionally not disclosed.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorEnvelope'
+    RateLimited:
+      description: Request rate exceeded. meta.retry_after_seconds, when supplied, is authoritative.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorEnvelope'
+    ServiceUnavailable:
+      description: Maintenance or safe upstream unavailability state.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorEnvelope'
+  schemas:
+    EnvelopeBase:
+      type: object
+      required: [success, message, data, meta, error_code, errors]
+      properties:
+        success:
+          type: boolean
+        message:
+          type: string
+          maxLength: 280
+        data: {}
+        meta:
+          $ref: '#/components/schemas/ResponseMeta'
+        error_code:
+          type: [string, 'null']
+          allOf:
+            - $ref: '#/components/schemas/ErrorCode'
+        errors:
+          oneOf:
+            - $ref: '#/components/schemas/FieldErrors'
+            - type: 'null'
+    ResponseMeta:
+      type: object
+      additionalProperties: false
+      properties:
+        request_id:
+          type: string
+          minLength: 1
+          maxLength: 128
+        data_version:
+          type: string
+          format: date-time
+        next_cursor:
+          type: [string, 'null']
+          maxLength: 1024
+        limit:
+          type: integer
+          minimum: 1
+          maximum: 50
+        retry_after_seconds:
+          type: integer
+          minimum: 1
+        estimated_end_at:
+          type: string
+          format: date-time
+        idempotent_replay:
+          type: boolean
+    FieldErrors:
+      type: object
+      additionalProperties:
+        type: array
+        minItems: 1
+        items:
+          type: string
+          maxLength: 280
+    ErrorCode:
+      type: [string, 'null']
+      enum:
+        - VALIDATION_ERROR
+        - INVALID_CURSOR
+        - INVALID_FILTER
+        - PRODUCT_NOT_FOUND
+        - PRODUCT_NOT_AVAILABLE
+        - IDEMPOTENCY_CONFLICT
+        - RATE_LIMITED
+        - MAINTENANCE
+        - UPSTREAM_UNAVAILABLE
+        - INTERNAL_ERROR
+        - null
+    ErrorEnvelope:
+      allOf:
+        - $ref: '#/components/schemas/EnvelopeBase'
+        - type: object
+          properties:
+            success:
+              const: false
+            data:
+              type: 'null'
+            error_code:
+              type: string
+              enum:
+                - VALIDATION_ERROR
+                - INVALID_CURSOR
+                - INVALID_FILTER
+                - PRODUCT_NOT_FOUND
+                - PRODUCT_NOT_AVAILABLE
+                - IDEMPOTENCY_CONFLICT
+                - RATE_LIMITED
+                - MAINTENANCE
+                - UPSTREAM_UNAVAILABLE
+                - INTERNAL_ERROR
+    DomainCode:
+      type: string
+      enum: [POWER_TOOLS, HAND_TOOLS, ACCESSORIES]
+    PowerSource:
+      type: string
+      enum: [BATTERY, AC, PNEUMATIC, PETROL, NOT_SPECIFIED]
+    ProductSort:
+      type: string
+      default: featured
+      enum: [featured, updated_desc, name_asc]
+    PublicAvailability:
+      type: string
+      description: Public-only availability. PREORDER is approved by BE per published product/variant; raw out-of-stock states and quantities are never exposed.
+      enum: [IN_STOCK, PREORDER]
+    Brand:
+      type: object
+      required: [code, display_name]
+      additionalProperties: false
+      properties:
+        code:
+          type: string
+          minLength: 1
+          maxLength: 80
+          pattern: '^[A-Z][A-Z0-9_]*$'
+        display_name:
+          type: string
+          minLength: 1
+          maxLength: 120
+    Domain:
+      type: object
+      required: [code, display_name]
+      additionalProperties: false
+      properties:
+        code:
+          $ref: '#/components/schemas/DomainCode'
+        display_name:
+          type: string
+          minLength: 1
+          maxLength: 120
+        icon:
+          type: [string, 'null']
+          format: uri
+    Category:
+      type: object
+      required: [code, display_name, domain, path, sort_order]
+      additionalProperties: false
+      properties:
+        code:
+          type: string
+          minLength: 2
+          maxLength: 80
+          pattern: '^[A-Z][A-Z0-9_]*$'
+        display_name:
+          type: string
+          minLength: 1
+          maxLength: 160
+        domain:
+          $ref: '#/components/schemas/DomainCode'
+        parent_code:
+          type: [string, 'null']
+          maxLength: 80
+        path:
+          type: array
+          minItems: 1
+          items:
+            type: string
+            maxLength: 80
+        icon:
+          type: [string, 'null']
+          format: uri
+        sort_order:
+          type: integer
+          minimum: 0
+    Media:
+      type: object
+      required: [media_id, type, url, sort_order]
+      additionalProperties: false
+      properties:
+        media_id:
+          type: string
+          minLength: 1
+          maxLength: 128
+        type:
+          type: string
+          enum: [IMAGE, VIDEO, DOCUMENT]
+        url:
+          type: string
+          format: uri
+        thumbnail_url:
+          type: [string, 'null']
+          format: uri
+        alt:
+          type: [string, 'null']
+          maxLength: 280
+        sort_order:
+          type: integer
+          minimum: 0
+    FeatureItem:
+      type: object
+      required: [code, label]
+      additionalProperties: false
+      properties:
+        code:
+          type: string
+          minLength: 1
+          maxLength: 80
+          pattern: '^[A-Z][A-Z0-9_]*$'
+        label:
+          type: string
+          minLength: 1
+          maxLength: 160
+        icon:
+          type: [string, 'null']
+          format: uri
+    SpecItem:
+      type: object
+      required: [code, label, value]
+      additionalProperties: false
+      properties:
+        code:
+          type: string
+          minLength: 1
+          maxLength: 80
+          pattern: '^[a-z][a-z0-9_]*$'
+        label:
+          type: string
+          minLength: 1
+          maxLength: 160
+        value:
+          type: string
+          minLength: 1
+          maxLength: 500
+        unit:
+          type: [string, 'null']
+          maxLength: 40
+    SpecGroup:
+      type: object
+      required: [code, label, items]
+      additionalProperties: false
+      properties:
+        code:
+          type: string
+          minLength: 1
+          maxLength: 80
+          pattern: '^[a-z][a-z0-9_]*$'
+        label:
+          type: string
+          minLength: 1
+          maxLength: 160
+        items:
+          type: array
+          minItems: 1
+          items:
+            $ref: '#/components/schemas/SpecItem'
+    VariantAttribute:
+      type: object
+      required: [code, label, value]
+      additionalProperties: false
+      properties:
+        code:
+          type: string
+          minLength: 1
+          maxLength: 80
+        label:
+          type: string
+          minLength: 1
+          maxLength: 160
+        value:
+          type: string
+          minLength: 1
+          maxLength: 500
+    Variant:
+      type: object
+      required: [variant_id, variant_name, attributes, availability]
+      additionalProperties: false
+      properties:
+        variant_id:
+          type: string
+          minLength: 1
+          maxLength: 128
+        variant_name:
+          type: string
+          minLength: 1
+          maxLength: 200
+        primary_code:
+          type: [string, 'null']
+          maxLength: 120
+        attributes:
+          type: array
+          items:
+            $ref: '#/components/schemas/VariantAttribute'
+        availability:
+          $ref: '#/components/schemas/PublicAvailability'
+        media:
+          type: array
+          items:
+            $ref: '#/components/schemas/Media'
+    BundleItem:
+      type: object
+      required: [label]
+      additionalProperties: false
+      properties:
+        label:
+          type: string
+          minLength: 1
+          maxLength: 240
+        product_slug:
+          type: [string, 'null']
+          maxLength: 180
+    CompatibilityItem:
+      type: object
+      required: [label]
+      additionalProperties: false
+      properties:
+        label:
+          type: string
+          minLength: 1
+          maxLength: 240
+        product_slug:
+          type: [string, 'null']
+          maxLength: 180
+    ProductCard:
+      type: object
+      required: [product_id, slug, name, brand, domain, category, availability, updated_at]
+      additionalProperties: false
+      properties:
+        product_id:
+          type: string
+          minLength: 1
+          maxLength: 128
+        slug:
+          type: string
+          minLength: 1
+          maxLength: 180
+          pattern: '^[a-z0-9]+(?:-[a-z0-9]+)*$'
+        name:
+          type: string
+          minLength: 1
+          maxLength: 240
+        model:
+          type: [string, 'null']
+          maxLength: 120
+        primary_code:
+          type: [string, 'null']
+          maxLength: 120
+        brand:
+          $ref: '#/components/schemas/Brand'
+        domain:
+          $ref: '#/components/schemas/DomainCode'
+        category:
+          $ref: '#/components/schemas/Category'
+        summary:
+          type: [string, 'null']
+          maxLength: 500
+        cover_media:
+          oneOf:
+            - $ref: '#/components/schemas/Media'
+            - type: 'null'
+        availability:
+          $ref: '#/components/schemas/PublicAvailability'
+        updated_at:
+          type: string
+          format: date-time
+    ProductDetail:
+      type: object
+      required: [product_id, slug, name, brand, domain, category, availability, updated_at]
+      additionalProperties: false
+      properties:
+        product_id:
+          type: string
+          minLength: 1
+          maxLength: 128
+        slug:
+          type: string
+          minLength: 1
+          maxLength: 180
+          pattern: '^[a-z0-9]+(?:-[a-z0-9]+)*$'
+        name:
+          type: string
+          minLength: 1
+          maxLength: 240
+        model:
+          type: [string, 'null']
+          maxLength: 120
+        primary_code:
+          type: [string, 'null']
+          maxLength: 120
+        brand:
+          $ref: '#/components/schemas/Brand'
+        domain:
+          $ref: '#/components/schemas/DomainCode'
+        category:
+          $ref: '#/components/schemas/Category'
+        summary:
+          type: [string, 'null']
+          maxLength: 500
+        cover_media:
+          oneOf:
+            - $ref: '#/components/schemas/Media'
+            - type: 'null'
+        availability:
+          $ref: '#/components/schemas/PublicAvailability'
+        updated_at:
+          type: string
+          format: date-time
+        description:
+          type: [string, 'null']
+          maxLength: 12000
+        features:
+          type: array
+          items:
+            $ref: '#/components/schemas/FeatureItem'
+        spec_groups:
+          type: array
+          items:
+            $ref: '#/components/schemas/SpecGroup'
+        variants:
+          type: array
+          items:
+            $ref: '#/components/schemas/Variant'
+        bundle_items:
+          type: array
+          items:
+            $ref: '#/components/schemas/BundleItem'
+        compatibility:
+          type: array
+          items:
+            $ref: '#/components/schemas/CompatibilityItem'
+        media:
+          type: array
+          items:
+            $ref: '#/components/schemas/Media'
+    FacetOption:
+      type: object
+      required: [value, label]
+      additionalProperties: false
+      properties:
+        value:
+          type: string
+          minLength: 1
+          maxLength: 160
+        label:
+          type: string
+          minLength: 1
+          maxLength: 160
+        count:
+          type: integer
+          minimum: 1
+    Facet:
+      type: object
+      required: [code, label, type, options]
+      additionalProperties: false
+      properties:
+        code:
+          type: string
+          minLength: 1
+          maxLength: 80
+        label:
+          type: string
+          minLength: 1
+          maxLength: 160
+        type:
+          type: string
+          enum: [CATEGORY, POWER_SOURCE, FEATURE, SPEC]
+        options:
+          type: array
+          minItems: 1
+          items:
+            $ref: '#/components/schemas/FacetOption'
+    ContactPhone:
+      type: object
+      required: [display, tel]
+      additionalProperties: false
+      properties:
+        display:
+          type: string
+          minLength: 1
+          maxLength: 80
+        tel:
+          type: string
+          pattern: '^\+[1-9]\d{7,14}$'
+    ZaloOa:
+      type: object
+      required: [id, chat_url]
+      additionalProperties: false
+      properties:
+        id:
+          type: string
+          minLength: 1
+          maxLength: 128
+        chat_url:
+          type: string
+          format: uri
+    SupportHours:
+      type: object
+      required: [timezone, intervals]
+      additionalProperties: false
+      properties:
+        timezone:
+          type: string
+          const: Asia/Ho_Chi_Minh
+        intervals:
+          type: array
+          items:
+            type: object
+            required: [days, opens_at, closes_at]
+            additionalProperties: false
+            properties:
+              days:
+                type: array
+                minItems: 1
+                items:
+                  type: string
+                  enum: [MON, TUE, WED, THU, FRI, SAT, SUN]
+              opens_at:
+                type: string
+                pattern: '^([01]\d|2[0-3]):[0-5]\d$'
+              closes_at:
+                type: string
+                pattern: '^([01]\d|2[0-3]):[0-5]\d$'
+    Maintenance:
+      type: object
+      required: [enabled, message, estimated_end_at]
+      additionalProperties: false
+      properties:
+        enabled:
+          type: boolean
+        message:
+          type: [string, 'null']
+          maxLength: 280
+        estimated_end_at:
+          type: [string, 'null']
+          format: date-time
+    PublicConfig:
+      type: object
+      required:
+        - config_version
+        - hotline
+        - zalo_oa
+        - support_hours
+        - privacy_policy_url
+        - maintenance
+        - min_supported_app_version
+        - feature_flags
+      additionalProperties: false
+      properties:
+        config_version:
+          type: string
+          minLength: 1
+          maxLength: 128
+        hotline:
+          oneOf:
+            - $ref: '#/components/schemas/ContactPhone'
+            - type: 'null'
+        hotline_fallback:
+          oneOf:
+            - $ref: '#/components/schemas/ContactPhone'
+            - type: 'null'
+        zalo_oa:
+          oneOf:
+            - $ref: '#/components/schemas/ZaloOa'
+            - type: 'null'
+        support_hours:
+          oneOf:
+            - $ref: '#/components/schemas/SupportHours'
+            - type: 'null'
+        privacy_policy_url:
+          type: [string, 'null']
+          format: uri
+        maintenance:
+          $ref: '#/components/schemas/Maintenance'
+        min_supported_app_version:
+          type: [string, 'null']
+          maxLength: 80
+        feature_flags:
+          type: object
+          additionalProperties:
+            type: boolean
+    HomeSection:
+      type: object
+      required: [kind, title, items]
+      additionalProperties: false
+      properties:
+        kind:
+          type: string
+          enum: [CATEGORY_HIGHLIGHTS, FEATURED_PRODUCTS, RECENTLY_UPDATED]
+        title:
+          type: string
+          minLength: 1
+          maxLength: 160
+        items:
+          type: array
+          minItems: 1
+          description: Category items for CATEGORY_HIGHLIGHTS; ProductCard items for product sections.
+          items: {}
+    HomePayload:
+      type: object
+      required: [domains, sections]
+      additionalProperties: false
+      properties:
+        domains:
+          type: array
+          minItems: 3
+          maxItems: 3
+          items:
+            $ref: '#/components/schemas/Domain'
+        sections:
+          type: array
+          items:
+            $ref: '#/components/schemas/HomeSection'
+    QuoteRequestInput:
+      type: object
+      required: [product_id, full_name, phone, consent, privacy_version]
+      additionalProperties: false
+      properties:
+        product_id:
+          type: string
+          minLength: 1
+          maxLength: 128
+        variant_id:
+          type: [string, 'null']
+          maxLength: 128
+        full_name:
+          type: string
+          minLength: 2
+          maxLength: 80
+        phone:
+          type: string
+          pattern: '^(?:0(?:3|5|7|8|9)\d{8}|\+84(?:3|5|7|8|9)\d{8})$'
+        province_code:
+          type: [string, 'null']
+          maxLength: 32
+          pattern: '^[A-Z0-9_-]+$'
+        note:
+          type: [string, 'null']
+          maxLength: 500
+        consent:
+          type: boolean
+          const: true
+        privacy_version:
+          type: string
+          minLength: 1
+          maxLength: 64
+          pattern: '^[ -~]+$'
+    QuoteAccepted:
+      type: object
+      required: [request_id, status]
+      additionalProperties: false
+      properties:
+        request_id:
+          type: string
+          minLength: 1
+          maxLength: 128
+        status:
+          type: string
+          const: RECEIVED
+    HealthVersion:
+      type: object
+      required: [api_version, min_supported_app_version, status]
+      additionalProperties: false
+      properties:
+        api_version:
+          type: string
+          const: v1
+        min_supported_app_version:
+          type: [string, 'null']
+          maxLength: 80
+        status:
+          type: string
+          const: ok
+    ConfigEnvelope:
+      allOf:
+        - $ref: '#/components/schemas/EnvelopeBase'
+        - type: object
+          properties:
+            success: { const: true }
+            data: { $ref: '#/components/schemas/PublicConfig' }
+            error_code: { type: 'null' }
+            errors: { type: 'null' }
+    HomeEnvelope:
+      allOf:
+        - $ref: '#/components/schemas/EnvelopeBase'
+        - type: object
+          properties:
+            success: { const: true }
+            data: { $ref: '#/components/schemas/HomePayload' }
+            error_code: { type: 'null' }
+            errors: { type: 'null' }
+    CategoriesEnvelope:
+      allOf:
+        - $ref: '#/components/schemas/EnvelopeBase'
+        - type: object
+          properties:
+            success: { const: true }
+            data:
+              type: array
+              items: { $ref: '#/components/schemas/Category' }
+            error_code: { type: 'null' }
+            errors: { type: 'null' }
+    ProductListEnvelope:
+      allOf:
+        - $ref: '#/components/schemas/EnvelopeBase'
+        - type: object
+          properties:
+            success: { const: true }
+            data:
+              type: array
+              items: { $ref: '#/components/schemas/ProductCard' }
+            error_code: { type: 'null' }
+            errors: { type: 'null' }
+    ProductDetailEnvelope:
+      allOf:
+        - $ref: '#/components/schemas/EnvelopeBase'
+        - type: object
+          properties:
+            success: { const: true }
+            data: { $ref: '#/components/schemas/ProductDetail' }
+            error_code: { type: 'null' }
+            errors: { type: 'null' }
+    FacetsEnvelope:
+      allOf:
+        - $ref: '#/components/schemas/EnvelopeBase'
+        - type: object
+          properties:
+            success: { const: true }
+            data:
+              type: array
+              items: { $ref: '#/components/schemas/Facet' }
+            error_code: { type: 'null' }
+            errors: { type: 'null' }
+    QuoteAcceptedEnvelope:
+      allOf:
+        - $ref: '#/components/schemas/EnvelopeBase'
+        - type: object
+          properties:
+            success: { const: true }
+            data: { $ref: '#/components/schemas/QuoteAccepted' }
+            error_code: { type: 'null' }
+            errors: { type: 'null' }
+    HealthVersionEnvelope:
+      allOf:
+        - $ref: '#/components/schemas/EnvelopeBase'
+        - type: object
+          properties:
+            success: { const: true }
+            data: { $ref: '#/components/schemas/HealthVersion' }
+            error_code: { type: 'null' }
+            errors: { type: 'null' }

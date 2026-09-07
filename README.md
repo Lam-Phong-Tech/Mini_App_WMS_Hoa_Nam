@@ -1,5 +1,18 @@
 # Zalo Mini App
 
+## Foundation validation
+
+The public product-viewer foundation uses only the G0 public API contract. In a DEV build it uses the explicitly labelled empty fixture; UAT and Production require a configured public API and never enable that fixture. No operational values or secrets belong in source.
+
+Run the checks before a hand-off:
+
+```bash
+npm run typecheck
+npm run lint
+npm test
+npm run build
+```
+
 ## Development
 
 ### Using Zalo Mini App Extension
@@ -23,6 +36,25 @@
 1. **Open** `localhost:3000` in your browser.
 
 ## Deployment
+
+### Temporary DEV preview on other devices
+
+When the public Catalogue backend is not available yet, use the explicitly labelled **DEV preview** build below. It contains only the bundled DEV UI fixture and is uploaded as a Zalo testing version; it is not UAT or Production data.
+
+```bash
+npm run deploy:dev-preview
+```
+
+Do not use this command for a UAT/Production release. Once the public backend is ready, configure `VITE_PUBLIC_API_BASE_URL` in the release environment and use the normal `npm run build` / `zmp deploy` flow.
+
+### Backend integration preview
+
+The backend test origin is configured only in `.env.backend-preview` and contains no credentials. Use it to test the real public Catalogue flow after the backend allows the Mini App's browser origin through CORS:
+
+```bash
+npm run start:backend-preview
+npm run deploy:backend-preview
+```
 
 1. **Create** a mini program. For instructions on how to create a mini program, please refer to the [Coffee Shop Tutorial](https://mini.zalo.me/tutorial/coffee-shop/step-1/)
 

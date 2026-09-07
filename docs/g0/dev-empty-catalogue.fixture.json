@@ -1,0 +1,41 @@
+{
+  "fixture_label": "DEV_CONTRACT_FIXTURE_NOT_UAT_OR_PRODUCTION",
+  "approved_catalogue_data_present": false,
+  "config": {
+    "config_version": "DEV-CONTRACT-EMPTY-1",
+    "hotline": null,
+    "zalo_oa": null,
+    "support_hours": null,
+    "privacy_policy_url": null,
+    "maintenance": {
+      "enabled": false,
+      "message": null,
+      "estimated_end_at": null
+    },
+    "min_supported_app_version": null,
+    "feature_flags": {
+      "catalogue_enabled": false,
+      "quote_request_enabled": false
+    }
+  },
+  "home": {
+    "domains": [
+      {
+        "code": "POWER_TOOLS",
+        "display_name": "Power Tools"
+      },
+      {
+        "code": "HAND_TOOLS",
+        "display_name": "Hand Tools"
+      },
+      {
+        "code": "ACCESSORIES",
+        "display_name": "Accessories"
+      }
+    ],
+    "sections": []
+  },
+  "categories": [],
+  "products": [],
+  "facets": []
+}
