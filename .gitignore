@@ -43,3 +43,6 @@ www/
 .codex-remote-attachments/
 undefined/
 __pycache__/
+
+# Ghi đè env cục bộ (không commit)
+.env.local

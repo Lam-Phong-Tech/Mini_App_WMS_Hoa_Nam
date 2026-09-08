@@ -1,0 +1,413 @@
+openapi: 3.1.0
+
+# ============================================================================
+#  ⚠️⚠️  TRẠNG THÁI: CLIENT_EXPECTED_CONTRACT — ĐỘ TIN CẬY THẤP  ⚠️⚠️
+#
+#  ĐÂY KHÔNG PHẢI HỢP ĐỒNG API CHÍNH THỨC VÀ KHÔNG ĐƯỢC DÙNG THAY THẾ.
+#
+#  ĐƯỢC DÙNG ĐỂ : sinh types/interfaces · tạo API adapter ·
+#                 tạo mock server/fixtures · viết contract test PHÍA CLIENT
+#  KHÔNG ĐƯỢC   : coi là bằng chứng server hỗ trợ endpoint/payload/idempotency/
+#                 conflict handling · gọi mutation thật · offline mutation ·
+#                 retry request ghi · Post Receipt/Post Issue
+#  GATE CHẶN    : GATE_WMS_API_INTEGRATION
+#
+#  Mức xác minh : [I-FE] — CHỈ suy ra từ CALL-SITE ở frontend.
+#                 KHÔNG có route/controller nào của server trong repository.
+#                 KHÔNG có OpenAPI/Swagger/Postman ở bất kỳ đâu
+#                 (đã tìm toàn ổ đĩa, kể cả .tmp/ — 0 kết quả).
+#
+#  Vì vậy, những thứ sau đây LÀ SUY ĐOÁN, KHÔNG PHẢI SỰ THẬT:
+#    - Tên trường và kiểu dữ liệu trong request/response
+#    - Trường nào bắt buộc / tuỳ chọn
+#    - Danh mục mã lỗi đầy đủ
+#    - Quy tắc phân trang
+#    - Server có xử lý Idempotency-Key hay không   <-- KHÔNG CÓ BẰNG CHỨNG
+#    - Ngữ nghĩa If-Match / versioning              <-- KHÔNG CÓ BẰNG CHỨNG
+#    - Mã HTTP trả về cho từng trường hợp
+#
+#  Chỉ những thứ sau là CHẮC CHẮN (quan sát được ở phía client):
+#    - Method + path mà frontend GỌI
+#    - Header mà frontend GỬI
+#    - Query param mà frontend DỰNG
+#    - Shape mà frontend KỲ VỌNG khi đọc response
+#
+#  Nguồn: src/services/*.ts tại commit 663114aff6804e50b77b88e05dda9f9c784d6fff
+# ============================================================================
+
+info:
+  title: WMS Hoa Nam — External Backend — CLIENT_EXPECTED_CONTRACT
+  version: 0.0.0-client-expected
+  summary: Kỳ vọng của client suy từ call-site. KHÔNG phải contract của server.
+  description: |
+    Tài liệu này mô tả những gì FRONTEND TIN LÀ ĐÚNG về API, không phải
+    những gì SERVER THỰC SỰ LÀM. Mọi mục cần chủ sở hữu WMS API nghiệm thu
+    trong GATE_WMS_API_INTEGRATION.
+
+    ĐƯỢC DÙNG ĐỂ (đã phê duyệt 2026-09-04):
+      - sinh types / interfaces
+      - tạo API adapter
+      - tạo mock server / fixtures
+      - viết contract test PHÍA CLIENT
+      - lập câu hỏi cho đội backend, ước lượng khối lượng
+
+    KHÔNG ĐƯỢC DÙNG ĐỂ:
+      - khẳng định server hỗ trợ endpoint, payload, idempotency hay conflict handling
+      - gọi mutation thật
+      - triển khai offline mutation
+      - retry request ghi dữ liệu
+      - Post Receipt / Post Issue
+  x-verification-status: CLIENT_EXPECTED_CONTRACT
+  x-confidence: LOW
+  x-approved-uses:
+    - generate-types-and-interfaces
+    - build-api-adapter
+    - build-mock-server-and-fixtures
+    - write-client-side-contract-tests
+  x-forbidden-uses:
+    - evidence-that-server-supports-endpoint-or-payload
+    - evidence-of-server-side-idempotency
+    - evidence-of-conflict-handling
+    - calling-real-mutations
+    - implementing-offline-mutations
+    - retrying-write-requests
+  x-blocking-gate: GATE_WMS_API_INTEGRATION
+  x-verified-by: [frontend-call-site-reading]
+  x-not-verified-by: [server-source, live-call, official-spec, vendor-documentation]
+  x-source-commit: 663114aff6804e50b77b88e05dda9f9c784d6fff
+  x-blocking-question: Q9
+
+servers:
+  - url: https://khohoanamdev.bigk.click
+    description: |
+      ❓ CHƯA XÁC NHẬN là development, staging hay production.
+      Người dùng đã chỉ thị rõ: KHÔNG được suy luận môi trường từ tên miền.
+      Cấu hình qua VITE_WMS_API_BASE_URL / VITE_API_BASE_URL.
+    x-environment-confirmed: false
+
+security:
+  - bearerAuth: []
+
+tags:
+  - { name: auth,      description: '3 endpoint — xác thực email/mật khẩu' }
+  - { name: inbound,   description: '12 endpoint — nhập kho' }
+  - { name: outbound,  description: '11 endpoint — xuất kho (dưới /mini-app)' }
+  - { name: warranty,  description: '11 endpoint — bảo hành' }
+  - { name: inventory, description: '5 endpoint — tồn kho, sản phẩm, kho' }
+  - { name: scan,      description: '2 endpoint — phân loại & sự kiện quét' }
+
+# ---------------------------------------------------------------------------
+#  x-endpoint-index: danh sách đầy đủ 42 path frontend gọi, kèm call-site.
+#  Phần `paths` bên dưới CHỈ mô tả chi tiết những endpoint suy ra được nhiều
+#  nhất; các endpoint còn lại được liệt kê ở đây để không mất dấu.
+# ---------------------------------------------------------------------------
+x-endpoint-index:
+  auth:
+    - { method: POST, path: /api/v1/auth/login,  source: 'src/services/zalo-auth.service.ts:88' }
+    - { method: GET,  path: /api/v1/auth/me,     source: 'src/services/zalo-auth.service.ts:104' }
+    - { method: POST, path: /api/v1/auth/logout, source: 'src/services/zalo-auth.service.ts:119' }
+  inbound:
+    - { method: POST,  path: /api/v1/inbound-documents,                       source: 'receipt-flow.service.ts:750' }
+    - { method: GET,   path: /api/v1/inbound-documents,                       source: 'scan.service.ts:1409,1456', query: [per_page, '…'] }
+    - { method: GET,   path: '/api/v1/inbound-documents/{id}',                source: 'receipt-flow.service.ts:1055 · scan.service.ts:1144' }
+    - { method: PATCH, path: '/api/v1/inbound-documents/{id}',                source: 'receipt-flow.service.ts:1329', headers: [If-Match] }
+    - { method: POST,  path: '/api/v1/inbound-documents/{id}/scan',           source: 'receipt-flow.service.ts:797 · scan.service.ts:1090', headers: [If-Match, Idempotency-Key] }
+    - { method: GET,   path: '/api/v1/inbound-documents/{id}/scan-entries',   source: 'receipt-flow.service.ts:559', query: [status, per_page] }
+    - { method: POST,  path: '/api/v1/inbound-documents/{id}/post-receipt',   source: 'receipt-flow.service.ts:841,916', headers: [If-Match, Idempotency-Key] }
+    - { method: GET,   path: /api/v1/mini-app/inbound-documents,              source: 'scan.service.ts:1481' }
+    - { method: POST,  path: /api/v1/mini-app/inbound/record,                 source: 'receipt-flow.service.ts:705', headers: [Idempotency-Key] }
+    - { method: POST,  path: /api/v1/mini-app/inbound/resolve-code,           source: 'receipt-flow.service.ts:1068' }
+    - { method: POST,  path: '/api/v1/mini-app/inbound-documents/{id}/post-receipt', source: 'receipt-flow.service.ts:902', headers: [If-Match, Idempotency-Key] }
+  outbound:
+    - { method: GET,   path: /api/v1/mini-app/outbound-documents,             source: 'scan.service.ts:1509' }
+    - { method: POST,  path: /api/v1/mini-app/outbound-documents,             source: 'scan.service.ts:1539', headers: [Idempotency-Key] }
+    - { method: GET,   path: '/api/v1/mini-app/outbound-documents/{id}',      source: 'scan.service.ts:1154,1620' }
+    - { method: POST,  path: '/api/v1/mini-app/outbound-documents/{id}/scan', source: 'scan.service.ts:509', headers: [If-Match] }
+    - { method: GET,   path: '/api/v1/mini-app/outbound-documents/{id}/packing-label', source: 'scan.service.ts:1644' }
+    - { method: POST,  path: '/api/v1/mini-app/outbound-documents/{id}/packing-labels/{labelId}/{action}', source: 'scan.service.ts:1702', headers: [Idempotency-Key], notes: 'action ∈ {ready, print, …} — enum ĐẦY ĐỦ CHƯA BIẾT' }
+    - { method: POST,  path: '/api/v1/mini-app/outbound-documents/{id}/post-issue', source: 'scan.service.ts:1741', headers: [Idempotency-Key] }
+    - { method: POST,  path: '/api/v1/mini-app/outbound-documents/{id}/unmatch',    source: 'scan.service.ts:1774' }
+    - { method: POST,  path: /api/v1/mini-app/outbound/resolve-code,          source: 'scan.service.ts:1563' }
+    - { method: POST,  path: /api/v1/mini-app/outbound/record,                source: 'scan.service.ts:1586', headers: [Idempotency-Key] }
+    - { method: GET,   path: /api/v1/mini-app/printer-configs,                source: 'scan.service.ts:1718' }
+  warranty:
+    - { method: POST,   path: /api/v1/mini-app/warranty/resolve-code,         source: 'warranty-flow.service.ts:165' }
+    - { method: POST,   path: /api/v1/mini-app/warranty-cases,                source: 'warranty-flow.service.ts:188', headers: [Idempotency-Key] }
+    - { method: GET,    path: /api/v1/mini-app/warranty-cases,                source: 'warranty-flow.service.ts:222', query: [status, '…'] }
+    - { method: GET,    path: '/api/v1/mini-app/warranty-cases/{caseId}',     source: 'warranty-flow.service.ts:266' }
+    - { method: POST,   path: '/api/v1/mini-app/warranty-cases/{caseId}/…',   source: 'warranty-flow.service.ts:309', headers: [Idempotency-Key], notes: 'đổi trạng thái — segment cuối CHƯA XÁC ĐỊNH' }
+    - { method: GET,    path: '/api/v1/mini-app/warranty-cases/{caseId}/…',   source: 'warranty-flow.service.ts:341', notes: 'timeline/events' }
+    - { method: GET,    path: '/api/v1/mini-app/warranty-cases/{caseId}/…',   source: 'warranty-flow.service.ts:355', notes: 'attachments' }
+    - { method: POST,   path: '/api/v1/mini-app/warranty-cases/{caseId}/…',   source: 'warranty-flow.service.ts:383', notes: 'UPLOAD multipart/form-data (ảnh + video)' }
+    - { method: GET,    path: '/api/v1/mini-app/warranty-attachments/{id}',   source: 'warranty-flow.service.ts:413,439', notes: 'trả về BLOB nhị phân' }
+    - { method: DELETE, path: '/api/v1/mini-app/warranty-attachments/{id}',   source: 'warranty-flow.service.ts:428' }
+    - { method: GET,    path: /api/v1/defects,                                source: 'warranty-flow.service.ts:246', query: [keyword, '…'] }
+  inventory:
+    - { method: GET, path: '/api/v1/inventory/trace/{code}',   source: 'scan.service.ts:804' }
+    - { method: GET, path: /api/v1/inventory/balances,         source: 'scan.service.ts:1805', query: [per_page] }
+    - { method: GET, path: /api/v1/products,                   source: 'scan.service.ts:883 · receipt-flow.service.ts:267' }
+    - { method: GET, path: '/api/v1/products/{productId}',     source: 'scan.service.ts:1793' }
+    - { method: GET, path: /api/v1/warehouses,                 source: 'receipt-flow.service.ts:239 · wms-context.service.ts:139', query: [status, per_page] }
+  scan:
+    - { method: POST, path: /api/v1/scan/classify, source: 'scan.service.ts:1024 · receipt-flow.service.ts:1093' }
+    - { method: GET,  path: /api/v1/scan/events,   source: 'scan.service.ts:1838', query: [per_page] }
+  dynamic:
+    - method: POST
+      path: '/api/v1/{resource}/{documentId}/{scanPath}'
+      source: 'scan.service.ts:937'
+      notes: '⚠️ Path DỰNG ĐỘNG lúc chạy. resource ∈ {warranty-component-issues, …}. Tập giá trị đầy đủ CHƯA XÁC ĐỊNH.'
+
+paths:
+
+  /api/v1/auth/login:
+    post:
+      tags: [auth]
+      summary: Đăng nhập bằng email + mật khẩu
+      operationId: wmsLogin
+      security: []
+      x-source: src/services/zalo-auth.service.ts:83-99
+      x-client-behaviour: |
+        api-client BỎ QUA xử lý 401/403 toàn cục cho riêng path này
+        (src/services/api-client.ts:336).
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                email:    { type: string, format: email, description: Client tự .trim().toLowerCase() }
+                password: { type: string, format: password }
+      responses:
+        '200':
+          description: |
+            ⚠️ SHAPE CHƯA XÁC MINH. Client chấp nhận RẤT NHIỀU biến thể
+            (zalo-auth.service.ts:18-41) — dấu hiệu cho thấy chính người viết
+            frontend cũng không chắc server trả gì.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/AuthEnvelope' }
+        default:
+          description: '❓ Mã lỗi và shape CHƯA XÁC MINH'
+          content: { application/json: { schema: { $ref: '#/components/schemas/WmsEnvelope' } } }
+
+  /api/v1/auth/me:
+    get:
+      tags: [auth]
+      summary: Lấy người dùng hiện tại
+      operationId: wmsGetCurrentUser
+      x-source: src/services/zalo-auth.service.ts:104
+      responses:
+        '200':
+          description: '❓ CHƯA XÁC MINH'
+          content: { application/json: { schema: { $ref: '#/components/schemas/AuthEnvelope' } } }
+        '401': { $ref: '#/components/responses/UnauthorizedInferred' }
+
+  /api/v1/auth/logout:
+    post:
+      tags: [auth]
+      summary: Đăng xuất
+      operationId: wmsLogout
+      x-source: src/services/zalo-auth.service.ts:119
+      x-client-behaviour: 'Client .catch(() => undefined) — bỏ qua mọi lỗi'
+      requestBody:
+        required: true
+        content: { application/json: { schema: { type: object, description: 'Client gửi {} rỗng' } } }
+      responses:
+        default: { description: '❓ CHƯA XÁC MINH — client bỏ qua kết quả' }
+
+  '/api/v1/inbound-documents/{id}/scan':
+    post:
+      tags: [inbound]
+      summary: Ghi nhận mã quét vào phiếu nhập
+      operationId: wmsInboundScan
+      x-source: 'src/services/receipt-flow.service.ts:797 · src/services/scan.service.ts:1090'
+      parameters:
+        - { $ref: '#/components/parameters/DocumentIdPath' }
+        - { $ref: '#/components/parameters/IfMatchHeader' }
+        - { $ref: '#/components/parameters/IdempotencyKeyHeader' }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              description: '❓ Tên trường CHƯA XÁC MINH — lấy từ object client dựng'
+              properties:
+                code_value: { type: string }
+                quantity:   { type: integer, minimum: 1 }
+      responses:
+        '200':
+          description: '❓ CHƯA XÁC MINH'
+          content: { application/json: { schema: { $ref: '#/components/schemas/WmsEnvelope' } } }
+        default: { $ref: '#/components/responses/UnknownError' }
+
+  '/api/v1/mini-app/outbound-documents/{id}/scan':
+    post:
+      tags: [outbound]
+      summary: Ghi nhận mã quét vào phiếu xuất
+      operationId: wmsOutboundScan
+      x-source: src/services/scan.service.ts:466-520
+      parameters:
+        - { $ref: '#/components/parameters/DocumentIdPath' }
+        - { $ref: '#/components/parameters/IfMatchHeader' }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              description: 'scan.service.ts:494-503 — đây là body client THỰC SỰ gửi'
+              properties:
+                quantity:    { type: integer, minimum: 1 }
+                code_value:  { type: string }
+                scan_source:
+                  type: string
+                  enum: [CAMERA, MANUAL, SCANNER]
+                  description: |
+                    ⚠️ Giá trị SCANNER chỉ là NHÃN mặc định của nhánh else —
+                    KHÔNG có tích hợp máy quét phần cứng nào tạo ra nó.
+                    Kiểu ở scan.service.ts:254 còn liệt kê cả 'HARDWARE'
+                    nhưng KHÔNG đường code nào phát sinh giá trị đó.
+      responses:
+        '200':
+          description: '❓ CHƯA XÁC MINH'
+          content: { application/json: { schema: { $ref: '#/components/schemas/WmsEnvelope' } } }
+        default: { $ref: '#/components/responses/UnknownError' }
+
+  '/api/v1/inventory/trace/{code}':
+    get:
+      tags: [inventory]
+      summary: Truy vết tồn kho theo mã
+      operationId: wmsInventoryTrace
+      x-source: src/services/scan.service.ts:804
+      parameters:
+        - { name: code, in: path, required: true, schema: { type: string }, description: 'Client encodeURIComponent' }
+      responses:
+        '200':
+          description: '❓ CHƯA XÁC MINH — client kỳ vọng ScanProductInfo'
+          content: { application/json: { schema: { $ref: '#/components/schemas/WmsEnvelope' } } }
+        default: { $ref: '#/components/responses/UnknownError' }
+
+  /api/v1/scan/classify:
+    post:
+      tags: [scan]
+      summary: Phân loại mã quét (ITEM / CONTAINER / SKU)
+      operationId: wmsScanClassify
+      x-source: 'src/services/scan.service.ts:1024 · src/services/receipt-flow.service.ts:1093'
+      requestBody:
+        required: true
+        content: { application/json: { schema: { type: object, description: '❓ CHƯA XÁC MINH' } } }
+      responses:
+        '200':
+          description: '❓ CHƯA XÁC MINH — client kỳ vọng classification ∈ {ITEM, CONTAINER, SKU}'
+          content: { application/json: { schema: { $ref: '#/components/schemas/WmsEnvelope' } } }
+        default: { $ref: '#/components/responses/UnknownError' }
+
+components:
+
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      description: |
+        Client gửi `Authorization: Bearer <token>`.
+        Token lấy theo thứ tự (wms-link-context.ts:141-152):
+          1. accessToken trong link context (query param)
+          2. sessionStorage['miniapp_wms_access_token']
+          3. localStorage['miniapp_warehouse_session_token']
+        ❓ Định dạng token (JWT? opaque?) và TTL phía server CHƯA XÁC MINH.
+
+  parameters:
+    DocumentIdPath:
+      { name: id, in: path, required: true, schema: { type: string }, description: '❓ Định dạng CHƯA XÁC MINH (UUID? chuỗi?)' }
+
+    IfMatchHeader:
+      name: If-Match
+      in: header
+      required: false
+      schema: { type: string }
+      description: |
+        ❓ NGỮ NGHĨA CHƯA XÁC MINH.
+        Client coi đây là "version" của chứng từ và BÁO LỖI nếu không lấy được
+        (scan.service.ts:490, 1066). Nhưng KHÔNG CÓ BẰNG CHỨNG server dùng nó
+        để kiểm soát đồng thời (optimistic concurrency).
+
+    IdempotencyKeyHeader:
+      name: Idempotency-Key
+      in: header
+      required: false
+      schema: { type: string, format: uuid }
+      description: |
+        🔴 KHÔNG CÓ BẰNG CHỨNG SERVER HỖ TRỢ HEADER NÀY.
+        Client gửi ở 18 vị trí — đó là bằng chứng về Ý ĐỊNH PHÍA CLIENT,
+        KHÔNG phải hành vi phía server.
+        Ngoài ra, 10/18 vị trí sinh key MỚI ngay tại lời gọi
+        (generateClientScanId() = crypto.randomUUID()), nên kể cả khi server
+        có hỗ trợ thì việc thử lại vẫn KHÔNG idempotent.
+        Xem 01-api-inventory.md §5.
+      x-server-support: UNKNOWN
+      x-blocking-question: Q9
+
+  responses:
+    UnauthorizedInferred:
+      description: |
+        Suy ra từ hành vi client: api-client.ts:338 gọi notifyMiniSessionExpired()
+        khi status 401, và notifyMiniPermissionDenied() khi 403.
+      content: { application/json: { schema: { $ref: '#/components/schemas/WmsEnvelope' } } }
+
+    UnknownError:
+      description: |
+        ❓ Danh mục mã lỗi CHƯA XÁC MINH.
+        Client đọc error_code từ payload.error_code HOẶC payload.error.code
+        (api-client.ts:319-322) — dấu hiệu shape lỗi không nhất quán.
+      content: { application/json: { schema: { $ref: '#/components/schemas/WmsEnvelope' } } }
+
+  schemas:
+    WmsEnvelope:
+      type: object
+      description: 'Envelope client kỳ vọng — src/services/scan.service.ts:38-46'
+      properties:
+        success:    { type: boolean }
+        message:    { type: string }
+        data:       { description: 'any — client không ràng buộc kiểu' }
+        meta:       { description: unknown }
+        error_code: { type: string }
+        code:       { type: string, description: '⚠️ Trường thứ hai cho mã lỗi — trùng lặp' }
+        error:      { type: string, description: '⚠️ Trường thứ ba — có thể là string HOẶC object có .code' }
+
+    AuthEnvelope:
+      type: object
+      description: |
+        ⚠️ Client chấp nhận ÍT NHẤT 8 vị trí khác nhau cho token và 5 vị trí
+        cho user (zalo-auth.service.ts:18-41, 128-168). Đây là dấu hiệu mạnh
+        cho thấy contract thật CHƯA ĐƯỢC BIẾT RÕ, không phải API linh hoạt.
+      properties:
+        success:            { type: boolean }
+        message:            { type: string }
+        staff:              { type: object }
+        user:               { type: object }
+        data:               { type: object, description: 'Có thể lồng staff/user/token bên trong' }
+        session_token:      { type: string }
+        session_expires_at: { type: string, format: date-time }
+        access_token:       { type: string }
+        token:              { type: string }
+        refresh_token:      { type: string }
+        token_type:         { type: string }
+        expires_in:         { type: integer }
+        expires_at:         { type: string, format: date-time }
+
+# ============================================================================
+#  DANH SÁCH CHƯA THỂ XÁC MINH — xem đầy đủ tại 01-api-inventory.md §4
+#  Tối thiểu cần backend nghiệm thu:
+#    1. Toàn bộ tên trường và kiểu dữ liệu request/response của 42 endpoint
+#    2. Enum {action} của packing-labels
+#    3. Tập giá trị {resource} của path dựng động (scan.service.ts:937)
+#    4. Segment cuối của 4 endpoint warranty-cases/{caseId}/…
+#    5. Danh mục mã lỗi đầy đủ
+#    6. Quy tắc phân trang (per_page, page, cursor?)
+#    7. Server CÓ hỗ trợ Idempotency-Key không, ngữ nghĩa thế nào
+#    8. Server CÓ dùng If-Match cho optimistic concurrency không
+#    9. Server phát hiện trùng (duplicate detection) thế nào
+#   10. Server xử lý xung đột (conflict) thế nào, trả mã gì
+# ============================================================================

@@ -1,0 +1,20 @@
+<!doctype html>
+<html lang="vi">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="theme-color" content="#ffffff" />
+    <title>Quản lý kho Hoa Nam</title>
+    <style>
+      html, body, #root { width: 100%; height: 100%; margin: 0; }
+      /* RN Web tự quản lý vùng cuộn bên trong app. Khóa body để thanh tab
+         luôn bám đáy và không tạo thêm vùng cuộn thứ hai bên ngoài app. */
+      body { overflow: hidden; background: #f7f7fb; }
+      #root { display: flex; }
+    </style>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/web/main.tsx"></script>
+  </body>
+</html>

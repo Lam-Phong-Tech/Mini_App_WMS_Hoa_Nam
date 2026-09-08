@@ -1,0 +1,530 @@
+openapi: 3.1.0
+
+# ============================================================================
+#  TRẠNG THÁI: DRAFT_DERIVED_FROM_SOURCE
+#  ĐÂY KHÔNG PHẢI HỢP ĐỒNG API CHÍNH THỨC.
+#
+#  Nguồn suy ra : mã nguồn Laravel trong backend/ tại commit
+#                 663114aff6804e50b77b88e05dda9f9c784d6fff
+#  Mức xác minh : [V-CODE] — route + controller tồn tại và đọc được đầy đủ
+#  CHƯA xác minh: chưa chạy server, chưa gọi thật một endpoint nào
+#                 (không được phép gọi API thật; không dùng credential trong repo)
+#
+#  Phạm vi      : CHỈ dịch vụ Laravel backend/ (12 endpoint).
+#                 KHÔNG phải WMS backend ngoài (khohoanamdev.bigk.click).
+#                 WMS backend xem file wms-external-api.draft.yaml.
+#
+#  ⚠️ backend/ vai trò A (/api/*) đã bị frontend bỏ dùng — xem 01-backend-audit.md §1
+# ============================================================================
+
+info:
+  title: WMS Hoa Nam — Mini Backend (Laravel) — DRAFT suy ra từ source
+  version: 0.0.0-draft
+  summary: Bản phác thảo suy ra từ mã nguồn, chưa được nghiệm thu làm contract
+  description: |
+    Suy ra hoàn toàn bằng cách đọc:
+      - backend/routes/api.php
+      - backend/routes/web.php
+      - backend/bootstrap/app.php
+      - backend/app/Http/Controllers/WarehouseScanController.php
+      - backend/app/Http/Controllers/ZaloAuthController.php
+      - backend/app/Http/Middleware/RequireWarehouseSession.php
+      - backend/database/migrations/*
+
+    KHÔNG endpoint nào được xác minh bằng cách gọi thật.
+    Mọi shape response lấy từ mảng PHP dựng trong controller.
+  x-verification-status: DRAFT_DERIVED_FROM_SOURCE
+  x-verified-by: source-reading-only
+  x-not-verified-by: [live-call, official-spec, vendor-documentation]
+  x-source-commit: 663114aff6804e50b77b88e05dda9f9c784d6fff
+
+servers:
+  - url: https://mini.lptech.info.vn
+    description: |
+      ❓ CHƯA XÁC NHẬN môi trường (dev/staging/prod).
+      Suy ra từ docs/zns-webhook-production.md và backend/.env.example.
+      KHÔNG được suy luận môi trường chỉ dựa trên tên miền.
+    x-environment-confirmed: false
+
+tags:
+  - name: auth
+    description: Cấp và kiểm tra session token (Zalo OAuth)
+  - name: warehouse-scans
+    description: Dashboard, lịch sử, duyệt mã quét
+  - name: scan
+    description: Ghi nhận mã quét theo 5 ngữ cảnh
+
+security:
+  - warehouseSession: []
+
+paths:
+
+  /api/zalo/login:
+    post:
+      tags: [auth]
+      summary: Đăng nhập Zalo, cấp session token 12 giờ
+      operationId: zaloLogin
+      security: []   # công khai
+      x-source: backend/routes/api.php:9 -> ZaloAuthController@login
+      x-security-finding: |
+        B-01 NGHIÊM TRỌNG: nếu access_token vắng mặt hoặc gọi graph.zalo.me thất bại,
+        controller dùng user.id do CLIENT tự khai (verified=false) và VẪN cấp token hợp lệ.
+        Xem ZaloAuthController.php:88-94 vs :29-35 vs :37-61.
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                source:       { type: string, maxLength: 64,   nullable: true }
+                access_token: { type: string, maxLength: 4096, nullable: true, description: Access token Zalo; nếu có sẽ xác thực qua graph.zalo.me/v2.0/me }
+                user:
+                  type: object
+                  nullable: true
+                  description: "⚠️ Fallback KHÔNG được xác thực — xem x-security-finding"
+                  properties:
+                    id:     { type: string, maxLength: 255 }
+                    name:   { type: string, maxLength: 255 }
+                    avatar: { type: string, maxLength: 2048 }
+      responses:
+        '200':
+          description: Đăng nhập thành công
+          headers: { Access-Control-Allow-Origin: { $ref: '#/components/headers/CorsOrigin' } }
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [success, message, staff, session_token, session_expires_at]
+                properties:
+                  success:            { type: boolean, const: true }
+                  message:            { type: string, examples: ['Đăng nhập Zalo thành công.'] }
+                  staff:              { $ref: '#/components/schemas/WarehouseStaff' }
+                  session_token:      { type: string, description: 'Str::random(80); server lưu hash SHA-256' }
+                  session_expires_at: { type: string, format: date-time, description: now + 12 giờ }
+        '401':
+          description: Không giải được profile Zalo
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ErrorEnvelope'
+                  - properties: { error_code: { const: ZALO_LOGIN_FAILED } }
+        '422': { $ref: '#/components/responses/LaravelValidationError' }
+
+  /api/warehouse-scans/dashboard:
+    get:
+      tags: [warehouse-scans]
+      summary: Số liệu chờ duyệt / đã duyệt
+      operationId: getDashboard
+      x-source: backend/routes/api.php:12 -> WarehouseScanController@dashboard
+      x-caching: Cache::remember theo WarehouseScanCache::dashboardKey(zalo_user_id)
+      parameters:
+        - { name: zalo_user_id, in: query, required: false, schema: { type: string } }
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [pending_approval_count, approved_count, warehouse_staff]
+                properties:
+                  pending_approval_count: { type: integer, minimum: 0 }
+                  approved_count:         { type: integer, minimum: 0 }
+                  warehouse_staff:
+                    oneOf:
+                      - $ref: '#/components/schemas/WarehouseStaff'
+                      - type: object
+                        description: Fallback khi không tìm thấy staff
+                        properties:
+                          name: { type: string, examples: ['Nhân viên kho'] }
+                          role: { type: string, examples: ['Warehouse Operator'] }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+
+  /api/warehouse-scans/history:
+    get:
+      tags: [warehouse-scans]
+      summary: Lịch sử mã quét
+      operationId: getScanHistory
+      x-source: backend/routes/api.php:13 -> WarehouseScanController@history
+      parameters:
+        - { name: zalo_user_id, in: query, required: false, schema: { type: string } }
+        - name: limit
+          in: query
+          required: false
+          schema: { type: integer, minimum: 1, maximum: 100, default: 50 }
+          description: 'Bị kẹp về [1,100] tại Controller:138'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [items]
+                properties:
+                  items:
+                    type: array
+                    items: { $ref: '#/components/schemas/ScanHistoryItem' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+    delete:
+      tags: [warehouse-scans]
+      summary: '⚠️ LUÔN TỪ CHỐI — chức năng bị khoá để bảo toàn audit'
+      operationId: clearScanHistory
+      x-source: backend/routes/api.php:14 -> WarehouseScanController@clearHistory
+      x-behaviour: Controller:158-165 trả 403 vô điều kiện, không xoá gì
+      responses:
+        '403':
+          description: Luôn trả về mã này
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ErrorEnvelope'
+                  - properties: { error_code: { const: AUDIT_DELETE_REVIEW_REQUIRED } }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+
+  /api/warehouse-scans/approved-products:
+    get:
+      tags: [warehouse-scans]
+      summary: 50 sản phẩm đã duyệt gần nhất
+      operationId: getApprovedProducts
+      x-source: backend/routes/api.php:15 -> WarehouseScanController@approvedProducts
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [items]
+                properties:
+                  items:
+                    type: array
+                    maxItems: 50
+                    items: { $ref: '#/components/schemas/ApprovedProduct' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+
+  /api/warehouse-scans/{warehouseScan}/approve:
+    patch:
+      tags: [warehouse-scans]
+      summary: Duyệt một bản ghi quét
+      operationId: approveScan
+      x-source: backend/routes/api.php:16 -> WarehouseScanController@approve
+      x-security-finding: |
+        B-03: KHÔNG kiểm tra vai trò. approved_by lấy trực tiếp từ input client
+        (Controller:200) => dấu vết audit giả mạo được.
+      parameters:
+        - name: warehouseScan
+          in: path
+          required: true
+          schema: { type: integer }
+          description: Route-model binding theo warehouse_scans.id
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                approved_by:
+                  type: string
+                  default: warehouse_admin
+                  description: '⚠️ Không xác thực — client tự khai'
+      responses:
+        '200':
+          description: Đã duyệt
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success: { type: boolean, const: true }
+                  message: { type: string, examples: ['Đã duyệt sản phẩm.'] }
+                  data:
+                    type: object
+                    properties: { scan_record_id: { type: integer } }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '404': { description: Không tìm thấy bản ghi (route-model binding) }
+
+  /api/receipts/{documentId}/scans:
+    post:
+      tags: [scan]
+      summary: Ghi nhận mã quét — ngữ cảnh RECEIPT (nhập kho)
+      operationId: scanReceipt
+      x-source: backend/routes/api.php:18 -> WarehouseScanController@store('RECEIPT', $documentId)
+      parameters: [{ $ref: '#/components/parameters/DocumentId' }]
+      requestBody: { $ref: '#/components/requestBodies/ScanRequest' }
+      responses:
+        '201': { $ref: '#/components/responses/ScanCreated' }
+        '422': { $ref: '#/components/responses/ScanBusinessError' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+
+  /api/outbounds/{documentId}/scans:
+    post:
+      tags: [scan]
+      summary: Ghi nhận mã quét — ngữ cảnh OUTBOUND (xuất kho)
+      operationId: scanOutbound
+      x-source: backend/routes/api.php:23 -> WarehouseScanController@store('OUTBOUND', $documentId)
+      parameters: [{ $ref: '#/components/parameters/DocumentId' }]
+      requestBody: { $ref: '#/components/requestBodies/ScanRequest' }
+      responses:
+        '201': { $ref: '#/components/responses/ScanCreated' }
+        '422': { $ref: '#/components/responses/ScanBusinessError' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+
+  /api/component-issues/{documentId}/scans:
+    post:
+      tags: [scan]
+      summary: Ghi nhận mã quét — ngữ cảnh WARRANTY_COMPONENT (xuất linh kiện bảo hành)
+      operationId: scanWarrantyComponent
+      x-source: backend/routes/api.php:32 -> WarehouseScanController@store('WARRANTY_COMPONENT', $documentId)
+      parameters: [{ $ref: '#/components/parameters/DocumentId' }]
+      requestBody: { $ref: '#/components/requestBodies/ScanRequest' }
+      responses:
+        '201': { $ref: '#/components/responses/ScanCreated' }
+        '422': { $ref: '#/components/responses/ScanBusinessError' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+
+  /api/warranty/item-lookup:
+    post:
+      tags: [scan]
+      summary: Ghi nhận mã quét — ngữ cảnh WARRANTY_ITEM (không có documentId)
+      operationId: scanWarrantyItem
+      x-source: backend/routes/api.php:28 -> WarehouseScanController@store('WARRANTY_ITEM')
+      requestBody: { $ref: '#/components/requestBodies/ScanRequest' }
+      responses:
+        '201': { $ref: '#/components/responses/ScanCreated' }
+        '422': { $ref: '#/components/responses/ScanBusinessError' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+
+  /api/inventory/lookup-by-code:
+    post:
+      tags: [scan]
+      summary: Ghi nhận mã quét — ngữ cảnh INVENTORY_LOOKUP (không có documentId)
+      operationId: scanInventoryLookup
+      x-source: backend/routes/api.php:37 -> WarehouseScanController@store('INVENTORY_LOOKUP')
+      requestBody: { $ref: '#/components/requestBodies/ScanRequest' }
+      responses:
+        '201': { $ref: '#/components/responses/ScanCreated' }
+        '422': { $ref: '#/components/responses/ScanBusinessError' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+
+  /api/{any}:
+    options:
+      summary: CORS preflight — khớp mọi path
+      operationId: corsPreflight
+      security: []
+      x-source: backend/routes/api.php:7 -> WarehouseScanController@options
+      parameters:
+        - { name: any, in: path, required: true, schema: { type: string } }
+      responses:
+        '204':
+          description: No Content + header CORS
+          headers:
+            Access-Control-Allow-Origin:  { $ref: '#/components/headers/CorsOrigin' }
+            Access-Control-Allow-Methods: { schema: { type: string, const: 'GET, POST, PATCH, DELETE, OPTIONS' } }
+            Access-Control-Allow-Headers: { schema: { type: string, const: 'Content-Type, Authorization, X-Requested-With' } }
+
+components:
+
+  securitySchemes:
+    warehouseSession:
+      type: http
+      scheme: bearer
+      description: |
+        Middleware `warehouse.session` (RequireWarehouseSession).
+        So hash('sha256', token) với warehouse_staff.api_token_hash
+        và kiểm tra api_token_expires_at > now().
+        KHÔNG kiểm tra vai trò — chỉ xác thực danh tính.
+      x-source: backend/app/Http/Middleware/RequireWarehouseSession.php:14-31
+
+  parameters:
+    DocumentId:
+      name: documentId
+      in: path
+      required: true
+      schema: { type: string }
+      description: '❓ Không có validate định dạng ở server — nhận mọi chuỗi'
+
+  headers:
+    CorsOrigin:
+      schema: { type: string, const: '*' }
+      description: '⚠️ B-02: CORS mở hoàn toàn trên API đã xác thực'
+
+  requestBodies:
+    ScanRequest:
+      required: true
+      description: 'Validate rule tại WarehouseScanController.php:27-37'
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/ScanRequest' }
+
+  responses:
+    Unauthorized:
+      description: Thiếu token / token hết hạn
+      content:
+        application/json:
+          schema:
+            allOf:
+              - $ref: '#/components/schemas/ErrorEnvelope'
+              - properties:
+                  error_code: { enum: [AUTH_REQUIRED, SESSION_EXPIRED] }
+
+    LaravelValidationError:
+      description: Lỗi validate mặc định của Laravel
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              message: { type: string }
+              errors:
+                type: object
+                additionalProperties: { type: array, items: { type: string } }
+
+    ScanCreated:
+      description: Đã lưu mã quét vào danh sách chờ duyệt
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/ScanResponse' }
+
+    ScanBusinessError:
+      description: |
+        Lỗi nghiệp vụ. 6 mã đầu là HARDCODE để test
+        (Controller:16-23) khớp với MOCK_SCAN_CODES ở frontend.
+        ITEM_ALREADY_SCANNED cũng phát sinh khi normalized_code đã tồn tại
+        TOÀN HỆ THỐNG (Controller:43) — xem phát hiện B-04.
+      content:
+        application/json:
+          schema:
+            allOf:
+              - $ref: '#/components/schemas/ErrorEnvelope'
+              - properties:
+                  error_code:
+                    enum:
+                      - BARCODE_NOT_FOUND
+                      - ITEM_ALREADY_SCANNED
+                      - SKU_NOT_REQUIRED
+                      - LINE_ALREADY_FULL
+                      - NETWORK_ERROR
+                      - REQUEST_TIMEOUT
+
+  schemas:
+
+    ErrorEnvelope:
+      type: object
+      required: [success, message, error_code]
+      properties:
+        success:    { type: boolean, const: false }
+        message:    { type: string }
+        error_code: { type: string }
+
+    WarehouseStaff:
+      type: object
+      description: 'staffPayload() — WarehouseScanController.php:237-247'
+      properties:
+        id:            { type: integer }
+        zalo_user_id:  { type: string }
+        name:          { type: string }
+        avatar_url:    { type: [string, 'null'] }
+        role:          { type: string, default: Warehouse Operator, description: '⚠️ Không dùng để phân quyền ở bất kỳ đâu' }
+        zalo_verified: { type: boolean, description: 'false khi profile lấy từ client, không qua graph.zalo.me' }
+
+    ScanRequest:
+      type: object
+      required: [client_scan_id, code, scan_method, scan_context]
+      properties:
+        client_scan_id:
+          type: string
+          format: uuid
+          description: |
+            Có ràng buộc UNIQUE ở DB (migration 000001) NHƯNG controller
+            không bắt QueryException => gửi lại cùng key gây HTTP 500,
+            không phải replay idempotent. Xem phát hiện B-05.
+        code:               { type: string, maxLength: 255 }
+        quantity:           { type: integer, minimum: 1, default: 1 }
+        scan_method:        { type: string, maxLength: 24 }
+        scan_context:       { type: string, maxLength: 48, description: '⚠️ Bị BỎ QUA — server dùng giá trị cứng theo route' }
+        warehouse_staff_id: { type: [integer, 'null'], description: 'Phải tồn tại trong warehouse_staff' }
+        zalo_user_id:       { type: [string, 'null'], maxLength: 255 }
+        scanned_by_name:    { type: [string, 'null'], maxLength: 255 }
+        scanned_at:         { type: [string, 'null'], format: date-time }
+
+    ScanProduct:
+      type: object
+      description: |
+        ⚠️ DỮ LIỆU GIẢ. buildProductInfo() sinh từ hash CRC32 của mã quét
+        (WarehouseScanController.php:252-265). Không có catalog sản phẩm thật.
+      properties:
+        product_id:     { type: integer, description: 'hexdec(4 ký tự đầu của crc32b)' }
+        sku_code:       { type: string,  description: "'SKU-' + 6 ký tự crc32b" }
+        product_name:   { type: string,  description: "'Sản phẩm ' + mã đã chuẩn hoá" }
+        item_id:        { type: integer }
+        item_code:      { type: string,  description: Mã đã chuẩn hoá }
+        serial_no:      { type: string,  description: "'SN-' + mã đã chuẩn hoá" }
+        warehouse_name: { type: string,  const: 'Kho trung tâm' }
+
+    ScanResponse:
+      type: object
+      required: [success, message, data]
+      properties:
+        success: { type: boolean, const: true }
+        message: { type: string, examples: ['Đã lưu mã quét vào danh sách chờ duyệt.'] }
+        data:
+          type: object
+          properties:
+            scan_record_id:  { type: integer }
+            approval_status: { type: string, const: PENDING_APPROVAL }
+            product:         { $ref: '#/components/schemas/ScanProduct' }
+            required_qty:    { type: integer, const: 1, description: '⚠️ Hardcode' }
+            scanned_qty:     { type: integer }
+            remaining_qty:   { type: integer, const: 0, description: '⚠️ Hardcode' }
+            matched:         { type: boolean, const: true, description: '⚠️ Hardcode' }
+            warehouse_staff: { oneOf: [{ $ref: '#/components/schemas/WarehouseStaff' }, { type: 'null' }] }
+
+    ApprovedProduct:
+      type: object
+      properties:
+        id:              { type: integer }
+        code:            { type: string }
+        sku_code:        { type: [string, 'null'] }
+        product_name:    { type: [string, 'null'] }
+        item_code:       { type: [string, 'null'] }
+        serial_no:       { type: [string, 'null'] }
+        warehouse_name:  { type: [string, 'null'] }
+        scanned_by_name: { type: [string, 'null'] }
+        approved_at:     { type: [string, 'null'], format: date-time }
+
+    ScanHistoryItem:
+      type: object
+      description: 'historyPayload() — WarehouseScanController.php:267-307'
+      properties:
+        id:      { type: string, description: client_scan_id }
+        status:  { type: string, const: SUCCESS, description: '⚠️ Hardcode — lịch sử luôn báo SUCCESS' }
+        request: { $ref: '#/components/schemas/ScanRequest' }
+        response:
+          type: object
+          properties:
+            success: { type: boolean, const: true }
+            message: { type: string }
+            data:
+              type: object
+              properties:
+                scan_record_id:  { type: integer }
+                approval_status: { type: string, enum: [PENDING_APPROVAL, APPROVED] }
+                product:         { $ref: '#/components/schemas/ScanProduct' }
+                required_qty:    { type: integer, const: 1 }
+                scanned_qty:     { type: integer }
+                remaining_qty:   { type: integer, const: 0 }
+                matched:         { type: boolean, const: true }
+
+# ============================================================================
+#  KHÔNG ĐƯA VÀO SPEC NÀY (nằm ngoài /api, thuộc routes/web.php):
+#    GET  /                  -> view welcome
+#    GET  /zns/zalo-webhook  -> ZaloWebhookController@show
+#    POST /zns/zalo-webhook  -> ZaloWebhookController@store  (miễn CSRF)
+#    GET  /up                -> health check mặc định Laravel
+#  Xem 01-zns-oa-inventory.md
+# ============================================================================

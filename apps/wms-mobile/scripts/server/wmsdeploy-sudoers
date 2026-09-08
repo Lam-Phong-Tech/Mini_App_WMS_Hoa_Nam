@@ -1,0 +1,1 @@
+wmsdeploy ALL=(root) NOPASSWD: /usr/local/sbin/deploy-wms-web

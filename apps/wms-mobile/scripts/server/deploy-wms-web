@@ -1,0 +1,56 @@
+#!/bin/sh
+set -eu
+
+if [ "$#" -ne 1 ]; then
+  echo "Usage: deploy-wms-web <release-id>" >&2
+  exit 2
+fi
+
+release_id="$1"
+if ! printf '%s' "$release_id" | grep -Eq '^[0-9]{8}T[0-9]{6}Z-[0-9a-f]{8}$'; then
+  echo "Release ID không hợp lệ." >&2
+  exit 2
+fi
+
+app_root='/var/www/appqr.lptech.info.vn'
+release_root="$app_root/releases"
+release="$release_root/$release_id"
+archive="/home/wmsdeploy/upload/wms-web-$release_id.tar.gz"
+
+if [ ! -f "$archive" ]; then
+  echo "Không tìm thấy release archive." >&2
+  exit 1
+fi
+
+# Chỉ cho phép gói Vite có duy nhất thư mục web-dist; không cho tar ghi ra
+# ngoài release directory hoặc tạo symlink không mong muốn.
+if tar -tzf "$archive" | grep -Eqv '^web-dist(/|$)'; then
+  echo "Release archive chứa đường dẫn không được phép." >&2
+  exit 1
+fi
+if ! tar -tzf "$archive" | grep -qx 'web-dist/index.html'; then
+  echo "Release archive thiếu web-dist/index.html." >&2
+  exit 1
+fi
+
+mkdir -p "$release_root"
+if [ -e "$release" ]; then
+  echo "Release đã tồn tại." >&2
+  exit 1
+fi
+
+mkdir "$release"
+tar --no-same-owner --no-same-permissions -xzf "$archive" -C "$release"
+if find "$release" -type l -print -quit | grep -q .; then
+  rm -rf -- "$release"
+  echo "Release archive không được chứa symlink." >&2
+  exit 1
+fi
+
+test -f "$release/web-dist/index.html"
+chown -R root:root "$release"
+nginx -t
+ln -sTfn "$release/web-dist" "$app_root/current"
+systemctl reload nginx
+rm -f -- "$archive"
+printf 'Đã phát hành %s\n' "$release_id"
