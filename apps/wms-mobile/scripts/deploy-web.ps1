@@ -24,14 +24,14 @@ New-Item -ItemType Directory -Path $logDir -Force | Out-Null
 
 $mutex = New-Object System.Threading.Mutex($false, 'WmsMobileWebDeploy')
 if (-not $mutex.WaitOne(0)) {
-  Write-DeployLog 'Bỏ qua: một lần phát hành khác đang chạy.'
+  Write-DeployLog 'Skipped: another deployment is already running.'
   exit 0
 }
 
 try {
   foreach ($requiredPath in @($keyPath, $knownHostsPath)) {
     if (-not (Test-Path -LiteralPath $requiredPath)) {
-      throw "Thiếu tệp cấu hình phát hành cục bộ: $requiredPath"
+      throw "Missing local deployment configuration: $requiredPath"
     }
   }
 
@@ -40,22 +40,22 @@ try {
   $ssh = (Get-Command ssh.exe -ErrorAction Stop).Source
   $scp = (Get-Command scp.exe -ErrorAction Stop).Source
 
-  Write-DeployLog "Bắt đầu kiểm tra và build release $releaseId."
+  Write-DeployLog "Starting validation and build for release $releaseId."
   Push-Location $appRoot
   try {
     & $npm run typecheck
-    if ($LASTEXITCODE -ne 0) { throw "Typecheck thất bại (mã $LASTEXITCODE)." }
+    if ($LASTEXITCODE -ne 0) { throw "Typecheck failed (exit $LASTEXITCODE)." }
 
     & $npm run build:web
-    if ($LASTEXITCODE -ne 0) { throw "Build web thất bại (mã $LASTEXITCODE)." }
+    if ($LASTEXITCODE -ne 0) { throw "Web build failed (exit $LASTEXITCODE)." }
 
     if (-not (Test-Path -LiteralPath (Join-Path $appRoot 'web-dist\index.html'))) {
-      throw 'Build không tạo ra web-dist\\index.html.'
+      throw 'Build did not create web-dist\\index.html.'
     }
 
     if (Test-Path -LiteralPath $archivePath) { Remove-Item -LiteralPath $archivePath -Force }
     & $tar -czf $archivePath -C $appRoot web-dist
-    if ($LASTEXITCODE -ne 0) { throw "Đóng gói release thất bại (mã $LASTEXITCODE)." }
+    if ($LASTEXITCODE -ne 0) { throw "Release archive failed (exit $LASTEXITCODE)." }
   }
   finally {
     Pop-Location
@@ -74,25 +74,25 @@ try {
 
   Push-Location $appRoot
   try {
-    Write-DeployLog 'Đang tải release lên VPS.'
+    Write-DeployLog 'Uploading release to VPS.'
     & $scp @sshOptions $archivePath "${remoteTarget}:/home/$remoteUser/upload/$archiveName"
-    if ($LASTEXITCODE -ne 0) { throw "Tải release lên VPS thất bại (mã $LASTEXITCODE)." }
+    if ($LASTEXITCODE -ne 0) { throw "VPS upload failed (exit $LASTEXITCODE)." }
 
     $remoteCommand = "sudo /usr/local/sbin/deploy-wms-web $releaseId"
 
-    Write-DeployLog 'Đang kích hoạt release mới trên VPS.'
+    Write-DeployLog 'Activating release on VPS.'
     & $ssh @sshOptions $remoteTarget $remoteCommand
-    if ($LASTEXITCODE -ne 0) { throw "Kích hoạt release trên VPS thất bại (mã $LASTEXITCODE)." }
+    if ($LASTEXITCODE -ne 0) { throw "VPS activation failed (exit $LASTEXITCODE)." }
   }
   finally {
     Pop-Location
   }
 
   Remove-Item -LiteralPath $archivePath -Force
-  Write-DeployLog "Đã phát hành $releaseId thành công."
+  Write-DeployLog "Release $releaseId deployed successfully."
 }
 catch {
-  Write-DeployLog "PHÁT HÀNH THẤT BẠI: $($_.Exception.Message)"
+  Write-DeployLog "DEPLOYMENT FAILED: $($_.Exception.Message)"
   exit 1
 }
 finally {

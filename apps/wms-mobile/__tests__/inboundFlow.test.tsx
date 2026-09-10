@@ -1158,6 +1158,7 @@ describe('BusinessScanScreen — bám thiết kế Mini App, không phải màn 
     const text = JSON.stringify(tree?.toJSON());
     return {
       text,
+      tree,
       unmount: async () => {
         await ReactTestRenderer.act(() => tree?.unmount());
       },
@@ -1183,6 +1184,39 @@ describe('BusinessScanScreen — bám thiết kế Mini App, không phải màn 
     const view = await renderScan();
     expect(view.text).toContain('Sẵn sàng quét mã');
     expect(view.text).toContain('Nhập mã thủ công');
+    await view.unmount();
+  });
+
+  it('hiện lỗi WMS ngay trong hộp nhập tay, không để toast bị Sheet che', async () => {
+    setTierCheckForTesting({ status: 'matched', expected: 'dev-test' });
+    const view = await renderScan({
+      onScan: async () => ({
+        accepted: false,
+        message: 'Hộp không gắn với SKU linh kiện ACTIVE. (COMPONENT_SKU_REQUIRED).',
+      }),
+    });
+    const manualButton = view.tree?.root
+      .findAllByType(Button)
+      .find(button => button.props.label === 'Nhập tay');
+    await ReactTestRenderer.act(() => manualButton?.props.onPress());
+
+    const codeInput = view.tree?.root
+      .findAllByType(CodeInput)
+      .find(input => input.props.label === 'Mã sản phẩm / mã tem');
+    await ReactTestRenderer.act(() => codeInput?.props.onChangeText('BOX-RPTW-001'));
+
+    const checkButton = view.tree?.root
+      .findAllByType(Button)
+      .find(button => button.props.label === 'Kiểm tra mã');
+    await ReactTestRenderer.act(async () => {
+      checkButton?.props.onPress();
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+
+    expect(JSON.stringify(view.tree?.toJSON())).toContain(
+      'Hộp không gắn với SKU linh kiện ACTIVE. (COMPONENT_SKU_REQUIRED).',
+    );
     await view.unmount();
   });
 

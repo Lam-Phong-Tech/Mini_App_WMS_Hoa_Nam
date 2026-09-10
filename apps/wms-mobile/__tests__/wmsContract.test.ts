@@ -251,13 +251,13 @@ describe('If-Match — version lấy từ data.version (2026-09-05)', () => {
     expect(REAL_DETAIL_HEADERS['X-Request-ID']).toMatch(/^[0-9a-f-]{36}$/);
   });
 
-  it('🔒 If-Match chỉ được GỬI từ ba tệp tầng ghi', () => {
+  it('🔒 If-Match chỉ được GỬI từ bốn tệp tầng ghi', () => {
     // 🔧 Đổi khung 2026-09-06 (`GATE_WMS §2f`). Trước đây test này đòi **không
     // tệp nào** nhắc tới If-Match, vì chưa thao tác nào được gửi nó. Nay
     // `post-receipt` đã duyệt và bắt buộc phải có header ấy.
     //
     // Nhưng nới không có nghĩa là bỏ canh. Danh sách dưới đây khoá **phạm vi**:
-    // chỉ ba tệp tầng ghi được gửi header này, và mỗi tệp chỉ gửi cho đúng
+    // chỉ bốn tệp tầng ghi được gửi header này, và mỗi tệp chỉ gửi cho đúng
     // thao tác của luồng mình. Ngày ai đó gắn If-Match vào một endpoint khác,
     // test này đỏ.
     //
@@ -271,6 +271,7 @@ describe('If-Match — version lấy từ data.version (2026-09-05)', () => {
       'src/services/wms/inboundWrite.ts',
       'src/services/wms/outboundWrite.ts',
       'src/services/wms/warrantyWrite.ts',
+      'src/services/wms/warrantyComponentWrite.ts',
     ];
 
     const fs = require('fs');

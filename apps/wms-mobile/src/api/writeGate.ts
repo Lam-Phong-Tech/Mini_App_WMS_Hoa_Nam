@@ -10,7 +10,8 @@
  * 🔓 Change Control `GATE_WMS §2j` (2026-09-07) — luồng NFC: nhận diện QR,
  *   giữ chỗ chip, xác nhận sau khi ghi/đọc lại, tra cứu chip và thu hồi chip.
  *
- * ⇒ Nhập, xuất và bảo hành đã đấu. 166 endpoint ghi còn lại vẫn chặn, và
+ * ⇒ Nhập, xuất và bảo hành đã đấu theo danh sách hẹp; các endpoint ghi còn lại
+ * vẫn chặn, và
  * **chưa method `DELETE` nào** được mở.
  *
  * ## Vì sao là danh sách chứ không phải một cờ bật/tắt
@@ -21,7 +22,7 @@
  *
  * ⇒ Cờ môi trường vẫn `false`; đường đi duy nhất là danh sách dưới đây.
  *
- * ## Mười lăm thao tác được duyệt
+ * ## Hai mươi thao tác được duyệt
  *
  * | Thao tác | Rủi ro | Header đặc biệt |
  * |---|---|---|
@@ -35,6 +36,11 @@
  * | `POST warranty-cases` | **trung bình** — tạo hồ sơ, và **lưu PII khách hàng** | `Idempotency-Key` |
  * | `POST warranty-cases/{id}/status` | **trung bình** — vòng đời hồ sơ; **không** đụng tồn kho | `Idempotency-Key` · `If-Match` |
  * | `POST warranty-cases/{id}/attachments` | **trung bình** — tải **ảnh/video khách hàng** lên; `multipart/form-data` | — |
+ * | `POST scan/classify` | **thấp** — đối soát physical code → SKU, `stock_effect=NONE` | — |
+ * | `POST component-issue-documents/resolve-code` | **thấp** — đối soát mã + tồn + trạng thái hồ sơ, không tạo phiếu | — |
+ * | `POST component-issue-documents` | **trung bình** — tạo phiếu nháp xuất linh kiện, chưa đổi tồn | — |
+ * | `POST component-issue-documents/{id}/scan` | **trung bình** — ghi bằng chứng quét vào phiếu nháp | `If-Match` |
+ * | `POST component-issue-documents/{id}/post` | **cao** — xác nhận xuất linh kiện và **giảm tồn kho thật** | `Idempotency-Key` · `If-Match` |
  *
  * ## 🔴 `DELETE warranty-attachments/{id}` — CHƯA được duyệt
  *
@@ -46,10 +52,10 @@
  * được từ app**. Đó là hạn chế thật của phạm vi hiện tại, không phải thiếu sót
  * — và màn hình phải nói ra thay vì có một nút xoá không hoạt động.
  *
- * ## 🔴 Hai thao tác đổi tồn kho — chỗ duy nhất không lùi được
+ * ## 🔴 Ba thao tác đổi tồn kho — chỗ duy nhất không lùi được
  *
- * `post-receipt` và `post-issue` là **hai thao tác duy nhất** trong danh sách
- * này đổi tồn kho thật. Mọi thứ khác đều lùi được: quét nhầm thì vuốt xoá,
+ * `post-receipt`, `post-issue` và `component-issue-documents/{id}/post` là **ba thao tác**
+ * trong danh sách này đổi tồn kho thật. Mọi thứ khác đều lùi được: quét nhầm thì vuốt xoá,
  * phiếu ghi nhận nhầm thì còn ở trạng thái chờ duyệt.
  *
  * Hậu quả khi nhầm không đối xứng — post nhầm phiếu **nhập** thì tồn dư ra và
@@ -87,7 +93,7 @@
  * sẽ lọt qua đúng chỗ nguy hiểm nhất.
  */
 
-/** Mười lăm thao tác được duyệt. */
+/** Hai mươi thao tác được duyệt. */
 export type ApprovedWrite =
   | 'inbound.resolveCode'
   | 'inbound.record'
@@ -99,6 +105,11 @@ export type ApprovedWrite =
   | 'warranty.createCase'
   | 'warranty.updateStatus'
   | 'warranty.uploadAttachment'
+  | 'scan.classify'
+  | 'componentIssue.resolveCode'
+  | 'componentIssue.create'
+  | 'componentIssue.scan'
+  | 'componentIssue.post'
   | 'nfc.resolveCode'
   | 'nfc.prepare'
   | 'nfc.confirm'
@@ -170,6 +181,37 @@ const APPROVED_WRITES: readonly ApprovedWriteEntry[] = [
     id: 'warranty.uploadAttachment',
     method: 'POST',
     segments: segmentsOf('/api/v1/mini-app/warranty-cases/{id}/attachments'),
+  },
+  // `scan/classify` dùng POST vì cần body, nhưng API contract cam kết chỉ
+  // resolve physical code → SKU và stock_effect=NONE. Không tạo chứng từ,
+  // scan evidence hay movement; cần cho component issue biết sku_id trước
+  // lệnh create.
+  {
+    id: 'scan.classify',
+    method: 'POST',
+    segments: segmentsOf('/api/v1/scan/classify'),
+  },
+  // Resolver của phiếu xuất linh kiện trả eligibility của cả mã và hồ sơ.
+  // POST chỉ vì cần body; BE cam kết không tạo phiếu/scan/movement ở đây.
+  {
+    id: 'componentIssue.resolveCode',
+    method: 'POST',
+    segments: segmentsOf('/api/v1/component-issue-documents/resolve-code'),
+  },
+  {
+    id: 'componentIssue.create',
+    method: 'POST',
+    segments: segmentsOf('/api/v1/component-issue-documents'),
+  },
+  {
+    id: 'componentIssue.scan',
+    method: 'POST',
+    segments: segmentsOf('/api/v1/component-issue-documents/{id}/scan'),
+  },
+  {
+    id: 'componentIssue.post',
+    method: 'POST',
+    segments: segmentsOf('/api/v1/component-issue-documents/{id}/post'),
   },
   // NFC không dùng generic `/physical-codes`: cặp prepare → confirm giữ chỗ
   // `reservation_token` để hai máy không ghi cùng một chip/item.
@@ -245,7 +287,7 @@ export function approvedWriteFor(
  * Thao tác này được phép gửi `Idempotency-Key` không.
  *
  * `GATE_01 §11` #6 cấm header này **toàn cục**. Các Change Control `§2e`–`§2i`
- * nới cho đúng bảy thao tác mà spec khai header đó là bắt buộc. Nơi khác vẫn cấm.
+ * nới cho đúng tám thao tác mà contract khai header đó là bắt buộc. Nơi khác vẫn cấm.
  *
  * Các endpoint nhận diện/tra cứu **không** được gửi: spec không khai header này
  * cho chúng, và chúng cũng không tạo gì để mà cần chống trùng.
@@ -259,6 +301,7 @@ export function allowsIdempotencyKey(method: string, path: string): boolean {
     approved === 'outbound.postIssue' ||
     approved === 'warranty.createCase' ||
     approved === 'warranty.updateStatus' ||
+    approved === 'componentIssue.post' ||
     // `PATCH items/{id}/nfc` có thể timeout sau khi thẻ đã ghi. Khóa chống
     // trùng là bắt buộc để retry không sinh một mapping thứ hai.
     approved === 'nfc.confirm'
@@ -268,9 +311,8 @@ export function allowsIdempotencyKey(method: string, path: string): boolean {
 /**
  * Thao tác này được phép gửi `If-Match` không.
  *
- * 🔓 Mở cho **đúng hai** thao tác: `post-receipt` và `post-issue` — hai lệnh
- * đổi tồn kho, và cũng là hai chỗ duy nhất spec khai header này. Bốn thao tác
- * còn lại vẫn cấm tuyệt đối.
+ * 🔓 Mở cho đúng các thao tác có optimistic locking. Phiếu linh kiện dùng
+ * version của chính phiếu, không dùng version hồ sơ bảo hành.
  *
  * 🔧 Kiểm chứng lại 2026-09-06: bản kiểm kê spec của tôi
  * (`openapi/wms-external-api.draft.yaml:128`) khai `post-issue` chỉ có
@@ -289,7 +331,9 @@ export function allowsIfMatch(method: string, path: string): boolean {
     // Chuyển trạng thái hồ sơ bảo hành cũng dùng optimistic locking, dù nó
     // KHÔNG đụng tồn kho: hai người cùng mở một hồ sơ là chuyện thường, và ghi
     // đè kết quả kiểm tra của nhau thì mất hẳn phần hồ sơ kỹ thuật.
-    approved === 'warranty.updateStatus'
+    approved === 'warranty.updateStatus' ||
+    approved === 'componentIssue.scan' ||
+    approved === 'componentIssue.post'
   );
 }
 

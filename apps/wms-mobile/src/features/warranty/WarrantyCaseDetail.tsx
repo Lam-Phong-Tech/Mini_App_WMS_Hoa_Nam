@@ -31,6 +31,7 @@ import { toAppError, messageForUser } from '../../errors/AppError';
 import { fetchWarrantyEvents } from '../../services/wms/queries';
 import { WarrantyDetailScreen } from './WarrantyDetailScreen';
 import { useWarrantyTransition } from './useWarrantyTransition';
+import { useWarrantyComponentHistory } from './useWarrantyComponentHistory';
 import { WARRANTY_STATUSES } from './warrantyPolicy';
 import type { WarrantyCase } from '../../services/wms/types';
 import type { TimelineEntry } from '../../ui/Timeline';
@@ -59,6 +60,7 @@ export function stepForStatus(status: string | undefined): number {
 export interface WarrantyCaseDetailProps {
   warrantyCase: WarrantyCase;
   onBack: () => void;
+  onIssueComponents?: (warrantyCase: WarrantyCase) => void;
   created?: boolean;
   /** Tiêm để test không cần mạng. */
   loadEvents?: typeof fetchWarrantyEvents;
@@ -67,6 +69,7 @@ export interface WarrantyCaseDetailProps {
 export function WarrantyCaseDetail({
   warrantyCase,
   onBack,
+  onIssueComponents,
   created = false,
   loadEvents = fetchWarrantyEvents,
 }: WarrantyCaseDetailProps): React.ReactElement {
@@ -74,6 +77,7 @@ export function WarrantyCaseDetail({
   const [current, setCurrent] = useState(warrantyCase);
   const [timeline, setTimeline] = useState<readonly TimelineEntry[]>([]);
   const [timelineError, setTimelineError] = useState<string | undefined>();
+  const componentHistory = useWarrantyComponentHistory(current.warranty_case_id);
 
   const refreshTimeline = useCallback(() => {
     setTimelineError(undefined);
@@ -117,10 +121,19 @@ export function WarrantyCaseDetail({
           ? undefined
           : messageForUser(transition.error)
       }
+      componentHistory={componentHistory.documents}
+      componentHistoryLoading={componentHistory.loading}
+      componentHistoryError={componentHistory.error}
+      onReloadComponentHistory={componentHistory.refresh}
       transitioning={transition.running}
       onTransition={(status, note, confirmedDefect) => {
         transition.run(status, note, confirmedDefect).catch(() => undefined);
       }}
+      onIssueComponents={
+        onIssueComponents === undefined
+          ? undefined
+          : () => onIssueComponents(current)
+      }
       onBack={onBack}
     />
   );

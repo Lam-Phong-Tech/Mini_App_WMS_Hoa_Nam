@@ -351,6 +351,9 @@ export function BusinessScanScreen({
   const [cameraError, setCameraError] = useState<string | undefined>();
   const [manualOpen, setManualOpen] = useState(false);
   const [manualCode, setManualCode] = useState('');
+  // Toast kết quả nằm sau Sheet nhập tay. Giữ lỗi riêng trong Sheet để thủ kho
+  // thấy ngay kết luận WMS, thay vì tưởng app không phản hồi.
+  const [manualError, setManualError] = useState<string | undefined>();
   const [isProcessing, setIsProcessing] = useState(false);
   const [imagePickerOpen, setImagePickerOpen] = useState(false);
   const [isDecodingImage, setIsDecodingImage] = useState(false);
@@ -469,6 +472,9 @@ export function BusinessScanScreen({
       setTorchOn(false);
       try {
         const feedback = await onScan(code, source);
+        if (source === 'MANUAL') {
+          setManualError(undefined);
+        }
         if (feedback?.accepted === false) {
           const message =
             feedback.message ??
@@ -488,6 +494,9 @@ export function BusinessScanScreen({
           if (!feedback.requiresInput) {
             showScanResult('failure', message);
           }
+          if (source === 'MANUAL' && !feedback.requiresInput) {
+            setManualError(message);
+          }
           return feedback.requiresInput === true;
         }
         showScanResult(
@@ -501,6 +510,9 @@ export function BusinessScanScreen({
           error instanceof Error ? error.message : 'Không kiểm tra được mã.';
         guard.current.reject(parseScanPayload(code).dedupeKey);
         showScanResult('failure', message);
+        if (source === 'MANUAL') {
+          setManualError(message);
+        }
         return false;
       } finally {
         setIsProcessing(false);
@@ -793,7 +805,10 @@ export function BusinessScanScreen({
               <Text
                 variant="caption"
                 accessibilityRole="button"
-                onPress={() => setManualOpen(true)}
+                onPress={() => {
+                  setManualError(undefined);
+                  setManualOpen(true);
+                }}
                 style={[styles.manualLink, { color: tokens.colors.primary }]}
               >
                 Nhập mã thủ công
@@ -956,7 +971,10 @@ export function BusinessScanScreen({
           <Button
             label="Nhập tay"
             variant="secondary"
-            onPress={() => setManualOpen(true)}
+            onPress={() => {
+              setManualError(undefined);
+              setManualOpen(true);
+            }}
             disabled={scanPaused}
           />
           <Button
@@ -976,7 +994,10 @@ export function BusinessScanScreen({
       {/* --- Hộp nhập mã thủ công --- */}
       <Sheet
         visible={manualOpen}
-        onDismiss={() => setManualOpen(false)}
+        onDismiss={() => {
+          setManualError(undefined);
+          setManualOpen(false);
+        }}
         title="Nhập mã thủ công"
         message="Mã nhập tay cũng kiểm tra trùng và tồn tại trên WMS"
       >
@@ -984,10 +1005,18 @@ export function BusinessScanScreen({
           label="Mã sản phẩm / mã tem"
           placeholder="Nhập QR, barcode hoặc serial"
           value={manualCode}
-          onChangeText={setManualCode}
+          onChangeText={value => {
+            setManualCode(value);
+            setManualError(undefined);
+          }}
           returnKeyType="done"
           onSubmitEditing={submitManual}
         />
+        {manualError === undefined ? null : (
+          <Text variant="caption" style={{ color: tokens.colors.dangerText }}>
+            {manualError}
+          </Text>
+        )}
         <Button
           label="Kiểm tra mã"
           onPress={submitManual}
@@ -997,7 +1026,10 @@ export function BusinessScanScreen({
         <Button
           label="Huỷ"
           variant="secondary"
-          onPress={() => setManualOpen(false)}
+          onPress={() => {
+            setManualError(undefined);
+            setManualOpen(false);
+          }}
         />
       </Sheet>
     </View>

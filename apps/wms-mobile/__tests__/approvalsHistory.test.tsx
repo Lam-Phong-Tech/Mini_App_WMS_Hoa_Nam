@@ -124,12 +124,12 @@ describe('🔧 V-02 — màn Duyệt phiếu TỰ NẠP, không đợi bấm Đ�
     await view.unmount();
   });
 
-  it('hiện số phiếu của trang đang nạp — đúng hàng đợi Mini App 10 phiếu/trang', async () => {
+  it('chỉ đếm các phiếu thực tế WMS trả về, không dùng meta.total lệch tập lọc', async () => {
     const view = await render(
       <ApprovalsScreen
         fetchInbound={async () => ({
-          // `meta.total` không được dùng cho tab: Mini App hiện số phiếu đã
-          // nạp rồi cho người dùng bấm "Tải thêm phiếu".
+          // Tổng này cố ý không khớp dữ liệu đã lọc — UI không được lấy nó để
+          // dựng badge, nếu không Trang chủ sẽ báo có phiếu không mở được.
           items: [{ id: 'a' }, { id: 'b' }],
           meta: { total: 5 },
         })}
@@ -137,6 +137,19 @@ describe('🔧 V-02 — màn Duyệt phiếu TỰ NẠP, không đợi bấm Đ�
       />,
     );
     expect(view.text).toContain('2 phiếu chờ duyệt');
+    await view.unmount();
+  });
+
+  it('dòng tổng cộng cả phiếu nhập và phiếu xuất như thẻ Trang chủ', async () => {
+    const view = await render(
+      <ApprovalsScreen
+        fetchInbound={async () => ({ items: [{ id: 'in-1' }] })}
+        fetchOutbound={async () => ({ items: [{ id: 'out-1' }, { id: 'out-2' }] })}
+      />,
+    );
+    expect(view.text).toContain('3 phiếu chờ duyệt');
+    expect(view.text).toContain('Phiếu nhập · 1');
+    expect(view.text).toContain('Phiếu xuất · 2');
     await view.unmount();
   });
 

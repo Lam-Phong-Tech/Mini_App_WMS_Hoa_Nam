@@ -241,6 +241,8 @@ describe('Trang chủ — bốn trạng thái của Prompt 4 §C', () => {
         deps={{
           // Không bao giờ resolve → giữ nguyên trạng thái loading.
           fetchDocuments: () => new Promise(() => {}),
+          fetchInboundPending: () => new Promise(() => {}),
+          fetchOutboundPending: () => new Promise(() => {}),
         }}
       />,
     );
@@ -255,6 +257,8 @@ describe('Trang chủ — bốn trạng thái của Prompt 4 §C', () => {
           fetchDocuments: async () => {
             throw new AppError({ kind: 'network', message: 'mất mạng' });
           },
+          fetchInboundPending: async () => emptyPage,
+          fetchOutboundPending: async () => emptyPage,
         }}
       />,
     );
@@ -265,7 +269,13 @@ describe('Trang chủ — bốn trạng thái của Prompt 4 §C', () => {
 
   it('trạng thái rỗng nói rõ phải làm gì', async () => {
     const view = await render(
-      <HomeScreen deps={{ fetchDocuments: async () => emptyPage }} />,
+      <HomeScreen
+        deps={{
+          fetchDocuments: async () => emptyPage,
+          fetchInboundPending: async () => emptyPage,
+          fetchOutboundPending: async () => emptyPage,
+        }}
+      />,
     );
     expect(view.text).toContain('Chưa có phiếu nào');
     await view.unmount();
@@ -273,7 +283,13 @@ describe('Trang chủ — bốn trạng thái của Prompt 4 §C', () => {
 
   it('"Đã duyệt hôm nay" dùng cùng snapshot trạng thái với Mini App', async () => {
     const view = await render(
-      <HomeScreen deps={{ fetchDocuments: async () => emptyPage }} />,
+      <HomeScreen
+        deps={{
+          fetchDocuments: async () => emptyPage,
+          fetchInboundPending: async () => emptyPage,
+          fetchOutboundPending: async () => emptyPage,
+        }}
+      />,
     );
     expect(view.text).toContain('Đã duyệt hôm nay');
     expect(view.text).toContain('Hoàn tất');
@@ -290,10 +306,39 @@ describe('Trang chủ — bốn trạng thái của Prompt 4 §C', () => {
               { id: '2', status: 'POSTED' },
             ],
           }),
+          fetchInboundPending: async () => ({
+            items: [{ id: '1', status: 'WAITING_APPROVAL' }],
+            meta: { total: 1 },
+          }),
+          fetchOutboundPending: async () => ({ items: [], meta: { total: 0 } }),
         }}
       />,
     );
     expect(view.text).toContain('1');
+    await view.unmount();
+  });
+
+  it('"Chờ duyệt" dùng đúng hai truy vấn hàng đợi của màn Duyệt phiếu', async () => {
+    let inboundQuery: Record<string, unknown> | undefined;
+    let outboundQuery: Record<string, unknown> | undefined;
+    const view = await render(
+      <HomeScreen
+        deps={{
+          fetchDocuments: async () => ({ items: [] }),
+          fetchInboundPending: async options => {
+            inboundQuery = options?.query;
+            return { items: [{ id: 'in-1' }], meta: { total: 2 } };
+          },
+          fetchOutboundPending: async options => {
+            outboundQuery = options?.query;
+            return { items: [{ id: 'out-1' }], meta: { total: 3 } };
+          },
+        }}
+      />,
+    );
+    expect(view.text).toContain('2 phiếu');
+    expect(inboundQuery).toMatchObject({ status: 'WAITING_APPROVAL', per_page: 50 });
+    expect(outboundQuery).toMatchObject({ ready_for_post: true, ready_for_issue: true, per_page: 50 });
     await view.unmount();
   });
 });

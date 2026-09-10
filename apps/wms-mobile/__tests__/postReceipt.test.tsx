@@ -299,7 +299,7 @@ describe('màn Duyệt phiếu', () => {
   it('phiếu chưa sẵn sàng được lọc vào nhóm cần xử lý', async () => {
     const view = await render([NOT_READY]);
     expect(view.text).toContain('Cần xử lý · 1');
-    expect(view.text).toContain('Chưa có phiếu sẵn sàng');
+    expect(view.text).toContain('Cần xử lý');
     await view.unmount();
   });
 

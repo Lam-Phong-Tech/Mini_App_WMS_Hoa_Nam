@@ -32,6 +32,7 @@ import {
   MESSAGE_CONFIRMED_DEFECT_REQUIRED,
   WARRANTY_STATUSES,
   canTransition,
+  canIssueWarrantyComponents,
   isWarrantyStatus,
   nextStatuses,
   requiresConfirmedDefect,
@@ -453,6 +454,71 @@ describe('màn danh sách bảo hành (ảnh 39, 40)', () => {
 });
 
 describe('màn chi tiết hồ sơ (ảnh 44–46)', () => {
+  it.each(['CHECKING', 'REPAIRING'])(
+    'hiện Xuất linh kiện khi hồ sơ ở %s',
+    async status => {
+      expect(canIssueWarrantyComponents(status)).toBe(true);
+      const view = await render(
+        <WarrantyDetailScreen
+          warrantyCase={{ ...MASKED_CASE, status }}
+          attachmentsState={attachments()}
+          onIssueComponents={() => undefined}
+        />,
+      );
+      expect(view.text).toContain('Xuất linh kiện');
+      await view.unmount();
+    },
+  );
+
+  it.each(['RECEIVED', 'COMPLETED', 'RETURNED', 'CANCELLED'])(
+    'ẩn Xuất linh kiện khi hồ sơ ở %s',
+    async status => {
+      expect(canIssueWarrantyComponents(status)).toBe(false);
+      const view = await render(
+        <WarrantyDetailScreen
+          warrantyCase={{ ...MASKED_CASE, status }}
+          attachmentsState={attachments()}
+          onIssueComponents={() => undefined}
+        />,
+      );
+      expect(view.text).not.toContain('Xuất linh kiện');
+      await view.unmount();
+    },
+  );
+
+  it('giữ danh sách linh kiện đã xuất trong hồ sơ đã trả, nhưng không cho xuất thêm', async () => {
+    const view = await render(
+      <WarrantyDetailScreen
+        warrantyCase={{ ...MASKED_CASE, status: 'RETURNED' }}
+        attachmentsState={attachments()}
+        onIssueComponents={() => undefined}
+        componentHistory={[
+          {
+            id: 'document-posted-1',
+            documentNumber: 'CID-20260909144859-2EUF',
+            postedAt: '2026-09-09 14:48:59+00',
+            lines: [
+              {
+                id: 'component-line-1',
+                skuCode: 'AABC',
+                skuName: 'ABC',
+                quantity: 1,
+                scannedCodeCount: 1,
+              },
+            ],
+          },
+        ]}
+      />,
+    );
+    expect(view.text).toContain('Linh kiện bảo hành');
+    expect(view.text).toContain('1 phiếu đã xuất');
+    expect(view.text).toContain('CID-20260909144859-2EUF');
+    expect(view.text).toContain('AABC · ABC');
+    expect(view.text).toContain('1 linh kiện · 1 mã/hộp');
+    expect(view.text).not.toContain('Xuất linh kiện');
+    await view.unmount();
+  });
+
   it('hồ sơ ẩn danh không hiện hàng khách hàng, hiện banner thay thế', async () => {
     const view = await render(
       <WarrantyDetailScreen warrantyCase={ANONYMIZED_CASE} />,

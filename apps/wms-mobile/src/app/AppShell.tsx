@@ -41,6 +41,7 @@ import { OutboundFlow } from '../features/outbound/OutboundFlow';
 import { WarrantyListScreen } from '../features/warranty/WarrantyListScreen';
 import { WarrantyIntakeScreen } from '../features/warranty/WarrantyIntakeScreen';
 import { WarrantyCaseDetail } from '../features/warranty/WarrantyCaseDetail';
+import { WarrantyComponentIssueFlow } from '../features/warranty/WarrantyComponentIssueFlow';
 import { useHardwareBack } from './useHardwareBack';
 import type { WarrantyCase } from '../services/wms/types';
 import { BusinessScanScreen } from '../features/scan/BusinessScanScreen';
@@ -150,6 +151,7 @@ export function AppShell(): React.ReactElement {
     | 'warranty-scan'
     | 'warranty-intake'
     | 'warranty-case'
+    | 'warranty-components'
     | 'nfc-assign'
     | 'nfc-scan'
     | 'nfc-lookup'
@@ -209,6 +211,10 @@ export function AppShell(): React.ReactElement {
     }
     if (openDocument !== undefined) {
       setOpenDocument(undefined);
+      return true;
+    }
+    if (flow === 'warranty-components') {
+      setFlow('warranty-case');
       return true;
     }
     if (flow === 'warranty-case') {
@@ -444,10 +450,27 @@ export function AppShell(): React.ReactElement {
       <WarrantyCaseDetail
         warrantyCase={openCase}
         created={warrantyCaseCreated}
+        onIssueComponents={warrantyCase => {
+          setOpenCase(warrantyCase);
+          setWarrantyCaseCreated(false);
+          setFlow('warranty-components');
+        }}
         onBack={() => {
           setOpenCase(undefined);
           setWarrantyCaseCreated(false);
           setFlow('warranty');
+        }}
+      />
+    );
+  }
+  if (flow === 'warranty-components' && openCase !== undefined) {
+    return (
+      <WarrantyComponentIssueFlow
+        warrantyCase={openCase}
+        onBack={() => setFlow('warranty-case')}
+        onComplete={updatedCase => {
+          setOpenCase(updatedCase);
+          setFlow('warranty-case');
         }}
       />
     );

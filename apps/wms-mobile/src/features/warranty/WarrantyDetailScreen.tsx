@@ -35,10 +35,12 @@ import { DefinitionRow } from '../../ui/DefinitionRow';
 import { AppIcon } from '../../ui/AppIcon';
 import { useTheme } from '../../theme/ThemeProvider';
 import type { WarrantyCase } from '../../services/wms/types';
+import type { WarrantyComponentHistoryDocument } from '../../services/wms/warrantyComponentRead';
 import {
   ATTACHMENT_LIMITS,
   MESSAGE_ANONYMIZED,
   actionVisibility,
+  canIssueWarrantyComponents,
   displayPii,
   isCaseAnonymized,
   validateTransition,
@@ -96,6 +98,12 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
   },
+  componentHistoryItem: {
+    borderWidth: 1,
+  },
+  documentNumber: {
+    fontWeight: '600',
+  },
 });
 
 export interface WarrantyDetailScreenProps {
@@ -129,6 +137,13 @@ export interface WarrantyDetailScreenProps {
     note: string,
     confirmedDefect?: string,
   ) => void;
+  /** Mở luồng quét linh kiện; chỉ hiện ở CHECKING hoặc REPAIRING. */
+  onIssueComponents?: () => void;
+  /** Các phiếu linh kiện đã Post, được liên kết bằng warranty_case_id. */
+  componentHistory?: readonly WarrantyComponentHistoryDocument[];
+  componentHistoryLoading?: boolean;
+  componentHistoryError?: string;
+  onReloadComponentHistory?: () => void;
 }
 
 /**
@@ -157,6 +172,11 @@ export function WarrantyDetailScreen({
   currentStep = 0,
   created = false,
   onTransition,
+  onIssueComponents,
+  componentHistory = [],
+  componentHistoryLoading = false,
+  componentHistoryError,
+  onReloadComponentHistory,
 }: WarrantyDetailScreenProps): React.ReactElement {
   const theme = useTheme();
   const [note, setNote] = useState('');
@@ -256,6 +276,96 @@ export function WarrantyDetailScreen({
           value={warrantyCase.accessories_received}
           last
         />
+      </Box>
+
+      <Box card padding="lg" gap="md">
+        <View style={styles.sectionHead}>
+          <Text variant="cardTitle" tone="strong">
+            Linh kiện bảo hành
+          </Text>
+          {componentHistoryLoading ? null : (
+            <Badge
+              label={String(componentHistory.length) + ' phiếu đã xuất'}
+              tone={componentHistory.length > 0 ? 'success' : 'neutral'}
+            />
+          )}
+        </View>
+        <Text variant="caption" tone="muted">
+          Danh sách linh kiện đã xuất được lưu theo hồ sơ này. Chỉ các phiếu
+          đã xác nhận xuất kho mới xuất hiện tại đây.
+        </Text>
+
+        {componentHistoryLoading ? (
+          <Text variant="caption" tone="muted">
+            Đang tải danh sách linh kiện đã xuất…
+          </Text>
+        ) : componentHistoryError !== undefined ? (
+          <Banner
+            tone="danger"
+            title="Không tải được lịch sử linh kiện"
+            message={componentHistoryError}
+          >
+            {onReloadComponentHistory === undefined ? null : (
+              <Button
+                label="Tải lại danh sách"
+                variant="secondary"
+                onPress={onReloadComponentHistory}
+              />
+            )}
+          </Banner>
+        ) : componentHistory.length === 0 ? (
+          <Text variant="caption" tone="muted">
+            Chưa có linh kiện nào đã xuất cho hồ sơ này.
+          </Text>
+        ) : (
+          componentHistory.map(document => (
+            <Box
+              key={document.id}
+              padding="md"
+              gap="sm"
+              style={[
+                styles.componentHistoryItem,
+                {
+                  borderColor: theme.colors.divider,
+                  borderRadius: theme.radius.control,
+                },
+              ]}
+            >
+              <View style={styles.sectionHead}>
+                <Text
+                  variant="caption"
+                  tone="strong"
+                  style={styles.documentNumber}
+                >
+                  {document.documentNumber ?? document.id}
+                </Text>
+                <Badge label="Đã xuất" tone="success" />
+              </View>
+              <Text variant="caption" tone="muted">
+                {formatComponentIssueTime(document.postedAt)}
+              </Text>
+              {document.detailUnavailable ? (
+                <Text variant="caption" tone="muted">
+                  Không tải được chi tiết linh kiện của phiếu này.
+                </Text>
+              ) : (
+                document.lines.map((line, index) => (
+                  <DefinitionRow
+                    key={line.id}
+                    label={componentLineLabel(line)}
+                    value={componentLineQuantity(line)}
+                    last={index === document.lines.length - 1}
+                  />
+                ))
+              )}
+            </Box>
+          ))
+        )}
+
+        {canIssueWarrantyComponents(warrantyCase.status) &&
+        onIssueComponents !== undefined ? (
+          <Button label="Xuất linh kiện" onPress={onIssueComponents} />
+        ) : null}
       </Box>
 
       {/* --- Chuyển trạng thái — ảnh 45 --- */}
@@ -532,6 +642,43 @@ export function WarrantyDetailScreen({
 function statusLabel(status?: string): string {
   const normalized = (status ?? 'RECEIVED').toUpperCase() as WarrantyStatus;
   return STATUS_LABEL[normalized] ?? status ?? 'Đã tiếp nhận';
+}
+
+function componentLineLabel(line: WarrantyComponentHistoryDocument['lines'][number]): string {
+  const sku = line.skuCode ?? 'SKU chưa xác định';
+  return line.skuName === undefined || line.skuName.trim() === ''
+    ? sku
+    : sku + ' · ' + line.skuName;
+}
+
+function componentLineQuantity(
+  line: WarrantyComponentHistoryDocument['lines'][number],
+): string {
+  const codeCount = line.scannedCodeCount;
+  return (
+    String(line.quantity) +
+    ' linh kiện' +
+    (codeCount > 0 ? ' · ' + String(codeCount) + ' mã/hộp' : '')
+  );
+}
+
+function formatComponentIssueTime(value?: string): string {
+  if (value === undefined || value.trim() === '') return 'Đã xác nhận xuất kho.';
+  // WMS đang trả cả ISO và `YYYY-MM-DD HH:mm:ss+00`; thay khoảng trắng để
+  // máy web/Android parse thống nhất. Nếu dữ liệu cũ không parse được thì giữ
+  // nguyên, không tự bịa thời điểm lịch sử.
+  const date = new Date(value.replace(' ', 'T'));
+  if (!Number.isFinite(date.getTime())) return 'Đã xuất ' + value;
+  return (
+    'Đã xuất ' +
+    date.toLocaleString('vi-VN', {
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+    })
+  );
 }
 
 function statusTone(

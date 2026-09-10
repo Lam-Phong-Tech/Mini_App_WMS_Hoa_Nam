@@ -5,20 +5,10 @@
  *
  * ## Nguồn các chỉ số
  *
- * Mini App gốc lấy tối đa 50 phiếu nhập, rồi phân loại trạng thái để hiện cả
- * *Chờ duyệt* và *Đã duyệt hôm nay*. Bản native trước đây chỉ gọi danh sách
- * `WAITING_APPROVAL`; vì vậy ô thứ hai phải hiện `—`, dù dữ liệu đã có trong
- * WMS. Lấy một danh sách chung cũng tránh hai kết quả lệch thời điểm.
- *
- * ## 🔴 V-01 — và vì sao Trang chủ KHÔNG phải chỗ sai
- *
- * Khảo sát thấy Trang chủ ghi *"Chờ duyệt: 5"* trong khi màn Duyệt phiếu ghi
- * *"0 phiếu chờ duyệt"* ([04-screen-survey.md §4](../../../../../docs/migration/04-screen-survey.md)).
- * Đối chiếu log mạng thì rõ nguyên nhân: hai màn **không** đọc lệch nhau — màn
- * Duyệt phiếu chỉ **chưa nạp**, vì nó đòi bấm *"Đồng bộ WMS"* thủ công (V-02).
- *
- * ⇒ Sửa đúng chỗ là cho màn Duyệt phiếu **tự nạp** (thuộc đợt 5), không phải
- * đổi Trang chủ. Ghi lại đây để lần sau không ai "sửa" nhầm màn.
+ * *Chờ duyệt* luôn lấy từ cùng hai truy vấn hàng đợi với màn Duyệt phiếu:
+ * phiếu nhập `WAITING_APPROVAL` và phiếu xuất do WMS xác nhận sẵn sàng. Không
+ * suy ra từ `DRAFT`/`SCANNING` của trang lịch sử, vì các trạng thái đó chưa
+ * phải lúc nào cũng có thể duyệt/Post.
  */
 
 import { useCallback, useEffect, useState } from 'react';
@@ -26,20 +16,16 @@ import { toAppError, type AppError } from '../../errors/AppError';
 import {
   WMS_READ_PATHS,
   fetchInboundDocuments,
+  fetchOutboundDocuments,
 } from '../../services/wms/queries';
 import type { InboundDocument } from '../../services/wms/types';
+import {
+  approvalQueueQuery,
+  approvalQueueTotal,
+} from '../approvals/approvalQueue';
 
 /** Trạng thái chờ duyệt giống Mini App nguồn. */
 export const STATUS_WAITING_APPROVAL = 'WAITING_APPROVAL';
-export const PENDING_DASHBOARD_STATUSES = new Set([
-  'DRAFT',
-  'SCANNING',
-  'READY_TO_ISSUE',
-  'WAITING_APPROVAL',
-  'PENDING_APPROVAL',
-  'PENDING',
-  'SUBMITTED',
-]);
 export const APPROVED_DASHBOARD_STATUSES = new Set([
   'POSTED',
   'APPROVED',
@@ -74,7 +60,11 @@ export interface HomeState {
 }
 
 export interface UseHomeSummaryDeps {
+  /** Snapshot cho danh sách "Sản phẩm đã duyệt" ở cuối Trang chủ. */
   readonly fetchDocuments?: typeof fetchInboundDocuments;
+  /** Hai nguồn này phải giống hệt nguồn màn Duyệt phiếu. */
+  readonly fetchInboundPending?: typeof fetchInboundDocuments;
+  readonly fetchOutboundPending?: typeof fetchOutboundDocuments;
 }
 
 const EMPTY: HomeSummary = { recent: [] };
@@ -83,6 +73,8 @@ export function useHomeSummary(deps: UseHomeSummaryDeps = {}): HomeState & {
   reload: () => void;
 } {
   const fetchDocuments = deps.fetchDocuments ?? fetchInboundDocuments;
+  const fetchInboundPending = deps.fetchInboundPending ?? fetchInboundDocuments;
+  const fetchOutboundPending = deps.fetchOutboundPending ?? fetchOutboundDocuments;
 
   const [state, setState] = useState<HomeState>({
     phase: 'loading',
@@ -99,18 +91,23 @@ export function useHomeSummary(deps: UseHomeSummaryDeps = {}): HomeState & {
       }));
 
       try {
-        // Cùng một snapshot cho cả hai KPI, đúng Mini App nguồn. Lấy 50 là
-        // giới hạn của dashboard web, không tải toàn bộ lịch sử về PDA.
-        const recent = await fetchDocuments({ query: { per_page: 50 } });
+        // `recent` chỉ phục vụ danh sách cuối Trang chủ. Số *Chờ duyệt* phải
+        // đọc chính hai hàng đợi mà màn Duyệt hiển thị — trước đây nó đếm nhầm
+        // cả DRAFT/SCANNING từ snapshot nhập, nên có thể lệch với Duyệt phiếu.
+        const [recent, inboundQueue, outboundQueue] = await Promise.all([
+          fetchDocuments({ query: { per_page: 50 } }),
+          fetchInboundPending({ query: approvalQueueQuery('inbound') }),
+          fetchOutboundPending({ query: approvalQueueQuery('outbound') }),
+        ]);
 
         setState({
           phase: 'ready',
           refreshing: false,
           loadedAt: new Date(),
           summary: {
-            pendingApproval: recent.items.filter(document =>
-              hasStatus(document, PENDING_DASHBOARD_STATUSES),
-            ).length,
+            pendingApproval:
+              approvalQueueTotal(inboundQueue.items.length) +
+              approvalQueueTotal(outboundQueue.items.length),
             approvedCount: recent.items.filter(document =>
               hasStatus(document, APPROVED_DASHBOARD_STATUSES),
             ).length,
@@ -126,7 +123,7 @@ export function useHomeSummary(deps: UseHomeSummaryDeps = {}): HomeState & {
         });
       }
     },
-    [fetchDocuments],
+    [fetchDocuments, fetchInboundPending, fetchOutboundPending],
   );
 
   useEffect(() => {

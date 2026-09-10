@@ -188,6 +188,12 @@ export function nextStatuses(current: string): readonly WarrantyStatus[] {
   return isWarrantyStatus(upper) ? WARRANTY_TRANSITIONS[upper] : [];
 }
 
+/** Chỉ hai bước kỹ thuật đang mở được phép lấy linh kiện từ kho. */
+export function canIssueWarrantyComponents(status?: string): boolean {
+  const normalized = (status ?? '').trim().toUpperCase();
+  return normalized === 'CHECKING' || normalized === 'REPAIRING';
+}
+
 export function canTransition(current: string, target: string): boolean {
   return nextStatuses(current).includes(target.toUpperCase() as WarrantyStatus);
 }

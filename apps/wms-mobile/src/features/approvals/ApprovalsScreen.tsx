@@ -25,10 +25,6 @@ import {
   fetchOutboundDocument,
   fetchOutboundDocuments,
 } from '../../services/wms/queries';
-import {
-  INBOUND_PENDING_QUERY,
-  OUTBOUND_READY_QUERY,
-} from '../../services/wms/documentStatus';
 import { postReceipt } from '../../services/wms/inboundWrite';
 import { postIssue } from '../../services/wms/outboundWrite';
 import type {
@@ -37,8 +33,12 @@ import type {
 } from '../../services/wms/types';
 import { postReceiptIdempotencyKey } from './usePostReceipt';
 import { postIssueIdempotencyKey } from './usePostIssue';
+import {
+  APPROVAL_QUEUE_PAGE_SIZE,
+  approvalQueueQuery,
+  approvalQueueTotal,
+} from './approvalQueue';
 
-const APPROVAL_PAGE_SIZE = 10;
 const APPROVAL_CACHE_TTL_MS = 10_000;
 
 const styles = StyleSheet.create({
@@ -104,6 +104,7 @@ type SelectionByTab = Record<ApprovalTab, readonly string[]>;
 
 const EMPTY_DOCUMENTS: DocumentsByTab = { inbound: [], outbound: [] };
 const FIRST_PAGE: NumberByTab = { inbound: 1, outbound: 1 };
+const EMPTY_TOTALS: NumberByTab = { inbound: 0, outbound: 0 };
 const NO_MORE: BoolByTab = { inbound: false, outbound: false };
 
 export interface ApprovalsScreenProps {
@@ -130,9 +131,12 @@ export function ApprovalsScreen({
 }: ApprovalsScreenProps): React.ReactElement {
   const theme = useTheme();
   const [tab, setTab] = useState<ApprovalTab>('inbound');
-  const [filter, setFilter] = useState<ApprovalFilter>('READY');
+  // Mở mặc định Tất cả để người dùng luôn thấy danh sách thực tế của hàng đợi;
+  // các phiếu chưa đủ hàng vẫn ở đây với nhãn "Cần xử lý", không bị giấu đi.
+  const [filter, setFilter] = useState<ApprovalFilter>('ALL');
   const [documentsByTab, setDocumentsByTab] =
     useState<DocumentsByTab>(EMPTY_DOCUMENTS);
+  const [totalByTab, setTotalByTab] = useState<NumberByTab>(EMPTY_TOTALS);
   const [pageByTab, setPageByTab] = useState<NumberByTab>(FIRST_PAGE);
   const [hasMoreByTab, setHasMoreByTab] = useState<BoolByTab>(NO_MORE);
   const [phase, setPhase] = useState<'loading' | 'ready' | 'error'>('loading');
@@ -146,11 +150,15 @@ export function ApprovalsScreen({
   const [approveError, setApproveError] = useState<string | undefined>();
   const [approveSuccess, setApproveSuccess] = useState<string | undefined>();
   const loadedAt = useRef<Partial<Record<ApprovalTab, number>>>({});
+  // `load` không được phụ thuộc trực tiếp state danh sách: nếu không mỗi lần
+  // nhận trang nhập lại tạo callback mới và effect sẽ đồng bộ lặp cả hai API.
+  const documentsByTabRef = useRef<DocumentsByTab>(EMPTY_DOCUMENTS);
   // `isApproving` chỉ đổi sau render. Ref này chặn ngay cú chạm đúp vào nút
   // duyệt, tránh hai lệnh Post cùng một phiếu và các 409 xung đột không cần có.
   const approvingRef = useRef(false);
 
   const documents = documentsByTab[tab];
+  const totalPendingDocuments = totalByTab.inbound + totalByTab.outbound;
   const rows = useMemo(
     () => documents.map(document => ({ document, ready: isReady(tab, document) })),
     [documents, tab],
@@ -194,30 +202,27 @@ export function ApprovalsScreen({
         const page =
           which === 'inbound'
             ? await fetchInbound({
-                query: {
-                  ...INBOUND_PENDING_QUERY,
-                  page: targetPage,
-                  per_page: APPROVAL_PAGE_SIZE,
-                },
+                query: approvalQueueQuery('inbound', targetPage),
               })
             : await fetchOutbound({
-                query: {
-                  ...OUTBOUND_READY_QUERY,
-                  page: targetPage,
-                  per_page: APPROVAL_PAGE_SIZE,
-                },
+                query: approvalQueueQuery('outbound', targetPage),
               });
         const incoming = page.items as readonly AnyDocument[];
         const next = options.append
-          ? dedupeDocuments([...documentsByTab[which], ...incoming])
+          ? dedupeDocuments([...documentsByTabRef.current[which], ...incoming])
           : incoming;
+        documentsByTabRef.current = { ...documentsByTabRef.current, [which]: next };
         setDocumentsByTab(current => ({ ...current, [which]: next }));
+        setTotalByTab(current => ({
+          ...current,
+          [which]: approvalQueueTotal(next.length),
+        }));
         setPageByTab(current => ({ ...current, [which]: targetPage }));
         setHasMoreByTab(current => ({
           ...current,
-          // Mini App coi đủ 10 phần tử là còn trang sau, không tin một meta
-          // có thể thuộc tập lọc khác.
-          [which]: page.items.length >= APPROVAL_PAGE_SIZE,
+          // `meta.total` hiện không cùng tập lọc với data ở mọi backend; chỉ
+          // biết còn trang khi trang vừa nhận đã đầy.
+          [which]: page.items.length >= APPROVAL_QUEUE_PAGE_SIZE,
         }));
         loadedAt.current[which] = Date.now();
         setPhase('ready');
@@ -226,12 +231,15 @@ export function ApprovalsScreen({
         setPhase('error');
       }
     },
-    [documentsByTab, fetchInbound, fetchOutbound],
+    [fetchInbound, fetchOutbound],
   );
 
   useEffect(() => {
-    load(tab).catch(() => undefined);
-  }, [load, tab]);
+    // Nạp đồng thời cả hai nguồn ngay khi vào màn. Nhờ đó badge và danh sách
+    // phản ánh cùng một hàng đợi với Trang chủ, không còn phải đổi tab mới biết
+    // số phiếu xuất đang chờ duyệt.
+    Promise.all([load('inbound'), load('outbound')]).catch(() => undefined);
+  }, [load]);
 
   const selectAllReady = useCallback(() => {
     setSelectedByTab(current => ({
@@ -278,9 +286,17 @@ export function ApprovalsScreen({
           );
         }
         approved += 1;
-        setDocumentsByTab(current => ({
+        setDocumentsByTab(current => {
+          const next = {
+            ...current,
+            [tab]: current[tab].filter(item => item.id !== document.id),
+          };
+          documentsByTabRef.current = next;
+          return next;
+        });
+        setTotalByTab(current => ({
           ...current,
-          [tab]: current[tab].filter(item => item.id !== document.id),
+          [tab]: Math.max(0, current[tab] - 1),
         }));
         setSelectedByTab(current => ({
           ...current,
@@ -322,13 +338,13 @@ export function ApprovalsScreen({
     <Page title="Duyệt phiếu" eyebrow="Theo phiếu" scroll>
       <FilterChipRow
         chips={[
-          { key: 'inbound', label: 'Phiếu nhập', count: documentsByTab.inbound.length },
-          { key: 'outbound', label: 'Phiếu xuất', count: documentsByTab.outbound.length },
+          { key: 'inbound', label: 'Phiếu nhập', count: totalByTab.inbound },
+          { key: 'outbound', label: 'Phiếu xuất', count: totalByTab.outbound },
         ]}
         activeKey={tab}
         onSelect={key => {
           setTab(key as ApprovalTab);
-          setFilter('READY');
+          setFilter('ALL');
         }}
       />
 
@@ -344,12 +360,15 @@ export function ApprovalsScreen({
           variant="secondary"
           loading={phase === 'loading'}
           onPress={() => {
-            loadedAt.current[tab] = undefined;
-            load(tab, { force: true }).catch(() => undefined);
+            loadedAt.current = {};
+            Promise.all([
+              load('inbound', { force: true }),
+              load('outbound', { force: true }),
+            ]).catch(() => undefined);
           }}
         />
         <Text variant="caption" tone="muted">
-          {String(documents.length) + ' phiếu chờ duyệt'}
+          {String(totalPendingDocuments) + ' phiếu chờ duyệt'}
         </Text>
       </Box>
 
@@ -367,7 +386,11 @@ export function ApprovalsScreen({
             label="Thử lại"
             variant="secondary"
             onPress={() => {
-              load(tab, { force: true }).catch(() => undefined);
+              loadedAt.current = {};
+              Promise.all([
+                load('inbound', { force: true }),
+                load('outbound', { force: true }),
+              ]).catch(() => undefined);
             }}
           />
         </Banner>

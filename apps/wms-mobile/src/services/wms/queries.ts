@@ -48,6 +48,13 @@ export const WMS_READ_PATHS = {
   outboundDocuments: '/api/v1/mini-app/outbound-documents',
   warrantyCases: '/api/v1/mini-app/warranty-cases',
   /**
+   * Chứng từ xuất linh kiện gắn với `warranty_case_id`.
+   *
+   * Không nằm trong payload hồ sơ bảo hành; màn chi tiết phải đọc riêng để
+   * lưu vết linh kiện đã dùng cho từng máy.
+   */
+  componentIssueDocuments: '/api/v1/component-issue-documents',
+  /**
    * Tải nội dung một file đính kèm. Hậu tố `/download` là **bắt buộc** — xem
    * chú thích ở trên.
    */
