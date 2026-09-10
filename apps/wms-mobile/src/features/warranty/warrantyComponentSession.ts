@@ -23,6 +23,11 @@ export interface WarrantyComponentSession {
   readonly warehouseId?: string;
   readonly documentId?: string;
   readonly version?: string;
+  /**
+   * Được ghi ngay sau khi mã linh kiện/hộp được resolver nhận diện thành công.
+   * Mốc này độc lập với số dòng nháp để không thể đổi kho bằng cách xóa dòng.
+   */
+  readonly warehouseLocked?: boolean;
   /** Các mã đã nhận phản hồi scan thành công từ WMS. */
   readonly scannedCodeKeys: readonly string[];
   /** Mã đang gửi lúc app bị đóng; phải đối chiếu lại chi tiết phiếu trước retry. */
@@ -65,6 +70,20 @@ export function loadWarrantyComponentSession(
 
 export function saveWarrantyComponentSession(session: WarrantyComponentSession): void {
   getAppStorage().setObject(keyFor(session.caseId), session);
+}
+
+/**
+ * Tương thích phiên cũ: trước khi có cờ riêng, đã có dòng nháp hoặc phiếu WMS
+ * vẫn đủ bằng chứng rằng mã đã được đối soát theo một kho và không được đổi.
+ */
+export function isWarrantyComponentWarehouseLocked(
+  session: WarrantyComponentSession | undefined,
+): boolean {
+  return (
+    session?.warehouseLocked === true ||
+    session?.draft.items.length !== 0 ||
+    session?.documentId !== undefined
+  );
 }
 
 /** Chỉ gọi sau khi WMS xác nhận Post thành công hoặc nhân viên chủ động huỷ phiếu. */

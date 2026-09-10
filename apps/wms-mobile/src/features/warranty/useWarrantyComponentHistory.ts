@@ -48,15 +48,29 @@ export function useWarrantyComponentHistory(
   });
   const pageRef = useRef(1);
   const loadingMoreRef = useRef(false);
+  const requestGenerationRef = useRef(0);
+  const latestCaseRef = useRef(warrantyCaseId);
+  const latestLoadRef = useRef(load);
+
+  // Đổi hồ sơ hoặc hàm loader là một thế hệ dữ liệu mới. Làm điều này trong
+  // render để response cũ không kịp nối dữ liệu vào một khung hình mới trước
+  // khi effect của case mới được chạy.
+  if (latestCaseRef.current !== warrantyCaseId || latestLoadRef.current !== load) {
+    latestCaseRef.current = warrantyCaseId;
+    latestLoadRef.current = load;
+    requestGenerationRef.current += 1;
+  }
 
   useEffect(() => {
     let active = true;
+    const generation = requestGenerationRef.current + 1;
+    requestGenerationRef.current = generation;
     pageRef.current = 1;
     loadingMoreRef.current = false;
     setState({ documents: [], loading: true, loadingMore: false, hasMore: false });
     load(warrantyCaseId, { query: { page: 1 } })
       .then(page => {
-        if (active) {
+        if (active && requestGenerationRef.current === generation) {
           pageRef.current = page.page;
           setState({
             documents: dedupe(page.documents),
@@ -67,7 +81,7 @@ export function useWarrantyComponentHistory(
         }
       })
       .catch(cause => {
-        if (active) {
+        if (active && requestGenerationRef.current === generation) {
           setState({
             documents: [],
             loading: false,
@@ -84,14 +98,20 @@ export function useWarrantyComponentHistory(
     };
   }, [load, revision, warrantyCaseId]);
 
-  const refresh = useCallback(() => setRevision(value => value + 1), []);
+  const refresh = useCallback(() => {
+    // Vô hiệu response cũ ngay lúc người dùng bấm, không chờ effect chạy.
+    requestGenerationRef.current += 1;
+    setRevision(value => value + 1);
+  }, []);
   const loadMore = useCallback(() => {
     if (loadingMoreRef.current || state.loading || !state.hasMore) return;
+    const generation = requestGenerationRef.current;
     loadingMoreRef.current = true;
     setState(current => ({ ...current, loadingMore: true, error: undefined }));
     const nextPage = pageRef.current + 1;
     load(warrantyCaseId, { query: { page: nextPage } })
       .then(page => {
+        if (requestGenerationRef.current !== generation) return;
         pageRef.current = page.page;
         setState(current => ({
           documents: dedupe([...current.documents, ...page.documents]),
@@ -101,13 +121,18 @@ export function useWarrantyComponentHistory(
         }));
       })
       .catch(cause => {
+        if (requestGenerationRef.current !== generation) return;
         setState(current => ({
           ...current,
           loadingMore: false,
           error: 'Không tải thêm được lịch sử linh kiện: ' + messageForUser(toAppError(cause)),
         }));
       })
-      .finally(() => { loadingMoreRef.current = false; });
+      .finally(() => {
+        if (requestGenerationRef.current === generation) {
+          loadingMoreRef.current = false;
+        }
+      });
   }, [load, state.hasMore, state.loading, warrantyCaseId]);
   return { ...state, refresh, loadMore };
 }

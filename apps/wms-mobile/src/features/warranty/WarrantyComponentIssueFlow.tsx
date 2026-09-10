@@ -37,6 +37,7 @@ import {
 import { resolveWarrantyComponentSku } from './warrantyComponentSkuLookup';
 import {
   clearWarrantyComponentSession,
+  isWarrantyComponentWarehouseLocked,
   loadWarrantyComponentSession,
   saveWarrantyComponentSession,
   type WarrantyComponentSessionStage,
@@ -93,6 +94,9 @@ export function WarrantyComponentIssueFlow({
   const [warehouseId, setWarehouseId] = useState<string | undefined>(
     recoveredSession?.warehouseId,
   );
+  const [warehouseLocked, setWarehouseLocked] = useState(() =>
+    isWarrantyComponentWarehouseLocked(recoveredSession),
+  );
   const [documentId, setDocumentId] = useState<string | undefined>(
     recoveredSession?.documentId,
   );
@@ -135,6 +139,7 @@ export function WarrantyComponentIssueFlow({
       caseId: warrantyCase.warranty_case_id,
       draft,
       warehouseId,
+      warehouseLocked,
       documentId,
       version: documentVersion,
       scannedCodeKeys,
@@ -151,6 +156,36 @@ export function WarrantyComponentIssueFlow({
     scannedCodeKeys,
     sessionStage,
     warehouseId,
+    warehouseLocked,
+    warrantyCase.warranty_case_id,
+  ]);
+
+  const lockWarehouseAfterSuccessfulScan = useCallback(() => {
+    if (warehouseLocked) return;
+    // Ghi đồng bộ cùng mốc scan thành công, không chờ render/effect tiếp theo.
+    // Nếu app bị đóng ngay sau resolver, kho vẫn không thể bị đổi khi mở lại.
+    saveWarrantyComponentSession({
+      caseId: warrantyCase.warranty_case_id,
+      draft,
+      warehouseId,
+      warehouseLocked: true,
+      documentId,
+      version: documentVersion,
+      scannedCodeKeys,
+      pendingCodeKey,
+      stage: sessionStage,
+      updatedAt: new Date().toISOString(),
+    });
+    setWarehouseLocked(true);
+  }, [
+    documentId,
+    documentVersion,
+    draft,
+    pendingCodeKey,
+    scannedCodeKeys,
+    sessionStage,
+    warehouseId,
+    warehouseLocked,
     warrantyCase.warranty_case_id,
   ]);
 
@@ -176,6 +211,7 @@ export function WarrantyComponentIssueFlow({
         warehouseId,
         caseId: warrantyCase.warranty_case_id,
       });
+      lockWarehouseAfterSuccessfulScan();
       if (sku.requiresQuantity) {
         setPendingBox({ code: rawCode.trim(), sku });
         setBoxQuantity('');
@@ -193,7 +229,7 @@ export function WarrantyComponentIssueFlow({
         message: 'Đã thêm linh kiện có mã, số lượng 1.',
       };
     },
-    [draft, warehouseId],
+    [draft, lockWarehouseAfterSuccessfulScan, warehouseId, warrantyCase.warranty_case_id],
   );
 
   const dismissBox = useCallback(() => {
@@ -238,6 +274,7 @@ export function WarrantyComponentIssueFlow({
       caseId: warrantyCase.warranty_case_id,
       draft,
       warehouseId,
+      warehouseLocked,
       documentId,
       version: documentVersion,
       scannedCodeKeys,
@@ -280,6 +317,7 @@ export function WarrantyComponentIssueFlow({
             caseId: warrantyCase.warranty_case_id,
             draft,
             warehouseId,
+            warehouseLocked,
             documentId: progress.documentId,
             version: progress.version,
             scannedCodeKeys: progress.completedCodeKeys,
@@ -311,7 +349,8 @@ export function WarrantyComponentIssueFlow({
     scannedCodeKeys,
     submitComponents,
     warehouseId,
-    warrantyCase,
+    warehouseLocked,
+    warrantyCase.warranty_case_id,
   ]);
 
   if (!canIssueWarrantyComponents(warrantyCase.status)) {
@@ -470,9 +509,9 @@ export function WarrantyComponentIssueFlow({
       <Select
         label="Kho xuất linh kiện*"
         placeholder="Chọn kho xuất"
-        disabled={warehouses.phase === 'loading' || draft.items.length > 0}
+        disabled={warehouses.phase === 'loading' || warehouseLocked}
         disabledPlaceholder={
-          draft.items.length > 0
+          warehouseLocked
             ? 'Kho đã được khóa sau khi quét mã đầu tiên'
             : 'Đang tải danh sách kho…'
         }
@@ -488,7 +527,9 @@ export function WarrantyComponentIssueFlow({
               : undefined
             : messageForUser(warehouses.error)
         }
-        onChange={setWarehouseId}
+        onChange={nextWarehouseId => {
+          if (!warehouseLocked) setWarehouseId(nextWarehouseId);
+        }}
         sheetTitle="Chọn kho xuất linh kiện"
       />
       {warehouses.phase === 'error' ? (

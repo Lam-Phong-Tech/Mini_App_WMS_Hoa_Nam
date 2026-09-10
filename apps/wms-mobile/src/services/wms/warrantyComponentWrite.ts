@@ -506,6 +506,7 @@ export async function issueWarrantyComponents(
   const completed = new Set(
     (options.completedCodeKeys ?? []).map(code => codeKey(code)),
   );
+  const pendingCodeKey = options.pendingCodeKey?.trim();
   let created: ComponentIssueDocument | undefined;
   let id = options.existingDocumentId?.trim();
   if (id === undefined || id === '') {
@@ -515,6 +516,20 @@ export async function issueWarrantyComponents(
   }
   if (id === undefined) {
     throw new AppError({ kind: 'parse', message: 'Không nhận được id phiếu linh kiện.' });
+  }
+
+  // Create có thể chỉ trả id rồi GET chi tiết mới lỗi. Lưu id ngay tại đây để
+  // lần mở lại tiếp tục đúng phiếu, tuyệt đối không Create thêm phiếu khác.
+  // Đồng thời giữ marker scan dở: callback này không được biến một mã chưa
+  // đối chiếu thành mã "an toàn" chỉ vì document vừa được tải lại.
+  if (created !== undefined) {
+    options.onProgress?.({
+      stage: 'created',
+      documentId: id,
+      version: documentVersion(created),
+      completedCodeKeys: Array.from(completed),
+      pendingCodeKey,
+    });
   }
 
   let current = await freshDocument(created, id, loadDocument);
@@ -531,10 +546,10 @@ export async function issueWarrantyComponents(
     documentId: id,
     version: documentVersion(current),
     completedCodeKeys: Array.from(completed),
+    pendingCodeKey,
   });
 
   const evidence = scannedCodeKeys(current);
-  const pendingCodeKey = options.pendingCodeKey?.trim();
   if (
     pendingCodeKey !== undefined &&
     pendingCodeKey !== '' &&

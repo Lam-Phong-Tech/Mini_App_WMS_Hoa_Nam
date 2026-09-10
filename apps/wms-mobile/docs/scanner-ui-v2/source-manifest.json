@@ -1,0 +1,54 @@
+{
+  "schema_version": 1,
+  "captured_at": "2026-09-10",
+  "app": {
+    "repository": "https://github.com/Lam-Phong-Tech/Mini_App_WMS_Hoa_Nam",
+    "branch_at_capture": "codex/gate-01-inventory",
+    "base_branch": "main",
+    "revision": "7f4d4006608009c400a4d6652200db030677db86",
+    "app_root": "apps/wms-mobile",
+    "agents_file": null,
+    "working_tree_before_artifacts": "clean"
+  },
+  "design": {
+    "repository": "https://github.com/Duc-Nguyen98/ScannerHNApp",
+    "revision": "7d925b15017ab315e0ae558bf3bdf29ea356f3e0",
+    "gallery": "https://duc-nguyen98.github.io/ScannerHNApp/",
+    "gallery_manifest": "docs/index.html",
+    "asset_manifest": "assets/scanner-approved/ASSET_MANIFEST.json",
+    "dialog_board_selected": "design/01_Main/BOARDS/01_UPDATED_BOARDS/01_dialog_header_aligned_v2.png",
+    "dialog_board_rejected": "design/01_Main/BOARDS/01_UPDATED_BOARDS/01_dialog_fixed.png",
+    "handoff_found": "handoff/dialog-header-color-v2/README.md",
+    "handoff_not_found": "03_HANDOFF/"
+  },
+  "input_prompt": {
+    "path": "C:/Users/TAN MIE/Downloads/01_Kiem_ke_va_chot_Gate.md",
+    "sha256": "3cdacd25b95768420ff4f1c93ace34e853788185015ec35ee0b49d458114db5a"
+  },
+  "boards": [
+    { "id": "L01", "path": "design/01_Main/BOARDS/00_LOCKED_ORIGINALS/01_Dang_nhap_va_Xac_nhan_phien_ORIGINAL.jpg", "width": 1448, "height": 1086, "sha256": "260e483a6447af2fb84cd5c1a5c5f5d75bd1a756ec6e37d69e0743aea5bd5853" },
+    { "id": "L02", "path": "design/01_Main/BOARDS/00_LOCKED_ORIGINALS/02_Trang_chu_ORIGINAL.jpg", "width": 1536, "height": 1024, "sha256": "ed0d7b90fdb66778cab0ff53b9537785e55ec60227d7666e5d7693f42eb15ef8" },
+    { "id": "U01", "path": "design/01_Main/BOARDS/01_UPDATED_BOARDS/01_dialog_header_aligned_v2.png", "width": 1774, "height": 887, "sha256": "a13e65f782ac8f64048a1a3ea2dfe615a62cdb9c99076d8ba5cdefaeb0901caa" },
+    { "id": "U02", "path": "design/01_Main/BOARDS/01_UPDATED_BOARDS/02_nhap_kho.png", "width": 1536, "height": 1024, "sha256": "b0f13c4aff332518a6d5348eac6452dd8e4aa9bf98347568df9e527073c3a67f" },
+    { "id": "U03", "path": "design/01_Main/BOARDS/01_UPDATED_BOARDS/03_xuat_kho.png", "width": 1536, "height": 1024, "sha256": "c27ce612b8b1cffe997c28d6beceb0246950707d03a03c5da4cc795419d5e0e9" },
+    { "id": "U04", "path": "design/01_Main/BOARDS/01_UPDATED_BOARDS/04_tra_cuu.png", "width": 1536, "height": 1024, "sha256": "9e501dee3a5c7e014336233d9978ff776bec12ea2bc707944ac132dfda2f973b" },
+    { "id": "U05", "path": "design/01_Main/BOARDS/01_UPDATED_BOARDS/05_nfc.png", "width": 1672, "height": 941, "sha256": "63f4b3876547ffec943f0e8f369eb22b48ba715ec38b14c51030a150b19a3b65" },
+    { "id": "U06", "path": "design/01_Main/BOARDS/01_UPDATED_BOARDS/06_lich_su.png", "width": 1672, "height": 941, "sha256": "78aa9384caf3f2ed600ead4f1c8518a8c254fccaadc96d1e5c8483d5f4c67aa2" },
+    { "id": "U07", "path": "design/01_Main/BOARDS/01_UPDATED_BOARDS/07_bao_hanh.png", "width": 1672, "height": 941, "sha256": "2ca3af4c77313c14eb709436ebd4dc98f74461c8890b1a8dc56db622bab57608" },
+    { "id": "U08", "path": "design/01_Main/BOARDS/01_UPDATED_BOARDS/08_ca_nhan.png", "width": 1671, "height": 941, "sha256": "751f5f0d7b840d3a75e98aca9e52a9bdfedb2ae0a3d275fcf20df7d021affee4" },
+    { "id": "U09", "path": "design/01_Main/BOARDS/01_UPDATED_BOARDS/09_bao_mat.png", "width": 1536, "height": 1024, "sha256": "f36a6d757793b0c3a4e059e61e9c023c00c88f71df1c12dbadaf43ba6c663272" },
+    { "id": "U10", "path": "design/01_Main/BOARDS/01_UPDATED_BOARDS/10_chung_tu.png", "width": 1536, "height": 1024, "sha256": "bb73f81c628986d6a763d4a846f19229e60898ef016eb02022926603bea776ad" },
+    { "id": "N11", "path": "design/01_Main/BOARDS/02_NEW_BOARDS/11_thong_bao_phe_duyet.png", "width": 1536, "height": 1024, "sha256": "34490e3317a14b17e9ad43772796325745bd278f7402fb68e4282f917f144f69" },
+    { "id": "N12", "path": "design/01_Main/BOARDS/02_NEW_BOARDS/12_khoi_phuc_va_ca_fixed.png", "width": 1536, "height": 1024, "sha256": "b2d4e23679822a467d02b0eef67144e3eb040b78381e6d0b7fb1a53ef2f9f649" },
+    { "id": "N13", "path": "design/01_Main/BOARDS/02_NEW_BOARDS/13_he_thong_fixed.png", "width": 1774, "height": 887, "sha256": "00ab6b9fb469305e206986afbcb78565d9eee72a57557989fbe864a374802d01" },
+    { "id": "N14", "path": "design/01_Main/BOARDS/02_NEW_BOARDS/14_du_lieu_quyet_loi_fixed.png", "width": 1536, "height": 1024, "sha256": "411441cd8eef6ed2ccfac459079870da00b610736b68cb0a3415ab2c86c3a8c8" },
+    { "id": "N15", "path": "design/01_Main/BOARDS/02_NEW_BOARDS/15_ngoai_le_quet_fixed.png", "width": 1536, "height": 1024, "sha256": "3bc6851e8ddeb494e1885a8e8683ba41327a8180880d2a11b74726a06f40b392" },
+    { "id": "N16", "path": "design/01_Main/BOARDS/02_NEW_BOARDS/16_dinh_kem_ban_giao_fixed.png", "width": 1536, "height": 1024, "sha256": "d224f33e82eab41f08b23fc092522181a5439e42b8d1901e0e483be4f95331ad" }
+  ],
+  "approved_assets": {
+    "manifest_release": "enhanced-11a32adc5521",
+    "manifest_sha256": "not-separately-captured; source file is pinned by design revision",
+    "scope": ["01_backgrounds", "02_people_staff", "03_overlays_gradients"],
+    "note": "The manifest says assets are user-supplied replacements and does not assert native-4K origin."
+  }
+}

@@ -1,0 +1,124 @@
+{
+  "schema_version": 1,
+  "stage": "GATE_01 — kiểm kê thiết kế, đối chiếu code và chốt điều kiện triển khai",
+  "status": "STALE",
+  "captured_at": "2026-09-10",
+  "base": {
+    "branch": "main",
+    "sha": "7f4d4006608009c400a4d6652200db030677db86"
+  },
+  "working_branch": "codex/gate-01-inventory",
+  "input_code_revision": "7f4d4006608009c400a4d6652200db030677db86",
+  "output_code_revision": "STALE: source has uncommitted fixes for R1-R4 after this Gate snapshot; Gate must be recaptured before it can be PASS or BLOCKED for the current tree.",
+  "code_fingerprint": {
+    "method": "git tree object for apps/wms-mobile/src; docs/scanner-ui-v2/evidence and gates excluded",
+    "input": "ebcd589eb0560aefac477ac5848c04c90eda0fbe",
+    "output": "STALE: not reused after post-Gate source edits"
+  },
+  "design": {
+    "repository": "https://github.com/Duc-Nguyen98/ScannerHNApp",
+    "sha": "7d925b15017ab315e0ae558bf3bdf29ea356f3e0",
+    "gallery": "https://duc-nguyen98.github.io/ScannerHNApp/"
+  },
+  "prompt": {
+    "path": "C:/Users/TAN MIE/Downloads/01_Kiem_ke_va_chot_Gate.md",
+    "sha256": "3cdacd25b95768420ff4f1c93ace34e853788185015ec35ee0b49d458114db5a"
+  },
+  "artifacts": {
+    "source_manifest": {
+      "path": "apps/wms-mobile/docs/scanner-ui-v2/source-manifest.json",
+      "sha256": "a5aa6aca9223173b9bd15d584fb60eb047601ae17f5b7027a02b5a875e1b006d"
+    },
+    "screen_map": {
+      "path": "apps/wms-mobile/docs/scanner-ui-v2/screen-map.md",
+      "sha256": "b7f52dec51f7e0a07616d4616cd30184a8c9fd46df3280d045e195072390975d"
+    },
+    "spec": {
+      "path": "apps/wms-mobile/docs/scanner-ui-v2/spec.md",
+      "sha256": "a8855702bdb55c6ca8ea909dc0d378b7ab7ec072e828f7b6e222e7efe4976ef6"
+    },
+    "decisions": {
+      "path": "apps/wms-mobile/docs/scanner-ui-v2/decisions.md",
+      "sha256": "4096dba8d26d53ee43f1761152bc4f70b2ecf4d9e6845de37711127b17971d2c"
+    },
+    "blockers": {
+      "path": "apps/wms-mobile/docs/scanner-ui-v2/blockers.md",
+      "sha256": "7099915e8863361b91ecb07f6e7288a6f9572dfdc0a67addf16a5bbd8568cafb"
+    },
+    "baseline": {
+      "path": "apps/wms-mobile/docs/scanner-ui-v2/evidence/baseline.md",
+      "sha256": "701ee3cfd038258ccfbc1bf6e229d077abf981b309909bf0da3b01856f10c5b6"
+    }
+  },
+  "previous_gate_hash": null,
+  "files_changed": [
+    "apps/wms-mobile/docs/scanner-ui-v2/source-manifest.json",
+    "apps/wms-mobile/docs/scanner-ui-v2/screen-map.md",
+    "apps/wms-mobile/docs/scanner-ui-v2/spec.md",
+    "apps/wms-mobile/docs/scanner-ui-v2/decisions.md",
+    "apps/wms-mobile/docs/scanner-ui-v2/blockers.md",
+    "apps/wms-mobile/docs/scanner-ui-v2/evidence/baseline.md",
+    "apps/wms-mobile/docs/scanner-ui-v2/gates/GATE_01.json"
+  ],
+  "checks": [
+    {
+      "command": "git ls-remote https://github.com/Duc-Nguyen98/ScannerHNApp.git HEAD",
+      "environment": "Windows PowerShell, read-only remote query",
+      "exit_code": 0,
+      "log": "Returned 7d925b15017ab315e0ae558bf3bdf29ea356f3e0",
+      "evidence_hash": "a5aa6aca9223173b9bd15d584fb60eb047601ae17f5b7027a02b5a875e1b006d"
+    },
+    {
+      "command": "git ls-remote https://github.com/Lam-Phong-Tech/Mini_App_WMS_Hoa_Nam.git refs/heads/main",
+      "environment": "Windows PowerShell, read-only remote query",
+      "exit_code": 0,
+      "log": "Returned 7f4d4006608009c400a4d6652200db030677db86",
+      "evidence_hash": "a5aa6aca9223173b9bd15d584fb60eb047601ae17f5b7027a02b5a875e1b006d"
+    },
+    {
+      "command": "npm run typecheck",
+      "environment": "apps/wms-mobile, Windows PowerShell",
+      "exit_code": 0,
+      "log": "tsc --noEmit completed successfully",
+      "evidence_hash": "701ee3cfd038258ccfbc1bf6e229d077abf981b309909bf0da3b01856f10c5b6"
+    },
+    {
+      "command": "npm test -- --runInBand",
+      "environment": "apps/wms-mobile, Windows PowerShell",
+      "exit_code": 0,
+      "log": "31 suites / 856 tests passed; React act warnings observed",
+      "evidence_hash": "701ee3cfd038258ccfbc1bf6e229d077abf981b309909bf0da3b01856f10c5b6"
+    },
+    {
+      "command": "npm run lint",
+      "environment": "apps/wms-mobile, Windows PowerShell",
+      "exit_code": 1,
+      "log": "65 errors / 10,968 warnings; no --fix applied",
+      "evidence_hash": "701ee3cfd038258ccfbc1bf6e229d077abf981b309909bf0da3b01856f10c5b6"
+    },
+    {
+      "command": "npm run build:web",
+      "environment": "apps/wms-mobile, Windows PowerShell",
+      "exit_code": 0,
+      "log": "Vite build succeeded; bundle-size warning emitted",
+      "evidence_hash": "701ee3cfd038258ccfbc1bf6e229d077abf981b309909bf0da3b01856f10c5b6"
+    }
+  ],
+  "unmet_criteria": [
+    "Baseline npm run lint fails.",
+    "D01, D03, D04 and D05 do not have a real decision or test conditions.",
+    "No device camera/NFC/PDA, account/role, E2E, performance or visual-fidelity evidence."
+  ],
+  "blockers": ["STALE_SOURCE", "LINT", "D01", "D03", "D04", "D05"],
+  "confirmed_decisions": [
+    "D02: ordinary inbound/outbound waits for Web approval; component issue for warranty posts directly on Scanner."
+  ],
+  "open_questions": [
+    "D01: define the platform scope and adapters for SmoothUI, Motion, GSAP, Lenis, Locomotive Scroll and TanStack Virtual.",
+    "D03: identify supported contracts and scope for the board-proposed profile/security/shift/notification/handover features.",
+    "D04: provide or approve visual, asset, font, viewport and motion acceptance specification.",
+    "D05: provide test environment, account/role, hardware and performance conditions."
+  ],
+  "next_stage_allowed": false,
+  "next_stage": "Do not run Gate 02. Recapture Gate 01 against the current source, then resolve lint under explicit implementation scope and obtain D01/D03/D04/D05 confirmation."
+}

@@ -26,6 +26,20 @@ import {
 import { fetchPostedWarrantyComponentHistory } from '../src/services/wms/warrantyComponentRead';
 import type { ReadClient } from '../src/services/wms/readOnlyClient';
 import type { RequestOptions } from '../src/api/client';
+import {
+  isWarrantyComponentWarehouseLocked,
+  loadWarrantyComponentSession,
+  saveWarrantyComponentSession,
+} from '../src/features/warranty/warrantyComponentSession';
+import {
+  createMemoryBackend,
+  createStorage,
+  setAppStorageForTesting,
+} from '../src/storage/storage';
+
+beforeEach(() => {
+  setAppStorageForTesting(createStorage(createMemoryBackend()));
+});
 
 interface SentRequest {
   readonly path: string;
@@ -488,6 +502,103 @@ describe('API gốc xuất linh kiện bảo hành', () => {
     expect(sent[2]?.headers?.['If-Match']).toBe('8');
   });
 
+  it('giữ marker scan dở sau retry để không gửi scan lần hai khi chưa đối chiếu', async () => {
+    const progress: Array<{ pendingCodeKey?: string }> = [];
+    const input = {
+      caseId: 'case-1',
+      warehouseId: 'warehouse-1',
+      postIdempotencyKey: 'post-key',
+      items: [
+        { skuId: 'sku-component-a', codeValue: 'SERIAL-001', quantity: 1 },
+      ],
+    };
+    const loadDocument = async () => ({
+      id: DOCUMENT_ID,
+      version: 1,
+      lines: [LINES[0]],
+    });
+    const noWriteClient: WarrantyComponentWriteClient = {
+      request: async () => {
+        throw new Error('Không được scan/Create/Post khi marker chưa đối chiếu.');
+      },
+    };
+
+    await expect(
+      issueWarrantyComponents(
+        input,
+        {
+          existingDocumentId: DOCUMENT_ID,
+          pendingCodeKey: 'SERIAL-001',
+          loadDocument,
+          onProgress: value => progress.push(value),
+        },
+        noWriteClient,
+      ),
+    ).rejects.toMatchObject({ code: 'COMPONENT_SCAN_RECONCILIATION_REQUIRED' });
+    expect(progress.at(-1)?.pendingCodeKey).toBe('SERIAL-001');
+
+    await expect(
+      issueWarrantyComponents(
+        input,
+        {
+          existingDocumentId: DOCUMENT_ID,
+          pendingCodeKey: progress.at(-1)?.pendingCodeKey,
+          loadDocument,
+        },
+        noWriteClient,
+      ),
+    ).rejects.toMatchObject({ code: 'COMPONENT_SCAN_RECONCILIATION_REQUIRED' });
+  });
+
+  it('lưu id phiếu ngay sau Create trước khi GET chi tiết có thể lỗi', async () => {
+    const progress: Array<{ documentId?: string }> = [];
+    const { client, sent } = sequenceClient([{ data: { id: DOCUMENT_ID } }]);
+    const input = {
+      caseId: 'case-1',
+      warehouseId: 'warehouse-1',
+      postIdempotencyKey: 'post-key',
+      items: [
+        { skuId: 'sku-component-a', codeValue: 'SERIAL-001', quantity: 1 },
+      ],
+    };
+
+    await expect(
+      issueWarrantyComponents(
+        input,
+        {
+          loadDocument: async () => {
+            throw new Error('GET detail tạm thời lỗi');
+          },
+          onProgress: value => progress.push(value),
+        },
+        client,
+      ),
+    ).rejects.toThrow('GET detail tạm thời lỗi');
+    expect(sent).toHaveLength(1);
+    expect(progress.at(-1)?.documentId).toBe(DOCUMENT_ID);
+
+    const retryClient: WarrantyComponentWriteClient = {
+      request: async () => {
+        throw new Error('Retry không được Create phiếu mới.');
+      },
+    };
+    await expect(
+      issueWarrantyComponents(
+        input,
+        {
+          existingDocumentId: progress.at(-1)?.documentId,
+          loadDocument: async () => ({
+            id: DOCUMENT_ID,
+            version: 2,
+            status: 'POSTED',
+            lines: [LINES[0]],
+          }),
+        },
+        retryClient,
+      ),
+    ).resolves.toMatchObject({ documentId: DOCUMENT_ID });
+  });
+
   it('gate chỉ cho API gốc và chỉ Post mới được Idempotency-Key', () => {
     const createPath = '/api/v1/component-issue-documents';
     const resolvePath = COMPONENT_ISSUE_RESOLVE_CODE_PATH;
@@ -512,6 +623,42 @@ describe('API gốc xuất linh kiện bảo hành', () => {
         '/api/v1/mini-app/warranty-component-issues/case-1/scans',
       ),
     ).toBeUndefined();
+  });
+});
+
+describe('khóa kho của phiên linh kiện bảo hành', () => {
+  it('giữ mốc khóa riêng cả khi nhân viên đã xóa toàn bộ dòng nháp', () => {
+    const draft = createWarrantyComponentDraft('case-warehouse-lock', 'session-1');
+    saveWarrantyComponentSession({
+      caseId: draft.caseId,
+      draft,
+      warehouseId: 'warehouse-1',
+      warehouseLocked: true,
+      scannedCodeKeys: [],
+      stage: 'local',
+      updatedAt: '2026-09-10T00:00:00.000Z',
+    });
+
+    const reloaded = loadWarrantyComponentSession(draft.caseId);
+    expect(reloaded?.draft.items).toHaveLength(0);
+    expect(isWarrantyComponentWarehouseLocked(reloaded)).toBe(true);
+  });
+
+  it('khóa phiên cũ có dòng nháp hoặc document WMS để không mở lại đường đổi kho', () => {
+    const draftWithItem = addWarrantyComponent(
+      createWarrantyComponentDraft('case-legacy', 'session-1'),
+      'SERIAL-001',
+    );
+    expect(
+      isWarrantyComponentWarehouseLocked({
+        caseId: draftWithItem.caseId,
+        draft: draftWithItem,
+        warehouseId: 'warehouse-1',
+        scannedCodeKeys: [],
+        stage: 'scanning',
+        updatedAt: '2026-09-10T00:00:00.000Z',
+      }),
+    ).toBe(true);
   });
 });
 
