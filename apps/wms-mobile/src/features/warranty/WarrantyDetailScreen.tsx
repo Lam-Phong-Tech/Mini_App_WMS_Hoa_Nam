@@ -142,8 +142,11 @@ export interface WarrantyDetailScreenProps {
   /** Các phiếu linh kiện đã Post, được liên kết bằng warranty_case_id. */
   componentHistory?: readonly WarrantyComponentHistoryDocument[];
   componentHistoryLoading?: boolean;
+  componentHistoryLoadingMore?: boolean;
+  componentHistoryHasMore?: boolean;
   componentHistoryError?: string;
   onReloadComponentHistory?: () => void;
+  onLoadMoreComponentHistory?: () => void;
 }
 
 /**
@@ -175,8 +178,11 @@ export function WarrantyDetailScreen({
   onIssueComponents,
   componentHistory = [],
   componentHistoryLoading = false,
+  componentHistoryLoadingMore = false,
+  componentHistoryHasMore = false,
   componentHistoryError,
   onReloadComponentHistory,
+  onLoadMoreComponentHistory,
 }: WarrantyDetailScreenProps): React.ReactElement {
   const theme = useTheme();
   const [note, setNote] = useState('');
@@ -361,6 +367,16 @@ export function WarrantyDetailScreen({
             </Box>
           ))
         )}
+
+        {componentHistoryHasMore && onLoadMoreComponentHistory !== undefined ? (
+          <Button
+            label={componentHistoryLoadingMore ? 'Đang tải thêm…' : 'Tải thêm lịch sử'}
+            variant="secondary"
+            loading={componentHistoryLoadingMore}
+            disabled={componentHistoryLoadingMore}
+            onPress={onLoadMoreComponentHistory}
+          />
+        ) : null}
 
         {canIssueWarrantyComponents(warrantyCase.status) &&
         onIssueComponents !== undefined ? (

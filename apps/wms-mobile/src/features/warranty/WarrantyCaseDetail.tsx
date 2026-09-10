@@ -123,8 +123,11 @@ export function WarrantyCaseDetail({
       }
       componentHistory={componentHistory.documents}
       componentHistoryLoading={componentHistory.loading}
+      componentHistoryLoadingMore={componentHistory.loadingMore}
+      componentHistoryHasMore={componentHistory.hasMore}
       componentHistoryError={componentHistory.error}
       onReloadComponentHistory={componentHistory.refresh}
+      onLoadMoreComponentHistory={componentHistory.loadMore}
       transitioning={transition.running}
       onTransition={(status, note, confirmedDefect) => {
         transition.run(status, note, confirmedDefect).catch(() => undefined);

@@ -1,10 +1,10 @@
 /**
  * Khung ứng dụng — quyết định hiện màn đăng nhập hay khung có thanh tab.
  *
- * ## Năm tab — đủ như bộ ảnh
+ * ## Bốn tab cho nhân viên quét
  *
- * Từ đợt 5, cả **5 tab** trong bộ ảnh đều có màn thật: Trang chủ · Quét mã ·
- * Duyệt phiếu · Lịch sử · Cá nhân.
+ * App chỉ quét và gửi phiếu. Duyệt/Ghi sổ tồn kho thuộc Web WMS, nên App không
+ * có tab thao tác Post trên thiết bị quét.
  *
  * Suốt đợt 1–4 thanh tab chỉ hiện tab đã dựng, vì nguyên tắc #4 của Prompt 4 cấm
  * *"màn hình demo để thay thế"* — một tab bấm vào ra màn trống đúng là thứ đó,
@@ -45,7 +45,6 @@ import { WarrantyComponentIssueFlow } from '../features/warranty/WarrantyCompone
 import { useHardwareBack } from './useHardwareBack';
 import type { WarrantyCase } from '../services/wms/types';
 import { BusinessScanScreen } from '../features/scan/BusinessScanScreen';
-import { ApprovalsScreen } from '../features/approvals/ApprovalsScreen';
 import { DocumentDetailScreen } from '../features/documents/DocumentDetailScreen';
 import { HistoryScreen } from '../features/history/HistoryScreen';
 import { LookupScreen } from '../features/lookup/LookupScreen';
@@ -74,7 +73,6 @@ const styles = StyleSheet.create({
 const IMPLEMENTED_TABS: readonly BottomNavItem[] = [
   { key: 'home', label: 'Trang chủ', icon: 'home' },
   { key: 'scan', label: 'Quét mã', icon: 'scan' },
-  { key: 'approvals', label: 'Duyệt phiếu', icon: 'approvals' },
   { key: 'history', label: 'Lịch sử', icon: 'history' },
   { key: 'profile', label: 'Cá nhân', icon: 'profile' },
 ];
@@ -86,8 +84,8 @@ function renderTab(
     onLoggedOut: () => void;
     onLogoutStarted: () => void;
     onSelectTask: (task: HomeTaskKey) => void;
-    onCreateOutbound: () => void;
     onHome: () => void;
+    onOpenHistory: () => void;
     onOpenDocument: (kind: 'inbound' | 'outbound', documentId: string) => void;
     onLookupNfc: () => void;
     onScanLookup: () => void;
@@ -102,13 +100,6 @@ function renderTab(
           onScan={handlers.onScanLookup}
           onScanAgain={handlers.onScanLookup}
           onLookupNfc={handlers.onLookupNfc}
-        />
-      );
-    case 'approvals':
-      return (
-        <ApprovalsScreen
-          onCreateOutbound={handlers.onCreateOutbound}
-          onOpenDocument={handlers.onOpenDocument}
         />
       );
     case 'history':
@@ -130,6 +121,7 @@ function renderTab(
         <HomeScreen
           userName={handlers.userName}
           onSelectTask={handlers.onSelectTask}
+          onSeeAll={handlers.onOpenHistory}
         />
       );
     default:
@@ -529,8 +521,8 @@ export function AppShell(): React.ReactElement {
           onLoggedOut: handleLoggedOut,
           onLogoutStarted: handleLogoutStarted,
           onSelectTask: handleTask,
-          onCreateOutbound: () => setFlow('outbound'),
           onHome: () => setTab('home'),
+          onOpenHistory: () => setTab('history'),
           onOpenDocument: handleOpenDocument,
           onLookupNfc: () => setFlow('nfc-lookup'),
           onScanLookup: () => {

@@ -122,7 +122,6 @@ export interface HomeScreenProps {
   /** Tên hiển thị ở lời chào. */
   userName?: string;
   onSelectTask?: (key: HomeTaskKey) => void;
-  onOpenApprovals?: () => void;
   onSeeAll?: () => void;
   /** Tiêm để test không cần mạng. */
   deps?: Parameters<typeof useHomeSummary>[0];
@@ -140,7 +139,6 @@ function formatTime(date: Date | undefined): string {
 export function HomeScreen({
   userName,
   onSelectTask,
-  onOpenApprovals,
   onSeeAll,
   deps,
 }: HomeScreenProps): React.ReactElement {
@@ -235,13 +233,13 @@ export function HomeScreen({
           ) : (
             <>
               <StatCard
-                label="Chờ duyệt"
+                label="Chờ Web duyệt"
                 value={String(home.summary.pendingApproval ?? 0)}
-                footnote="Cần xử lý"
+                footnote={String(home.summary.pendingApproval ?? 0) + ' phiếu đã gửi'}
                 icon={<AppIcon name="clock" size={18} color={theme.colors.warning} />}
               />
               <StatCard
-                label="Đã duyệt hôm nay"
+                label="Web đã xử lý hôm nay"
                 value={String(home.summary.approvedCount ?? 0)}
                 footnote="Hoàn tất"
                 icon={<AppIcon name="check-circle" size={18} color={theme.colors.success} />}
@@ -298,42 +296,10 @@ export function HomeScreen({
         ))}
       </View>
 
-      {/* --- Duyệt phiếu --- */}
-      <Pressable
-        accessibilityRole="button"
-        accessibilityLabel="Mở màn duyệt phiếu"
-        onPress={onOpenApprovals}
-        style={({ pressed }) => ({ opacity: pressed ? 0.7 : 1 })}
-      >
-        <Box card padding="lg" gap="md">
-          <View style={[styles.approvalRow, { gap: theme.spacing.md }]}>
-            <View style={styles.approvalBody}>
-              <View style={[styles.approvalRow, { gap: theme.spacing.sm }]}>
-                <Text variant="cardTitle" tone="strong">
-                  Duyệt phiếu
-                </Text>
-                {home.summary.pendingApproval === undefined ? null : (
-                  <Badge
-                    label={String(home.summary.pendingApproval) + ' phiếu'}
-                  />
-                )}
-              </View>
-              <Text variant="caption" tone="muted">
-                Kiểm tra phiếu đã ghi nhận, phê duyệt/Post theo đúng quyền nhân
-                viên.
-              </Text>
-            </View>
-            <Text variant="cardTitle" tone="muted">
-              ›
-            </Text>
-          </View>
-        </Box>
-      </Pressable>
-
-      {/* --- Sản phẩm đã duyệt --- */}
+      {/* Web WMS duyệt và Post; App chỉ hiển thị chứng từ quét gần đây. */}
       <View style={styles.sectionHead}>
         <Text variant="cardTitle" tone="strong">
-          Sản phẩm đã duyệt
+          Phiếu gần đây
         </Text>
         <Text
           variant="caption"

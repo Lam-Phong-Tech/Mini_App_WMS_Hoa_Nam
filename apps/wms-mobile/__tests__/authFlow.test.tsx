@@ -281,7 +281,7 @@ describe('Trang chủ — bốn trạng thái của Prompt 4 §C', () => {
     await view.unmount();
   });
 
-  it('"Đã duyệt hôm nay" dùng cùng snapshot trạng thái với Mini App', async () => {
+  it('"Web đã xử lý hôm nay" dùng cùng snapshot trạng thái với Mini App', async () => {
     const view = await render(
       <HomeScreen
         deps={{
@@ -291,7 +291,7 @@ describe('Trang chủ — bốn trạng thái của Prompt 4 §C', () => {
         }}
       />,
     );
-    expect(view.text).toContain('Đã duyệt hôm nay');
+    expect(view.text).toContain('Web đã xử lý hôm nay');
     expect(view.text).toContain('Hoàn tất');
     await view.unmount();
   });

@@ -44,13 +44,22 @@ export interface ComponentIssueDocumentLine {
   readonly line_id?: string | number;
   readonly sku_id?: string | number;
   readonly required_qty?: number;
-  readonly items?: readonly unknown[];
+  readonly items?: readonly ComponentIssueDocumentItem[];
+}
+
+/** Bằng chứng quét trong chi tiết phiếu. Các tên trường khác nhau giữa bản BE. */
+export interface ComponentIssueDocumentItem {
+  readonly code_value?: string;
+  readonly raw_code?: string;
+  readonly physical_code_value?: string;
+  readonly quantity?: number;
 }
 
 export interface ComponentIssueDocument {
   readonly id?: string | number;
   readonly component_issue_document_id?: string | number;
   readonly version?: string | number;
+  readonly status?: string;
   readonly lines?: readonly ComponentIssueDocumentLine[];
 }
 
@@ -83,6 +92,25 @@ export interface WarrantyComponentBatchOptions {
   readonly ensureTier?: () => Promise<unknown>;
   readonly loadCase?: (caseId: string) => Promise<WarrantyCase>;
   readonly loadDocument?: (documentId: string) => Promise<ComponentIssueDocument>;
+  /** Phiếu đã tạo ở lần trước; dùng khi mở lại app giữa lúc xuất dở. */
+  readonly existingDocumentId?: string;
+  /** Mã đã có phản hồi scan thành công ở lần chạy trước. */
+  readonly completedCodeKeys?: readonly string[];
+  /** Mã có request scan dở lúc app bị đóng. */
+  readonly pendingCodeKey?: string;
+  /**
+   * Ghi bền vững tiến độ TRƯỚC/Sau từng request. Không đổi tồn; chỉ giúp lần
+   * mở sau tiếp tục đúng document và đúng Idempotency-Key của Post.
+   */
+  readonly onProgress?: (progress: WarrantyComponentProgress) => void;
+}
+
+export interface WarrantyComponentProgress {
+  readonly stage: 'creating' | 'created' | 'scanning' | 'scanned' | 'posting';
+  readonly documentId?: string;
+  readonly version?: string;
+  readonly completedCodeKeys: readonly string[];
+  readonly pendingCodeKey?: string;
 }
 
 interface SuccessfulWrite<T> {
@@ -148,6 +176,21 @@ function lineForSku(
   skuId: string,
 ): ComponentIssueDocumentLine | undefined {
   return document.lines?.find(line => text(line.sku_id) === skuId);
+}
+
+function codeKey(value: string): string {
+  return value.trim().replace(/\s+/g, '').toUpperCase();
+}
+
+function scannedCodeKeys(document: ComponentIssueDocument): Set<string> {
+  const keys = new Set<string>();
+  for (const line of document.lines ?? []) {
+    for (const item of line.items ?? []) {
+      const code = item.code_value ?? item.raw_code ?? item.physical_code_value;
+      if (typeof code === 'string' && code.trim() !== '') keys.add(codeKey(code));
+    }
+  }
+  return keys;
 }
 
 function envelopeMessage(envelope: unknown): string | undefined {
@@ -460,14 +503,59 @@ export async function issueWarrantyComponents(
 ): Promise<WarrantyComponentBatchResult> {
   validateBatch(input);
   const loadDocument = options.loadDocument ?? defaultLoadDocument;
-  const created = await createComponentIssueDocument(input, options, client);
-  const id = documentId(created);
+  const completed = new Set(
+    (options.completedCodeKeys ?? []).map(code => codeKey(code)),
+  );
+  let created: ComponentIssueDocument | undefined;
+  let id = options.existingDocumentId?.trim();
+  if (id === undefined || id === '') {
+    options.onProgress?.({ stage: 'creating', completedCodeKeys: [] });
+    created = await createComponentIssueDocument(input, options, client);
+    id = documentId(created);
+  }
   if (id === undefined) {
     throw new AppError({ kind: 'parse', message: 'Không nhận được id phiếu linh kiện.' });
   }
 
   let current = await freshDocument(created, id, loadDocument);
+  if (String(current.status ?? '').toUpperCase() === 'POSTED') {
+    return {
+      documentId: id,
+      issuedLines: input.items.length,
+      issuedQuantity: input.items.reduce((sum, item) => sum + item.quantity, 0),
+      version: documentVersion(current),
+    };
+  }
+  options.onProgress?.({
+    stage: 'created',
+    documentId: id,
+    version: documentVersion(current),
+    completedCodeKeys: Array.from(completed),
+  });
+
+  const evidence = scannedCodeKeys(current);
+  const pendingCodeKey = options.pendingCodeKey?.trim();
+  if (
+    pendingCodeKey !== undefined &&
+    pendingCodeKey !== '' &&
+    !completed.has(codeKey(pendingCodeKey)) &&
+    !evidence.has(codeKey(pendingCodeKey))
+  ) {
+    throw new AppError({
+      kind: 'config',
+      code: 'COMPONENT_SCAN_RECONCILIATION_REQUIRED',
+      message:
+        'Không xác minh được mã đang quét dở trên phiếu WMS. Mở phiếu trên Web để đối chiếu trước khi quét lại, tránh xuất trùng.',
+    });
+  }
   for (const item of input.items) {
+    const itemKey = codeKey(item.codeValue);
+    // Phản hồi scan đã mất nhưng server đã lưu evidence: nhận lại từ chi tiết,
+    // tuyệt đối không gửi scan lần hai cho cùng một mã/hộp.
+    if (completed.has(itemKey) || evidence.has(itemKey)) {
+      completed.add(itemKey);
+      continue;
+    }
     const line = lineForSku(current, item.skuId);
     const currentLineId = line === undefined ? undefined : lineId(line);
     const version = documentVersion(current);
@@ -483,6 +571,13 @@ export async function issueWarrantyComponents(
         message: 'Phiếu linh kiện không có version để quét an toàn.',
       });
     }
+    options.onProgress?.({
+      stage: 'scanning',
+      documentId: id,
+      version,
+      completedCodeKeys: Array.from(completed),
+      pendingCodeKey: itemKey,
+    });
     const scanned = await scanComponentIssueDocument(
       {
         documentId: id,
@@ -498,6 +593,13 @@ export async function issueWarrantyComponents(
     // Một số response scan tối giản không trả lại lines; GET chi tiết là nguồn
     // chuẩn trước lượt scan tiếp theo, tránh dùng line/version cũ.
     if (current.lines === undefined) current = await loadDocument(id);
+    completed.add(itemKey);
+    options.onProgress?.({
+      stage: 'scanned',
+      documentId: id,
+      version: documentVersion(current),
+      completedCodeKeys: Array.from(completed),
+    });
   }
 
   const finalVersion = documentVersion(current);
@@ -507,6 +609,12 @@ export async function issueWarrantyComponents(
       message: 'Không lấy được version mới nhất trước khi xác nhận xuất.',
     });
   }
+  options.onProgress?.({
+    stage: 'posting',
+    documentId: id,
+    version: finalVersion,
+    completedCodeKeys: Array.from(completed),
+  });
   const posted = await postComponentIssueDocument(
     { documentId: id, version: finalVersion },
     input.postIdempotencyKey,

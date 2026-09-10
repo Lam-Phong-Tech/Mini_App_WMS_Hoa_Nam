@@ -62,6 +62,12 @@ export interface WarrantyComponentHistoryDocument {
   readonly detailUnavailable?: boolean;
 }
 
+export interface WarrantyComponentHistoryPage {
+  readonly documents: readonly WarrantyComponentHistoryDocument[];
+  readonly page: number;
+  readonly hasMore: boolean;
+}
+
 function text(value: unknown): string | undefined {
   return typeof value === 'string' && value.trim() !== '' ? value.trim() : undefined;
 }
@@ -132,11 +138,11 @@ function fallbackDocument(
  * Chỉ lấy phiếu đã Post: DRAFT/CANCELLED không phải linh kiện đã dùng cho máy
  * và không được đưa vào hồ sơ lịch sử.
  */
-export async function fetchPostedWarrantyComponentHistory(
+export async function fetchPostedWarrantyComponentHistoryPage(
   warrantyCaseId: string,
   options: ReadOptions = {},
   client?: ReadClient,
-): Promise<readonly WarrantyComponentHistoryDocument[]> {
+): Promise<WarrantyComponentHistoryPage> {
   const page = await readPage<RawComponentIssueDocument>(
     WMS_READ_PATHS.componentIssueDocuments,
     {
@@ -166,8 +172,30 @@ export async function fetchPostedWarrantyComponentHistory(
     }),
   );
 
-  return results.map((result, index) => {
+  const documents = results.map((result, index) => {
     if (result.status === 'fulfilled') return result.value;
     return fallbackDocument(page.items[index] ?? {});
   });
+  const requestedPage = Number(options.query?.page ?? 1);
+  const currentPage = page.meta?.current_page ??
+    (Number.isSafeInteger(requestedPage) && requestedPage > 0 ? requestedPage : 1);
+  const hasMore = page.links?.next !== undefined && page.links.next !== null
+    ? true
+    : page.meta?.last_page !== undefined
+      ? currentPage < page.meta.last_page
+      : page.items.length >= COMPONENT_HISTORY_PAGE_SIZE;
+  return { documents, page: currentPage, hasMore };
+}
+
+/** Tương thích các nơi chỉ cần trang đầu của lịch sử đã Post. */
+export async function fetchPostedWarrantyComponentHistory(
+  warrantyCaseId: string,
+  options: ReadOptions = {},
+  client?: ReadClient,
+): Promise<readonly WarrantyComponentHistoryDocument[]> {
+  return (await fetchPostedWarrantyComponentHistoryPage(
+    warrantyCaseId,
+    options,
+    client,
+  )).documents;
 }

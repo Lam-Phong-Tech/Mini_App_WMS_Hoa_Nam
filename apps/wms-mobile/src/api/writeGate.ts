@@ -97,6 +97,8 @@
 export type ApprovedWrite =
   | 'inbound.resolveCode'
   | 'inbound.record'
+  // Không có UI/AppShell nào được phép gọi Post; giữ entry cho các adapter cũ
+  // để không biến một client cập nhật dở thành lỗi route. BE vẫn là chốt quyền.
   | 'inbound.postReceipt'
   | 'outbound.resolveCode'
   | 'outbound.record'

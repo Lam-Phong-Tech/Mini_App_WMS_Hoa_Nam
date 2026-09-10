@@ -35,6 +35,12 @@ import {
   type WarrantyComponentDraft,
 } from './warrantyComponentDraft';
 import { resolveWarrantyComponentSku } from './warrantyComponentSkuLookup';
+import {
+  clearWarrantyComponentSession,
+  loadWarrantyComponentSession,
+  saveWarrantyComponentSession,
+  type WarrantyComponentSessionStage,
+} from './warrantyComponentSession';
 
 const styles = StyleSheet.create({
   head: {
@@ -77,11 +83,31 @@ export function WarrantyComponentIssueFlow({
   submitComponents = issueWarrantyComponents,
 }: WarrantyComponentIssueFlowProps): React.ReactElement {
   const theme = useTheme();
+  const [recoveredSession] = useState(() =>
+    loadWarrantyComponentSession(warrantyCase.warranty_case_id),
+  );
   const [draft, setDraft] = useState<WarrantyComponentDraft>(() =>
-    createWarrantyComponentDraft(warrantyCase.warranty_case_id),
+    recoveredSession?.draft ?? createWarrantyComponentDraft(warrantyCase.warranty_case_id),
   );
   const warehouses = useWarehouses();
-  const [warehouseId, setWarehouseId] = useState<string>();
+  const [warehouseId, setWarehouseId] = useState<string | undefined>(
+    recoveredSession?.warehouseId,
+  );
+  const [documentId, setDocumentId] = useState<string | undefined>(
+    recoveredSession?.documentId,
+  );
+  const [documentVersion, setDocumentVersion] = useState<string | undefined>(
+    recoveredSession?.version,
+  );
+  const [scannedCodeKeys, setScannedCodeKeys] = useState<readonly string[]>(
+    recoveredSession?.scannedCodeKeys ?? [],
+  );
+  const [pendingCodeKey, setPendingCodeKey] = useState<string | undefined>(
+    recoveredSession?.pendingCodeKey,
+  );
+  const [sessionStage, setSessionStage] = useState<WarrantyComponentSessionStage>(
+    recoveredSession?.stage ?? 'local',
+  );
   const [step, setStep] = useState<IssueStep>('scan');
   const [pendingBox, setPendingBox] = useState<{
     readonly code: string;
@@ -100,6 +126,33 @@ export function WarrantyComponentIssueFlow({
       setWarehouseId(first.id);
     }
   }, [warehouseId, warehouses.warehouses]);
+
+  // Lưu nháp ngay cả trước khi tạo phiếu WMS. Mỗi lần callback từ service trả
+  // về thì state server-side bên dưới cũng được ghi nguyên tử xuống thiết bị.
+  useEffect(() => {
+    if (outcome !== undefined) return;
+    saveWarrantyComponentSession({
+      caseId: warrantyCase.warranty_case_id,
+      draft,
+      warehouseId,
+      documentId,
+      version: documentVersion,
+      scannedCodeKeys,
+      pendingCodeKey,
+      stage: sessionStage,
+      updatedAt: new Date().toISOString(),
+    });
+  }, [
+    documentId,
+    documentVersion,
+    draft,
+    outcome,
+    pendingCodeKey,
+    scannedCodeKeys,
+    sessionStage,
+    warehouseId,
+    warrantyCase.warranty_case_id,
+  ]);
 
   const handleScan = useCallback(
     async (rawCode: string): Promise<ScanFeedback> => {
@@ -178,6 +231,20 @@ export function WarrantyComponentIssueFlow({
     submittingRef.current = true;
     setSubmitting(true);
     setSubmitError(undefined);
+    // Ghi dấu trước request create. Nếu app tắt tại đây, lần sau service sẽ
+    // nạp lại documentId đã nhận được thay vì bắt đầu một vòng Post mới.
+    setSessionStage('creating');
+    saveWarrantyComponentSession({
+      caseId: warrantyCase.warranty_case_id,
+      draft,
+      warehouseId,
+      documentId,
+      version: documentVersion,
+      scannedCodeKeys,
+      pendingCodeKey,
+      stage: 'creating',
+      updatedAt: new Date().toISOString(),
+    });
     try {
       const result = await submitComponents({
         caseId: warrantyCase.warranty_case_id,
@@ -191,7 +258,40 @@ export function WarrantyComponentIssueFlow({
           codeValue: item.rawCode,
           quantity: item.quantity,
         })),
+      }, {
+        existingDocumentId: documentId,
+        completedCodeKeys: scannedCodeKeys,
+        pendingCodeKey,
+        onProgress: progress => {
+          const nextStage: WarrantyComponentSessionStage =
+            progress.stage === 'creating'
+              ? 'creating'
+              : progress.stage === 'posting'
+                ? 'posting'
+                : progress.stage === 'scanning'
+                  ? 'scanning'
+                  : 'scanning';
+          setDocumentId(progress.documentId);
+          setDocumentVersion(progress.version);
+          setScannedCodeKeys(progress.completedCodeKeys);
+          setPendingCodeKey(progress.pendingCodeKey);
+          setSessionStage(nextStage);
+          saveWarrantyComponentSession({
+            caseId: warrantyCase.warranty_case_id,
+            draft,
+            warehouseId,
+            documentId: progress.documentId,
+            version: progress.version,
+            scannedCodeKeys: progress.completedCodeKeys,
+            pendingCodeKey: progress.pendingCodeKey,
+            stage: nextStage,
+            updatedAt: new Date().toISOString(),
+          });
+        },
       });
+      // Post đã trả thành công; đây là mốc duy nhất được phép xoá dấu vết
+      // phiếu dở. Lịch sử `POSTED` sẽ là nguồn sự thật từ đây trở đi.
+      clearWarrantyComponentSession(warrantyCase.warranty_case_id);
       setOutcome(result);
       setStep('done');
     } catch (error) {
@@ -203,7 +303,16 @@ export function WarrantyComponentIssueFlow({
       submittingRef.current = false;
       setSubmitting(false);
     }
-  }, [draft, submitComponents, warehouseId, warrantyCase]);
+  }, [
+    documentId,
+    documentVersion,
+    draft,
+    pendingCodeKey,
+    scannedCodeKeys,
+    submitComponents,
+    warehouseId,
+    warrantyCase,
+  ]);
 
   if (!canIssueWarrantyComponents(warrantyCase.status)) {
     return (
@@ -355,14 +464,18 @@ export function WarrantyComponentIssueFlow({
       <Banner
         tone="info"
         title="Chưa xuất kho ở bước quét"
-        message="Kiểm tra đúng mã và số lượng. Tồn kho chỉ thay đổi khi bấm Xác nhận xuất linh kiện."
+        message="Kiểm tra đúng mã và số lượng. Xác nhận xuất linh kiện sẽ Post trực tiếp và giảm tồn kho."
       />
 
       <Select
         label="Kho xuất linh kiện*"
         placeholder="Chọn kho xuất"
-        disabled={warehouses.phase === 'loading'}
-        disabledPlaceholder="Đang tải danh sách kho…"
+        disabled={warehouses.phase === 'loading' || draft.items.length > 0}
+        disabledPlaceholder={
+          draft.items.length > 0
+            ? 'Kho đã được khóa sau khi quét mã đầu tiên'
+            : 'Đang tải danh sách kho…'
+        }
         value={warehouseId}
         options={warehouses.warehouses.map(warehouse => ({
           value: warehouse.id,
