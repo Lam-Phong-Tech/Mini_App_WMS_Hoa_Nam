@@ -49,8 +49,32 @@ describe("public storefront backend mappers", () => {
       hotline: { display: "1900 1234", tel: "1900 1234" },
       zalo_oa: null,
       privacy_policy_url: "https://hoanam.vn/chinh-sach-bao-mat",
+      privacy_version: "1.0.0",
     });
     expect(config.support_hours?.intervals).toHaveLength(2);
+  });
+
+  it("prefers the v1.1 public config fields while retaining legacy fallbacks", () => {
+    const config = mapBackendConfig({
+      config_version: "operating-config-7",
+      hotline: { display: "098 636 6675", tel: "+84986366675" },
+      zalo_oa: null,
+      support_hours: {
+        timezone: "Asia/Ho_Chi_Minh",
+        intervals: [{ days: ["MON", "TUE"], opens_at: "08:00", closes_at: "17:30" }],
+      },
+      privacy_policy_url: "https://hoanam.vn/chinh-sach-bao-mat",
+      privacy_version: "1.0.0",
+      maintenance: { enabled: false },
+    });
+
+    expect(config).toMatchObject({
+      config_version: "operating-config-7",
+      hotline: { display: "098 636 6675", tel: "+84986366675" },
+      privacy_policy_url: "https://hoanam.vn/chinh-sach-bao-mat",
+      privacy_version: "1.0.0",
+    });
+    expect(config.support_hours?.intervals).toEqual([{ days: ["MON", "TUE"], opens_at: "08:00", closes_at: "17:30" }]);
   });
 
   it("keeps only taxonomy-complete public products and preserves cursor metadata", () => {

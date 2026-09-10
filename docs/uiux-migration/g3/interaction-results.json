@@ -1,0 +1,25 @@
+{
+  "recorded_at": "2026-09-10T00:14:00+07:00",
+  "status": "PASS_TARGET_HEADLESS",
+  "environment": {
+    "target": "local backend-preview using approved Green/DEV-TEST reads",
+    "browser": "Chrome via DevTools Protocol",
+    "mobile_viewport": {"width": 390, "height": 844, "dpr": 1},
+    "desktop_viewport": {"width": 1024, "height": 900, "dpr": 1},
+    "reduced_motion": true
+  },
+  "results": {
+    "categories": {"canonical_tabs": 3, "power_tools_cards": 52, "window_scroll_y": 0},
+    "filter_sheet": {"page_overflow_while_open": "hidden", "escape_closed": true},
+    "detail_gallery": {"public_variant_buttons": 35, "gallery_zoom_controls": 3, "close_control": true, "escape_returned_to_detail": true},
+    "search": {"exact_item_code": "DCKIT55", "result_cards": 1, "input_identity_preserved": true},
+    "scroll": {"scroll_root": ".hn-page", "window_scroll_y": 0},
+    "virtual": {"loaded_and_rendered": 80, "mobile_columns": 2, "desktop_columns": 4, "focused_row_retained": true},
+    "motion": {"gsap_lazy_chunk_loaded": true, "cards_visible_after_animation": true}
+  },
+  "source_evidence": "docs/uiux-migration/evidence/g3/interaction-results.json",
+  "non_claims": [
+    "Real Zalo Android/iPhone, safe-area, physical Vietnamese IME and native back remain G5-only.",
+    "The target Green rendering is not a strict pixel-match claim."
+  ]
+}

@@ -20,6 +20,7 @@ import { ProductGrid } from "@/components/catalogue/product-grid";
 import { AppShell } from "@/components/app-shell";
 import { SystemStatePanel } from "@/components/system-state-panel";
 import { useProductResults } from "@/hooks/use-product-results";
+import { useScrollRestoration } from "@/hooks/use-scroll-restoration";
 import { getFoundationRoute } from "@/routes";
 import { useAppContext } from "@/state/app-context";
 import { createLoadingState } from "@/state/system-state";
@@ -34,36 +35,40 @@ export const ProductListPage = ({ openFilter = false }: { openFilter?: boolean }
   const query = useMemo(() => parseProductQuery(location.search), [location.search]);
   const results = useProductResults(api, query);
   const returnPath = createProductReturnPath(location.pathname, location.search);
+  const scrollKey = `products:${productQueryCacheKey(query)}`;
+  useScrollRestoration(scrollKey, results.kind === "success-data" || results.kind === "success-empty" || results.kind === "load-more-error");
 
   useEffect(() => {
     if (openFilter) setFilterVisible(true);
   }, [openFilter]);
 
   if (phase === "loading") {
-    return <AppShell route={productsRoute} scrollKey={`products:${productQueryCacheKey(query)}`}><SystemStatePanel state={createLoadingState()} /></AppShell>;
+    return <AppShell route={productsRoute} scrollKey={scrollKey}><SystemStatePanel state={createLoadingState()} /></AppShell>;
   }
   if (systemState) {
-    return <AppShell route={productsRoute} scrollKey={`products:${productQueryCacheKey(query)}`}><SystemStatePanel state={systemState} onRetry={() => void refresh()} /></AppShell>;
+    return <AppShell route={productsRoute} scrollKey={scrollKey}><SystemStatePanel state={systemState} onRetry={() => void refresh()} /></AppShell>;
   }
 
   const filterCount = countActiveFilters(query);
   const hasProducts = results.products.length > 0;
 
   return (
-    <AppShell route={productsRoute} scrollKey={`products:${productQueryCacheKey(query)}`}>
+    <AppShell route={productsRoute} scrollKey={scrollKey}>
       <section className="catalogue-toolbar" aria-label="Điều khiển danh sách sản phẩm">
-        <button type="button" onClick={() => navigate(`/search${location.search}`, { animate: false })}>Tìm kiếm</button>
         <button type="button" onClick={() => setFilterVisible(true)}>
-          Lọc & sắp xếp{filterCount ? ` (${filterCount})` : ""}
+          Lọc{filterCount ? ` (${filterCount})` : ""}
         </button>
+        <output aria-live="polite">Đã hiển thị {results.renderedCount}</output>
+        <button type="button" onClick={() => navigate(`/search${location.search}`, { animate: false })}>Tìm kiếm</button>
       </section>
+      <p className="catalogue-availability-note">Chỉ hiển thị sản phẩm công khai: Còn hàng hoặc Đặt trước.</p>
       {visibleText(query.q) ? <p className="result-caption">Kết quả cho “{visibleText(query.q)}”</p> : null}
 
       {results.kind === "loading" ? <CatalogueSkeleton /> : null}
-      {results.failure ? <CatalogueFailure failure={results.failure} onRetry={() => void results.reload()} /> : null}
+      {!hasProducts && results.failure ? <CatalogueFailure failure={results.failure} onRetry={() => void results.reload()} /> : null}
       {results.kind === "success-empty" ? <EmptyCatalogue onRetry={() => void results.reload()} /> : null}
-      {hasProducts ? <ProductGrid products={results.products} returnPath={returnPath} label="Danh sách sản phẩm" /> : null}
-      {hasProducts ? <InfiniteLoadTrigger loading={results.kind === "loading-more"} hasMore={Boolean(results.nextCursor)} onLoadMore={results.loadMore} /> : null}
+      {hasProducts ? <ProductGrid products={results.products} loadedCount={results.loadedCount} returnPath={returnPath} label="Danh sách sản phẩm" /> : null}
+      {hasProducts ? <InfiniteLoadTrigger loading={results.kind === "loading-more"} failure={results.kind === "load-more-error" ? results.failure : null} hasMore={results.renderedCount < results.loadedCount || Boolean(results.nextCursor)} onLoadMore={results.loadMore} /> : null}
 
       <FilterSheet
         api={api}

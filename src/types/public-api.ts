@@ -215,6 +215,8 @@ export interface PublicConfigDto {
   zalo_oa: ZaloOaDto | null;
   support_hours: SupportHoursDto | null;
   privacy_policy_url: string | null;
+  /** Version of the exact privacy notice currently shown to the customer. */
+  privacy_version: string | null;
   maintenance: {
     enabled: boolean;
     message: string | null;
@@ -247,9 +249,16 @@ export interface ProductQuery {
   limit?: number;
 }
 
-export interface QuoteRequestInput {
+export interface QuoteRequestItemInput {
   product_id: string;
   variant_id?: string | null;
+  /** A customer-stated quantity, never stock, reservation, or checkout quantity. */
+  quantity?: number | null;
+}
+
+export interface QuoteRequestInput {
+  /** The v1.1 canonical request shape. A single selected product is one item. */
+  items: QuoteRequestItemInput[];
   full_name: string;
   phone: string;
   province_code?: string | null;

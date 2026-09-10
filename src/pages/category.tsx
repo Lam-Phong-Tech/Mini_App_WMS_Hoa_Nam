@@ -3,6 +3,7 @@ import { useLocation, useNavigate } from "zmp-ui";
 
 import {
   getVisibleCategories,
+  getCanonicalDomains,
   parseProductQuery,
   serializeProductQuery,
   visibleText,
@@ -32,7 +33,10 @@ const CategoryPage = () => {
   const navigate = useNavigate();
   const { api, home, phase, systemState, refresh } = useAppContext();
   const requestedDomain = useMemo(() => parseProductQuery(location.search).domain, [location.search]);
-  const selectedDomain = requestedDomain ?? home?.domains[0]?.code;
+  const canonicalDomains = useMemo(() => getCanonicalDomains(home?.domains), [home?.domains]);
+  const selectedDomain = canonicalDomains.some((domain) => domain.code === requestedDomain)
+    ? requestedDomain
+    : canonicalDomains[0]?.code;
   const [categoryState, setCategoryState] = useState<CategoryState>({ kind: "loading", categories: [], failure: null });
 
   const loadCategories = useCallback(async () => {
@@ -63,12 +67,12 @@ const CategoryPage = () => {
     return <AppShell route={categoryRoute}><SystemStatePanel state={systemState} onRetry={() => void refresh()} /></AppShell>;
   }
 
-  const selectedDomainLabel = home?.domains.find((domain) => domain.code === selectedDomain)?.display_name ?? "Danh mục";
+  const selectedDomainLabel = canonicalDomains.find((domain) => domain.code === selectedDomain)?.display_name ?? "Danh mục";
 
   return (
     <AppShell route={categoryRoute}>
       <section className="catalogue-toolbar catalogue-toolbar--domains" aria-label="Chọn nhóm sản phẩm">
-        {(home?.domains ?? []).map((domain) => (
+        {canonicalDomains.map((domain) => (
           <button
             key={domain.code}
             type="button"
@@ -91,7 +95,10 @@ const CategoryPage = () => {
 
       {categoryState.kind === "loading" ? <CatalogueSkeleton /> : null}
       {categoryState.failure ? <CatalogueFailure failure={categoryState.failure} onRetry={() => void loadCategories()} /> : null}
-      {categoryState.kind === "success-empty" ? <EmptyCatalogue onRetry={() => void loadCategories()} /> : null}
+      {categoryState.kind === "success-empty" ? <>
+        <EmptyCatalogue onRetry={() => void loadCategories()} />
+        <button className="category-return" type="button" onClick={() => navigate("/home", { animate: false })}>Quay lại Trang chủ</button>
+      </> : null}
       {categoryState.kind === "success-data" ? (
         <section className="category-list" aria-label="Danh mục công khai">
           <button

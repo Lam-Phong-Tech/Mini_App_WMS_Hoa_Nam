@@ -30,30 +30,41 @@ export const InfiniteLoadTrigger = ({
   loading,
   hasMore,
   onLoadMore,
+  failure = null,
 }: {
   loading: boolean;
   hasMore: boolean;
   onLoadMore: () => Promise<void>;
+  failure?: ApiFailure | null;
 }) => {
   const triggerRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
     const trigger = triggerRef.current;
-    if (!trigger || !hasMore || loading || !("IntersectionObserver" in window)) return;
+    // A failed append must wait for the explicit retry control below. Leaving
+    // the observer active here turns an in-viewport sentinel into a retry
+    // loop, which can hide the error state and repeatedly call the API.
+    if (!trigger || !hasMore || loading || failure || !("IntersectionObserver" in window)) return;
     const observer = new IntersectionObserver((entries) => {
       if (entries.some((entry) => entry.isIntersecting)) void onLoadMore();
-    }, { rootMargin: "160px" });
+    }, {
+      // The G2 measurement establishes ZaUI Page as the scroll root. Using it
+      // avoids a window observer that never reaches the sentinel in Mini App.
+      root: trigger.closest<HTMLElement>(".hn-page"),
+      rootMargin: "160px 0px",
+    });
     observer.observe(trigger);
     return () => observer.disconnect();
-  }, [hasMore, loading, onLoadMore]);
+  }, [failure, hasMore, loading, onLoadMore]);
 
   if (!hasMore) return null;
 
   return (
     <div className="infinite-load" ref={triggerRef}>
       {loading ? <Spinner /> : null}
+      {failure ? <p className="infinite-load__error" role="status">Không thể tải thêm. Nội dung đã hiển thị vẫn được giữ lại.</p> : null}
       <Button variant="secondary" onClick={() => void onLoadMore()} disabled={loading}>
-        {loading ? "Đang tải thêm" : "Tải thêm sản phẩm"}
+        {loading ? "Đang tải thêm" : failure ? "Thử tải lại" : "Xem thêm sản phẩm"}
       </Button>
     </div>
   );

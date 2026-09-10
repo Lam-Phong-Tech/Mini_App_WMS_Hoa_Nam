@@ -300,30 +300,46 @@ export const mapBackendConfig = (value: unknown): PublicConfigDto => {
   const privacy = toRecord(config.privacy);
   const maintenance = toRecord(config.maintenance);
   const supportHours = toRecord(config.support_hours);
+  const configuredHotline = toRecord(config.hotline);
+  const configuredOa = toRecord(config.zalo_oa);
   const weekday = toRecord(supportHours.weekday);
   const saturday = toRecord(supportHours.saturday);
-  const intervals: NonNullable<PublicConfigDto["support_hours"]>["intervals"] = [];
+  const intervals: NonNullable<PublicConfigDto["support_hours"]>["intervals"] = compactMap(supportHours.intervals, (candidate) => {
+    const interval = toRecord(candidate);
+    const days = compactMap(interval.days, (day) => {
+      const value = toText(day);
+      return value && ["MON", "TUE", "WED", "THU", "FRI", "SAT", "SUN"].includes(value)
+        ? value as NonNullable<PublicConfigDto["support_hours"]>["intervals"][number]["days"][number]
+        : null;
+    });
+    const opensAt = toText(interval.opens_at);
+    const closesAt = toText(interval.closes_at);
+    return days.length && opensAt && closesAt ? { days, opens_at: opensAt, closes_at: closesAt } : null;
+  });
   const weekdayOpen = toText(weekday.open);
   const weekdayClose = toText(weekday.close);
   const saturdayOpen = toText(saturday.open);
   const saturdayClose = toText(saturday.close);
-  if (weekdayOpen && weekdayClose) intervals.push({ days: ["MON", "TUE", "WED", "THU", "FRI"], opens_at: weekdayOpen, closes_at: weekdayClose });
-  if (saturdayOpen && saturdayClose) intervals.push({ days: ["SAT"], opens_at: saturdayOpen, closes_at: saturdayClose });
+  const hasConfiguredIntervals = intervals.length > 0;
+  if (!hasConfiguredIntervals && weekdayOpen && weekdayClose) intervals.push({ days: ["MON", "TUE", "WED", "THU", "FRI"], opens_at: weekdayOpen, closes_at: weekdayClose });
+  if (!hasConfiguredIntervals && saturdayOpen && saturdayClose) intervals.push({ days: ["SAT"], opens_at: saturdayOpen, closes_at: saturdayClose });
 
-  const hotline = toText(contact.hotline);
-  const oaUrl = toText(contact.zalo_oa_url);
-  const oaId = toText(contact.zalo_oa_id);
+  const hotlineDisplay = toText(configuredHotline.display) ?? toText(contact.hotline);
+  const hotlineTel = toText(configuredHotline.tel) ?? hotlineDisplay;
+  const oaUrl = toText(configuredOa.chat_url) ?? toText(contact.zalo_oa_url);
+  const oaId = toText(configuredOa.id) ?? toText(contact.zalo_oa_id);
   const featureFlags = Object.entries(toRecord(config.feature_flags)).reduce<Record<string, boolean>>(
     (result, [key, enabled]) => ({ ...result, [key]: toBoolean(enabled) }),
     {},
   );
 
   return {
-    config_version: toText(config.contract_version) ?? "unknown",
-    hotline: hotline ? { display: hotline, tel: hotline } : null,
+    config_version: toText(config.config_version) ?? toText(config.contract_version) ?? "unknown",
+    hotline: hotlineDisplay && hotlineTel ? { display: hotlineDisplay, tel: hotlineTel } : null,
     zalo_oa: oaUrl ? { id: oaId, chat_url: oaUrl } : null,
     support_hours: intervals.length ? { timezone: "Asia/Ho_Chi_Minh", intervals } : null,
-    privacy_policy_url: toText(privacy.url),
+    privacy_policy_url: toText(config.privacy_policy_url) ?? toText(privacy.url),
+    privacy_version: toText(config.privacy_version) ?? toText(privacy.version),
     maintenance: {
       enabled: toBoolean(maintenance.enabled),
       message: toText(maintenance.message),

@@ -1,0 +1,188 @@
+{
+  "schema_version": "1.0",
+  "updated_at": "2026-09-10T00:12:48.7045891+07:00",
+  "approval_rule": "User/authorized-PM language is retained verbatim. A decision remains blocked when an authoritative artifact is absent, when two confirmed rules conflict, or when an environment/device check has not been performed.",
+  "decisions": [
+    {
+      "id": "D10",
+      "conflict": "G2 visual gate requires a rendered comparison against the locked Designer snapshot, while runtime must continue using only Green public data and configuration.",
+      "selected_option": "Use the locked Designer repository at commit 86079f965f2fcb43a7e3efbbc9467d119b47921f solely to build deterministic QA visual baselines for comparison with the target app.",
+      "scope": ["G2 QA visual comparison", "local Designer build", "evidence only"],
+      "user_confirmation_verbatim": "xác nhận",
+      "confirmation_context": "Direct response authorizing use of the locked Designer fixture/build for the G2 QA visual comparison after its purpose and restrictions were stated.",
+      "confirmed_at": "2026-09-09T16:05:00+07:00",
+      "source_references": ["user message in this thread dated 2026-09-09", "D05"],
+      "locked_behavior": {
+        "baseline_commit": "86079f965f2fcb43a7e3efbbc9467d119b47921f",
+        "permitted_use": "local, deterministic QA screenshot and geometry comparison only",
+        "forbidden": ["runtime use in the target app", "replacing Green API/config/media", "Green fixture submission", "Customer/Production use or deployment"]
+      },
+      "status": "APPROVED_FOR_G2_QA_ONLY"
+    },
+    {
+      "id": "D11",
+      "conflict": "UIUX-G3 requires a locked-Designer visual comparison, but the earlier D10 approval was restricted to G2.",
+      "selected_option": "Render the locked Designer checkout at commit 86079f965f2fcb43a7e3efbbc9467d119b47921f locally only to capture UIUX-G3 structural visual comparison evidence.",
+      "scope": ["G3 local visual comparison", "locked Designer checkout", "evidence only"],
+      "user_confirmation_verbatim": "Tôi cho phép dùng snapshot Designer `86079f965f2fcb43a7e3efbbc9467d119b47921f` chỉ trên local để đối chiếu visual UIUX-G3; không dùng làm dữ liệu runtime, Green, UAT, Customer hoặc Production.",
+      "confirmation_context": "User supplied the complete G3 revalidation authorization twice in the same message; the full confirmation is preserved in evidence/reference/user-confirmation-g3-revalidation-2026-09-10.md.",
+      "confirmed_at": "2026-09-10T00:12:48.7045891+07:00",
+      "source_references": ["user message in this thread dated 2026-09-10", "docs/uiux-migration/evidence/reference/user-confirmation-g3-revalidation-2026-09-10.md", "D05"],
+      "locked_behavior": {
+        "baseline_commit": "86079f965f2fcb43a7e3efbbc9467d119b47921f",
+        "permitted_use": "local structural visual comparison for UIUX-G3 evidence only",
+        "forbidden": ["target runtime use", "Green fixture use", "UAT use", "Customer use", "Production use or deployment"]
+      },
+      "status": "APPROVED_FOR_G3_LOCAL_QA_ONLY"
+    },
+    {
+      "id": "D12",
+      "conflict": "G3 needs controlled negative and 79/80/81 runtime evidence, while Green must not be made unavailable, rate-limited or populated with test data.",
+      "selected_option": "Use a local-only, in-memory QA adapter/fixture for the named G3 states and thresholds. It accepts no writes and is never packaged as target runtime, UAT, Customer or Production data.",
+      "scope": ["G3 local QA adapter", "negative-state browser evidence", "79/80/81 interaction evidence"],
+      "user_confirmation_verbatim": "Tôi cũng duyệt một QA adapter/fixture cô lập chỉ để kiểm tra các trạng thái empty, loading, append error, unavailable, maintenance, rate-limit, image error và ngưỡng 79/80/81; không gọi quote POST, không ghi sale/CRM và không phát hành dữ liệu fixture.",
+      "confirmation_context": "User supplied the complete G3 revalidation authorization twice in the same message; the full confirmation is preserved in evidence/reference/user-confirmation-g3-revalidation-2026-09-10.md.",
+      "confirmed_at": "2026-09-10T00:12:48.7045891+07:00",
+      "source_references": ["user message in this thread dated 2026-09-10", "docs/uiux-migration/evidence/reference/user-confirmation-g3-revalidation-2026-09-10.md"],
+      "locked_behavior": {
+        "permitted_cases": ["empty", "loading", "append error", "unavailable", "maintenance", "rate-limit", "image error", "79", "80", "81"],
+        "implementation": "in-memory local server started only by scripts/run-g3-qa-harness.mjs and terminated in its finally block",
+        "forbidden": ["quote POST", "sale/CRM write", "fixture deployment", "runtime/UAT/Customer/Production fixture use"]
+      },
+      "status": "APPROVED_FOR_G3_LOCAL_QA_ONLY"
+    },
+    {
+      "id": "D01",
+      "conflict": "one-product target quote DTO versus multi-product items[] contract",
+      "selected_option": "One request supports 1..20 unique product items and remains compatible with one selected product; no fan-out or first-item fallback.",
+      "scope": ["quote request UI", "public API", "backend", "optional request quantity"],
+      "user_confirmation_verbatim": "BE đã xong. Endpoint cũ, thêm trường items[] để gửi nhiều sản phẩm trong một request. App đang chạy ngoài thị trường không cần sửa gì.",
+      "confirmed_at": "2026-09-08T19:16:51.0215531+07:00",
+      "source_references": ["user-pasted attachment sha256:d30e44eb18a815d3ec073546542007e3a696048eb82888971cabd04ec0e3a6b9", "docs/g0/openapi.v1.yaml", "src/types/public-api.ts"],
+      "locked_behavior": {
+        "claimed_endpoint": "POST {BASE_URL}/api/v1/public/quote-requests",
+        "claimed_config_contract_version": "1.1.0",
+        "items": "1..20 unique product_id entries",
+        "quantity": "optional request quantity 1..9999; not stock, reservation, cart or checkout",
+        "response": "201 created or 200 same-key replay; request_id and RECEIVED response shape",
+        "forbidden": ["N request fan-out", "use only first selected product", "encode product list into note"]
+      },
+      "verification": "Green/DEV-TEST OpenAPI exposes POST /api/v1/public/quote-requests, items[].variant_id and a multiple_products sample. An authorized Green QA request demonstrated 201 creation, 200 same-key replay and 409 changed-payload conflict. The OpenAPI array lacks machine-readable minItems/maxItems; 1..20 unique items remains the user's explicit approved contract rule. See evidence/reference/api-green-g1-revalidation-2026-09-09.json.",
+      "required_before_implementation": [],
+      "confirmation_recorded_at": "2026-09-09T14:55:10.6808353+07:00",
+      "status": "APPROVED_RUNTIME_VERIFIED_FOR_GREEN_DEV_TEST"
+    },
+    {
+      "id": "D02",
+      "conflict": "form validation, idempotency order semantics and privacy-config shape",
+      "selected_option": "Vietnamese mobile only; formatted inputs normalize to +84; name 1..100 after trim; note max 1000; consent required; 15-second request timeout and manual retry.",
+      "scope": ["quote form", "validation", "idempotency", "public config", "backend", "src/pages/quote-request.tsx", "src/services/quote-service.ts"],
+      "user_confirmation_verbatim": "Idempotency: thứ tự hiển thị sản phẩm không làm thay đổi nội dung. FE phải chuẩn hoá và sắp xếp items[] theo quy tắc cố định trước khi tạo fingerprint, tạo Idempotency-Key và gửi API. Cùng nội dung thì dùng lại key; đổi sản phẩm, variant, quantity, tên, điện thoại chuẩn hoá, ghi chú, consent hoặc privacy version thì tạo key mới. ... province_code không thu thập và không gửi trong đợt này. privacy_version và URL chính sách luôn lấy từ public config; thiếu một trong hai thì chặn gửi và giữ draft.",
+      "confirmed_at": null,
+      "confirmation_recorded_at": "2026-09-09T14:55:10.6808353+07:00",
+      "source_references": ["user request dated 2026-09-08", "user-pasted attachment sha256:d30e44eb18a815d3ec073546542007e3a696048eb82888971cabd04ec0e3a6b9", "docs/uiux-migration/evidence/reference/user-confirmation-g1-revalidation-2026-09-09.md", "src/services/quote-service.ts"],
+      "locked_behavior": {
+        "phone": "Accept 0XXXXXXXXX or +84XXXXXXXXX only with spaces, dots, dashes or parentheses as separators; remove separators and normalize leading 0 to +84; reject +840, non-Vietnamese/international/landline/extension/letters/invalid length.",
+        "name": "trimmed length 1..100",
+        "note": "trimmed length up to 1000; normalize line endings; empty and absent are equivalent",
+        "consent": "required, initially false; catalogue browsing does not require it",
+        "retry": "15-second timeout; user initiates retry; in-flight payload is immutable and repeated taps are blocked",
+        "privacy": "privacy_version must be separate from config_version; missing configuration blocks submission and preserves draft",
+        "idempotency_order": "presentation order is normalized before fingerprint, key generation and wire submission",
+        "province_code": "not collected or submitted in this release",
+        "consent_copy": "Tôi đồng ý để Hoa Nam sử dụng họ tên, số điện thoại, sản phẩm quan tâm và ghi chú tôi cung cấp nhằm tiếp nhận yêu cầu và liên hệ tư vấn theo Chính sách sử dụng thông tin."
+      },
+      "verification": "Green config has root privacy_policy_url/privacy_version; current quote code maps the root field and legacy fallback. Quote unit tests cover formatted phone normalization, 1..100 name, 1000-character note, canonical product order and manual retry key reuse. See g1-revalidation.md and evidence/reference/api-green-g1-revalidation-2026-09-09.json.",
+      "unresolved_conflicts": [],
+      "required_before_implementation": [],
+      "status": "APPROVED_RUNTIME_REVALIDATED"
+    },
+    {
+      "id": "D03",
+      "conflict": "public operating data/config/asset rights and QA fixture are absent",
+      "selected_option": "Use approved public API, images and operating config; use fixed Designer data only in separately approved QA comparison, never UAT/Production or sale submission.",
+      "scope": ["catalogue data", "media", "public config", "QA fixture"],
+      "user_confirmation_verbatim": "Fixture Designer chỉ dùng đối chiếu trong môi trường QA khi được cho phép; không đưa thành dữ liệu thật. Thiếu dữ liệu/config thì ghi rõ điểm bị chặn.",
+      "confirmed_at": "2026-09-08T19:16:51.0215531+07:00",
+      "source_references": ["user request dated 2026-09-08", "src/types/public-api.ts", "src/services/contact-config.ts"],
+      "locked_behavior": { "config": ["config_version", "hotline", "hotline_fallback", "zalo_oa", "support_hours object", "privacy_policy_url", "privacy_version", "maintenance", "min_supported_app_version", "feature_flags"], "data": ["stable product_id/slug", "public availability", "HTTPS media with alt/order/use rights", "optional public specs/variants/related", "lookup by ID"], "qa_cases": ["result", "empty", "preorder", "image failure", "unavailable product"] },
+      "verification": "The user authorizes public API, config and media served by Green/DEV-TEST for UI integration testing only, and excludes Designer fixture/data from runtime. A Green read across 19 pages/933 products found no invalid domain or availability. See evidence/reference/user-confirmation-g1-revalidation-2026-09-09.md and evidence/reference/api-green-g1-revalidation-2026-09-09.json.",
+      "required_before_implementation": [],
+      "confirmation_recorded_at": "2026-09-09T14:55:10.6808353+07:00",
+      "status": "APPROVED_GREEN_DEV_TEST_ONLY"
+    },
+    {
+      "id": "D04",
+      "conflict": "PV-13–PV-18 storage/receipt/compare behavior was unspecified",
+      "selected_option": "Deliver all PV-01–PV-18 in stages with locked local-storage/RAM behaviors; PV-16 sends one multi-product request only after D01 evidence is verified.",
+      "scope": ["routes", "local storage", "RAM receipt", "FAQ", "compare", "selection"],
+      "user_confirmation_verbatim": "Triển khai đủ PV-01–PV-18... PV-13 lưu product_id bằng local storage tối đa 30 ID... PV-14 tối đa 100 ID... PV-17 chỉ giữ trong RAM... PV-18 tối đa 3 sản phẩm, ít nhất 2, cùng domain và category.",
+      "confirmed_at": "2026-09-08T19:16:51.0215531+07:00",
+      "source_references": ["user request dated 2026-09-08", "Designer PREVIEW_SCREEN_PLAN.md", "Designer lib/preview-library.ts"],
+      "locked_behavior": { "recent": "local storage, newest-first max 30 IDs, clear with confirmation, no app-set expiry", "saved": "local storage max 100 IDs, device-only, ID-only, no catalogue/PII", "storage_fallback": "RAM plus storage-limit notice", "faq": "use only snapshot topics; no warranty/shipping/operating promises", "receipt": "RAM only for current app-open session; valid backend acceptance only; remove from UI does not cancel backend", "compare": "2..3 products in same domain and category; absent specs show Chưa có thông tin", "stale_ids": "do not erase merely because an ID is absent from a loaded page; only hide/remove after API confirms it is no longer public" },
+      "status": "APPROVED"
+    },
+    {
+      "id": "D05",
+      "conflict": "visual source generation and baseline choice",
+      "selected_option": "Locked Designer snapshot is the sole implementation/acceptance baseline; live is reference-only.",
+      "scope": ["visual baseline", "QA evidence"],
+      "user_confirmation_verbatim": "Khóa commit Designer 86079f965f2fcb43a7e3efbbc9467d119b47921f. Lập trình và nghiệm thu cùng snapshot này. Live chỉ tham khảo; nếu khác snapshot thì không tự đổi chuẩn.",
+      "confirmed_at": "2026-09-08T18:23:39.7269178+07:00",
+      "source_references": ["Designer source manifest"],
+      "status": "APPROVED"
+    },
+    {
+      "id": "D06",
+      "conflict": "ZaUI scroll owner differs from Designer window-scroll/dependency model",
+      "selected_option": "Keep ZMP; preserve native touch/wheel; use exactly one measured scroll controller and do not exclude the Designer libraries without compatibility checks.",
+      "scope": ["scroll", "motion", "dependencies"],
+      "user_confirmation_verbatim": "Một bộ điều khiển cuộn, touch/wheel giữ native. Kiểm tra tương thích với vùng cuộn ZaUI trước khi tích hợp; không mặc định loại thư viện khỏi yêu cầu.",
+      "confirmed_at": "2026-09-08T19:16:51.0215531+07:00",
+      "source_references": ["user request dated 2026-09-08", "Designer PREVIEW_MOTION_QA.md"],
+      "required_before_dependency_integration": ["measure ZaUI scroll container, input/dialog/back behavior", "per-library React18/ZMP/legacy-browser and bundle proof", "select one controller after measurement"],
+      "gate_owner": "UIUX-G2",
+      "status": "APPROVED_DEFERRED_TO_UIUX_G2"
+    },
+    {
+      "id": "D07",
+      "conflict": "no real-device evidence currently exists",
+      "selected_option": "Before acceptance, test real Zalo Android and iOS and retain device/OS/Zalo/viewport/DPR/orientation/safe-area/IME/back/scroll evidence per case.",
+      "scope": ["responsive QA", "real devices", "evidence"],
+      "user_confirmation_verbatim": "Với QA thật, tôi chọn tối thiểu một Android và một iPhone... screenshot/video, thao tác tái hiện, expected/actual và PASS/FAIL từng case.",
+      "confirmed_at": "2026-09-08T19:16:51.0215531+07:00",
+      "source_references": ["user request dated 2026-09-08"],
+      "gate_owner": "UIUX-G5",
+      "status": "APPROVED_DEFERRED_TO_UIUX_G5"
+    },
+    {
+      "id": "D08",
+      "conflict": "two-column Designer virtual rows conflict with ordinary four-column desktop grid",
+      "selected_option": "Use TanStack Virtual only when at least 80 loaded, eligible products exist; mobile has 2 columns and desktop 4, with row count/measurement recalculated as columns change.",
+      "scope": ["virtualization", "catalogue grid", "responsive behavior"],
+      "user_confirmation_verbatim": "Kích hoạt khi danh sách có ít nhất 80 sản phẩm đã tải và đủ điều kiện hiển thị... 2 cột mobile, 4 cột desktop... Virtualizer phải tính lại số hàng và đo chiều cao khi đổi số cột.",
+      "confirmed_at": "2026-09-08T19:16:51.0215531+07:00",
+      "source_references": ["user request dated 2026-09-08", "Designer components/preview-virtual-products.tsx"],
+      "required_before_integration": ["compatibility/focus/responsive evidence under the target browser/device matrix", "no full-catalogue fetch solely to reach threshold"],
+      "gate_owner": "UIUX-G2",
+      "status": "APPROVED_DEFERRED_TO_UIUX_G2"
+    },
+    {
+      "id": "D09",
+      "conflict": "The locked G2 baseline requires Public Sans, but the target contains no font binary, @font-face rule, Fontsource package, or previously approved host.",
+      "selected_option": "Bundle Public Sans retrieved from the approved Google Fonts CSS API at weights 400, 500, 600, 700 and 800 for the Green/DEV-TEST G2 implementation; verify actual font loading before visual claims.",
+      "scope": ["index.html font resource hints and stylesheet", "G2 visual validation"],
+      "user_confirmation_verbatim": "xác nhận",
+      "confirmation_context": "Direct response to the assistant's request: 'Xác nhận giúp: cho phép dùng Google Fonts Public Sans (400/500/600/700/800) hoặc cung cấp font được duyệt, đồng thời mở/khôi phục browser test để tôi tiếp tục G2.'",
+      "confirmed_at": "2026-09-09T15:58:24.0349430+07:00",
+      "source_references": ["user message in this thread dated 2026-09-09", "docs/uiux-migration/g2/token-font-audit.md"],
+      "locked_behavior": {
+        "font_family": "Public Sans",
+        "source": "Google Fonts CSS API; files are bundled under public/fonts so Green runtime and local visual QA do not depend on live font-host access.",
+        "weights": [400, 500, 600, 700, 800],
+        "environment_scope": "Green/DEV-TEST G2 integration only; no Customer/Production deployment authorization is implied."
+      },
+      "status": "APPROVED_FOR_G2"
+    }
+  ]
+}

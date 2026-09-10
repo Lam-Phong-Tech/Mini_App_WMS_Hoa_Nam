@@ -1,5 +1,4 @@
 import { useEffect, useMemo, useState } from "react";
-import { Button } from "zmp-ui";
 import { useNavigate } from "zmp-ui";
 
 import {
@@ -11,6 +10,7 @@ import {
 import { CatalogueSkeleton, EmptyCatalogue } from "@/components/catalogue/catalogue-feedback";
 import { ProductGrid } from "@/components/catalogue/product-grid";
 import { AppShell } from "@/components/app-shell";
+import { UiButton } from "@/components/ui-button";
 import { SystemStatePanel } from "@/components/system-state-panel";
 import { UiIcon, UiIconName } from "@/components/ui-icon";
 import { usePullToRefresh } from "@/hooks/use-pull-to-refresh";
@@ -20,22 +20,7 @@ import { CategoryDto, ProductCardDto, isApiSuccess } from "@/types/public-api";
 
 const homeRoute = getFoundationRoute("home");
 
-const DOMAIN_COPY = {
-  POWER_TOOLS: {
-    name: "Máy công cụ",
-    description: "Pin, điện AC, khí nén",
-  },
-  HAND_TOOLS: {
-    name: "Dụng cụ cầm tay",
-    description: "Kẹp, siết, đo, cắt",
-  },
-  ACCESSORIES: {
-    name: "Phụ kiện",
-    description: "Pin, sạc, mũi và lưỡi",
-  },
-} as const;
-
-const DOMAIN_ICONS: Record<keyof typeof DOMAIN_COPY, UiIconName> = {
+const DOMAIN_ICONS: Record<"POWER_TOOLS" | "HAND_TOOLS" | "ACCESSORIES", UiIconName> = {
   POWER_TOOLS: "hammer",
   HAND_TOOLS: "wrench",
   ACCESSORIES: "zap",
@@ -82,8 +67,8 @@ const HomePage = () => {
     return (
       <AppShell route={homeRoute} onContentTouchStart={pullToRefresh.onTouchStart} onContentTouchEnd={pullToRefresh.onTouchEnd}>
         <section className="hero-card hero-card--compact">
-          <p className="hero-card__eyebrow">HOA NAM</p>
-          <h2>Product Viewer</h2>
+          <p className="hero-card__eyebrow">HOA NAM TOOLS</p>
+          <h2>Tìm đúng dụng cụ.</h2>
           <p>Đang kiểm tra dữ liệu công khai.</p>
         </section>
         <CatalogueSkeleton />
@@ -109,17 +94,12 @@ const HomePage = () => {
 
   return (
     <AppShell route={homeRoute} onContentTouchStart={pullToRefresh.onTouchStart} onContentTouchEnd={pullToRefresh.onTouchEnd}>
-      <button className="home-search" type="button" onClick={() => navigate("/search", { animate: false })}>
-        <UiIcon name="search" size={26} strokeWidth={2} />
-        <span>Tìm theo tên, model hoặc công dụng</span>
-      </button>
-
       <section className="hero-card home-hero">
         <div className="hero-copy">
-          <p className="hero-card__eyebrow"><UiIcon name="sparkles" size={16} strokeWidth={2} /> DỮ LIỆU CATALOGUE</p>
-          <h2>Tìm đúng dụng cụ cho công việc</h2>
-          <p>Tra cứu nhanh sản phẩm đã công khai và đang sẵn sàng.</p>
-          <Button variant="primary" onClick={() => navigate("/products", { animate: false })}>Xem sản phẩm <UiIcon name="chevronRight" size={20} /></Button>
+          <p className="hero-card__eyebrow">CATALOGUE HOA NAM</p>
+          <h1><span>Tìm đúng dụng cụ.</span><span>Làm tốt công việc.</span></h1>
+          <p>Khám phá sản phẩm công khai theo nhu cầu và công việc của bạn.</p>
+          <UiButton onClick={() => navigate("/products", { animate: false })}>Xem sản phẩm <UiIcon name="chevronRight" size={20} /></UiButton>
         </div>
         <div className={`hero-visual ${heroMedia ? "hero-visual--image" : ""}`} style={heroMedia ? { backgroundImage: `url("${heroMedia.replace(/"/g, "%22")}")` } : undefined} aria-hidden="true">
           {heroMedia ? null : <><span className="hero-visual__ring hero-visual__ring--one"></span><span className="hero-visual__ring hero-visual__ring--two"></span><span className="hero-visual__tool"><UiIcon name="sparkles" size={42} /></span></>}
@@ -131,7 +111,6 @@ const HomePage = () => {
       <section aria-labelledby="domain-title" className="content-section">
         <div className="section-heading">
           <h2 id="domain-title">Nhóm sản phẩm</h2>
-          <span>3 domain</span>
         </div>
         <div className="domain-grid">
           {(home?.domains ?? []).map((domain) => (
@@ -142,8 +121,8 @@ const HomePage = () => {
               onClick={() => navigate(`/categories?domain=${domain.code}`, { animate: false })}
             >
               <span className="domain-icon"><UiIcon name={DOMAIN_ICONS[domain.code]} size={27} /></span>
-              <strong>{DOMAIN_COPY[domain.code].name}</strong>
-              <span>{DOMAIN_COPY[domain.code].description}</span>
+              <strong>{visibleText(domain.display_name)}</strong>
+              <span>Khám phá sản phẩm</span>
             </button>
           ))}
         </div>

@@ -1,0 +1,26 @@
+{
+  "recorded_at": "2026-09-10T00:07:36.136+07:00",
+  "status": "PASS",
+  "green_read_only": {
+    "cursor_page_size": 20,
+    "pages_loaded": 4,
+    "loaded_and_rendered": 80,
+    "virtual_grid": true,
+    "mobile_columns": 2,
+    "desktop_columns_after_resize": 4,
+    "focused_row_retained": true,
+    "evidence": "docs/uiux-migration/evidence/g3/interaction-results.json"
+  },
+  "isolated_qa_thresholds": {
+    "79": {"loaded_and_rendered": 79, "virtual_grid": false, "dom_cards": 79},
+    "80": {"loaded_and_rendered": 80, "virtual_grid": true, "mobile_columns": 2, "mounted_dom_cards": 12},
+    "81": {"loaded_and_rendered": 81, "virtual_grid": true, "mobile_columns": 2, "mounted_dom_cards": 12},
+    "evidence": "docs/uiux-migration/evidence/g3/qa-interaction-results.json"
+  },
+  "motion": {
+    "gsap_lazy_chunk_loaded": true,
+    "cards_visible_after_animation": true,
+    "reduced_motion_skips_animation": true
+  },
+  "boundary": "The threshold adapter is local/in-memory and has no quote endpoint or runtime/UAT/Customer/Production use."
+}

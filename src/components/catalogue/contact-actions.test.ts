@@ -9,6 +9,7 @@ const config = (tel: string, oa: string): PublicConfigDto => ({
   zalo_oa: { id: "oa-test", chat_url: oa },
   support_hours: null,
   privacy_policy_url: null,
+  privacy_version: null,
   maintenance: { enabled: false, message: null, estimated_end_at: null },
   min_supported_app_version: null,
   feature_flags: {},

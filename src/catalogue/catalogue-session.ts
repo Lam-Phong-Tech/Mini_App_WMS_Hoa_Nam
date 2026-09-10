@@ -3,6 +3,8 @@ import { ProductCardDto } from "@/types/public-api";
 export interface ProductListCacheEntry {
   products: ProductCardDto[];
   nextCursor: string | null;
+  /** Number of loaded products intentionally revealed in the progressive grid. */
+  renderedCount: number;
 }
 
 const productListCache = new Map<string, ProductListCacheEntry>();

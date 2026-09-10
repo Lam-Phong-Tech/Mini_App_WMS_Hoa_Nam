@@ -1,6 +1,6 @@
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
-import { getAvailabilityLabel, isPreorderAvailability, visibleText } from "@/catalogue/catalogue-utils";
+import { getAvailabilityLabel, getProductMedia, getVisibleVariants, isPreorderAvailability, visibleText } from "@/catalogue/catalogue-utils";
 import { ContactActions } from "@/components/catalogue/contact-actions";
 import { ProductGallery } from "@/components/catalogue/product-gallery";
 import { PublicImage } from "@/components/catalogue/public-image";
@@ -23,9 +23,9 @@ interface ProductDetailTemplateProps {
   product: ProductDetailDto;
   config: PublicConfigDto | null;
   relatedProducts: ProductCardDto[];
-  onOpenGallery: () => void;
+  onOpenGallery: (variantId?: string) => void;
   onOpenProduct: (slug: string) => void;
-  onRequestConsultation: () => void;
+  onRequestConsultation: (variantId?: string) => void;
 }
 
 /**
@@ -45,6 +45,15 @@ export const ProductDetailTemplate = ({
   onRequestConsultation,
 }: ProductDetailTemplateProps) => {
   const [activeTab, setActiveTab] = useState<DetailTab>("information");
+  const variants = useMemo(() => getVisibleVariants(product.variants), [product.variants]);
+  const [selectedVariantId, setSelectedVariantId] = useState<string | null>(null);
+  const selectedVariant = variants.find((variant) => variant.variant_id === selectedVariantId) ?? variants[0] ?? null;
+  const relatedLimitInitial = 2;
+  const [relatedLimit, setRelatedLimit] = useState(relatedLimitInitial);
+  useEffect(() => {
+    setSelectedVariantId((current) => variants.some((variant) => variant.variant_id === current) ? current : variants[0]?.variant_id ?? null);
+    setRelatedLimit(relatedLimitInitial);
+  }, [product.product_id, variants]);
   const features = product.features
     ?.map((feature) => ({ code: feature.code, label: visibleText(feature.label) }))
     .filter((feature): feature is { code: string; label: string } => Boolean(feature.label)) ?? [];
@@ -66,18 +75,24 @@ export const ProductDetailTemplate = ({
   const category = visibleText(product.category.display_name);
   const primaryCode = visibleText(product.primary_code);
   const identitySummary = summary && summary !== description ? summary : null;
-  const isPreorder = isPreorderAvailability(product.availability);
-  const availabilityLabel = getAvailabilityLabel(product.availability);
+  const displayAvailability = selectedVariant?.availability ?? product.availability;
+  const isPreorder = isPreorderAvailability(displayAvailability);
+  const availabilityLabel = getAvailabilityLabel(displayAvailability);
   const requestLabel = isPreorder ? "Đặt trước" : "Yêu cầu tư vấn";
+  const hasGalleryMedia = getProductMedia(product, selectedVariant).length > 0;
+  const visibleBundleItems = product.bundle_items?.filter((item) => visibleText(item.label)) ?? [];
+  const visibleCompatibility = product.compatibility?.filter((item) => visibleText(item.label)) ?? [];
+  const visibleRelated = relatedProducts.slice(0, relatedLimit);
+  const relatedAreSameCategory = relatedProducts.length > 0 && relatedProducts.every((item) => item.category.code === product.category.code);
 
   return (
     <article className="product-detail-template">
       <section className="detail-template__gallery" aria-label="Hình ảnh sản phẩm">
-        <ProductGallery product={product} />
-        <button className="detail-template__zoom" type="button" onClick={onOpenGallery}>
+        <ProductGallery product={product} variant={selectedVariant} />
+        {hasGalleryMedia ? <button className="detail-template__zoom" type="button" onClick={() => onOpenGallery(selectedVariant?.variant_id)}>
           <UiIcon name="search" size={17} strokeWidth={2.2} />
           Xem ảnh
-        </button>
+        </button> : null}
       </section>
 
       <section className="detail-template__identity">
@@ -89,6 +104,24 @@ export const ProductDetailTemplate = ({
         {model ? <p className="detail-template__model">Model: <strong>{model}</strong></p> : null}
         {primaryCode && primaryCode !== model ? <p className="detail-template__model">Mã sản phẩm: <strong>{primaryCode}</strong></p> : null}
         {identitySummary ? <p className="detail-template__description">{identitySummary}</p> : null}
+        {variants.length ? (
+          <div className="detail-template__variants" aria-label="Chọn phiên bản">
+            <span>Phiên bản</span>
+            <div>
+              {variants.map((variant) => (
+                <button
+                  key={variant.variant_id}
+                  type="button"
+                  className={selectedVariant?.variant_id === variant.variant_id ? "is-selected" : ""}
+                  aria-pressed={selectedVariant?.variant_id === variant.variant_id}
+                  onClick={() => setSelectedVariantId(variant.variant_id)}
+                >
+                  {visibleText(variant.variant_name)}
+                </button>
+              ))}
+            </div>
+          </div>
+        ) : null}
       </section>
 
       <div className="detail-template__tabs" role="tablist" aria-label="Thông tin sản phẩm">
@@ -140,6 +173,30 @@ export const ProductDetailTemplate = ({
               <p className="detail-template__body">{packageContents}</p>
             </div>
           ) : null}
+          {visibleBundleItems.length ? (
+            <div className="detail-template__block">
+              <h2>Bao gồm</h2>
+              <ul className="detail-template__linked-list">
+                {visibleBundleItems.map((item, index) => (
+                  <li key={`${item.product_slug ?? "label"}:${index}`}>
+                    {item.product_slug ? <button type="button" onClick={() => onOpenProduct(item.product_slug!)}>{visibleText(item.label)}</button> : visibleText(item.label)}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          ) : null}
+          {visibleCompatibility.length ? (
+            <div className="detail-template__block">
+              <h2>Tương thích</h2>
+              <ul className="detail-template__linked-list">
+                {visibleCompatibility.map((item, index) => (
+                  <li key={`${item.product_slug ?? "label"}:${index}`}>
+                    {item.product_slug ? <button type="button" onClick={() => onOpenProduct(item.product_slug!)}>{visibleText(item.label)}</button> : visibleText(item.label)}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          ) : null}
           {category ? (
             <div className="detail-template__block detail-template__classification">
               <h2>Phân loại</h2>
@@ -171,19 +228,21 @@ export const ProductDetailTemplate = ({
       {relatedProducts.length ? (
         <section className="detail-template__related" aria-label="Sản phẩm liên quan">
           <h2>Sản phẩm liên quan</h2>
+          <p>{relatedAreSameCategory ? "Khám phá thêm sản phẩm cùng danh mục." : "Khám phá thêm sản phẩm cùng nhóm."}</p>
           <div>
-            {relatedProducts.slice(0, 3).map((related) => (
+            {visibleRelated.map((related) => (
               <button key={related.product_id} type="button" onClick={() => onOpenProduct(related.slug)} aria-label={`Xem ${visibleText(related.name) ?? "sản phẩm liên quan"}`}>
                 <PublicImage media={related.cover_media} alt={related.name} />
                 <strong>{visibleText(related.model) ?? visibleText(related.name)}</strong>
               </button>
             ))}
           </div>
+          {relatedLimit < relatedProducts.length ? <button className="detail-template__more-related" type="button" onClick={() => setRelatedLimit((current) => Math.min(relatedProducts.length, current + 2))}>Xem thêm sản phẩm liên quan</button> : null}
         </section>
       ) : null}
 
       <section className="detail-template__conversion" aria-label="Yêu cầu sản phẩm">
-        <button type="button" className="detail-template__request" onClick={onRequestConsultation}>{requestLabel}</button>
+        <button type="button" className="detail-template__request" onClick={() => onRequestConsultation(selectedVariant?.variant_id)}>{requestLabel}</button>
         <ContactActions config={config} showUnavailable className="detail-template__contact-actions" />
       </section>
     </article>

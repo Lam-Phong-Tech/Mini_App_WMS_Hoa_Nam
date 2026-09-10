@@ -1,0 +1,154 @@
+{
+  "schema_version": "1.0",
+  "stage": "UIUX-G1",
+  "status": "PASS",
+  "recorded_at": "2026-09-09T14:59:49.2667260+07:00",
+  "revalidation_of": {
+    "prior_status": "BLOCKED",
+    "prior_gate_sha256": "0baec58fe6ab7b60473515cef2cf7265965813f4e2b05e0ff8779fd343d300ce",
+    "reason": "User supplied the missing D01-D03 decisions, Green/DEV-TEST authorization and explicit authority to revalidate the quote/config integration changes."
+  },
+  "target_base_sha": "411ba4d3ae4e287ef40626aba8ca6794924be1ef",
+  "design_source_sha": "86079f965f2fcb43a7e3efbbc9467d119b47921f",
+  "implementation_head_sha": "411ba4d3ae4e287ef40626aba8ca6794924be1ef",
+  "dirty_diff": {
+    "tracked_runtime_changes_authorized_for_revalidation": [
+      "src/pages/quote-request.tsx",
+      "src/services/backend-public-mappers.ts",
+      "src/services/public-api.ts",
+      "src/services/quote-service.ts",
+      "src/types/public-api.ts"
+    ],
+    "tracked_test_changes": [
+      "src/components/catalogue/contact-actions.test.ts",
+      "src/services/backend-public-mappers.test.ts",
+      "src/services/dev-quote-mock.ts",
+      "src/services/dev-quote-mock.test.ts",
+      "src/services/quote-service.test.ts",
+      "src/state/system-state.test.ts"
+    ],
+    "preserved_user_local_untracked": [".env.backend-preview", ".env.dev-preview", ".tmp/"],
+    "documentation": "docs/uiux-migration/ remains untracked in the current worktree and records this revalidation."
+  },
+  "previous_gate_path": null,
+  "previous_gate_sha256": null,
+  "baseline_id": "UIUX-G1-2026-09-08-source-01",
+  "baseline_manifest": {
+    "path": "docs/uiux-migration/baseline.json",
+    "sha256": "2d07c8c7d4268cd46ba4a42307e4302a6ccbaa40b2f02248c089907fe82bf1d5"
+  },
+  "decisions": {
+    "path": "docs/uiux-migration/decisions.json",
+    "sha256": "0b50d3768fdc3bde1c74d8e57f51e826af2198aa6d10c616d5a4f422479db3be"
+  },
+  "input_artifacts": [
+    { "path": "docs/uiux-migration/baseline.json", "sha256": "2d07c8c7d4268cd46ba4a42307e4302a6ccbaa40b2f02248c089907fe82bf1d5" },
+    { "path": "docs/uiux-migration/evidence/reference/source-manifest.json", "sha256": "7b2de1e27189319412923a08fc09dea1fc87e52641fe0be6c7a5eb9629e58f65" },
+    { "path": "docs/uiux-migration/decisions.json", "sha256": "0b50d3768fdc3bde1c74d8e57f51e826af2198aa6d10c616d5a4f422479db3be" },
+    { "path": "docs/uiux-migration/evidence/reference/user-confirmation-g1-revalidation-2026-09-09.md", "sha256": "fc5d1f12d611718368a6c15bedec5916b08fb7ae773d61def2b7e02738aa7db4" },
+    { "path": "docs/uiux-migration/evidence/reference/api-green-g1-revalidation-2026-09-09.json", "sha256": "b5419e8c9e99e9df1b76d14e03b70a9c26190439dfa428860a886db0871ab831" },
+    { "path": "src/types/public-api.ts", "sha256": "bc05996912ca3a32372b3bf65a1197d1ec8394ffb967ff45b2075e0cd3b6e606" },
+    { "path": "src/services/backend-public-mappers.ts", "sha256": "3ce481410b039c49381a4f7ca589b3093ec37f9e328dc9e63e55c08619f7d2ba" },
+    { "path": "src/services/public-api.ts", "sha256": "fb8df1bbf122240baf61db486d3640c84fb7b4f4d2c5e336aa6cc36794cb3357" },
+    { "path": "src/services/quote-service.ts", "sha256": "abf1ea8c3a0a489c087601cdb7ba1d1938f4a080114099b71dacf0813b97297a" },
+    { "path": "src/pages/quote-request.tsx", "sha256": "89592ede2b53d8863e059fa3f88811b13323d9daca3b55e6c8ed74988393712b" }
+  ],
+  "output_artifacts": [
+    { "path": "docs/uiux-migration/g1-revalidation.md", "sha256": "768db83fad31af3e5222c34f54dde484a90914cd97583b4fd57a8bf8c86bf7d6" },
+    { "path": "docs/uiux-migration/api-impact.md", "sha256": "122024bed068f547f20fd0e7671c2e1b46f4b2c6404ee3f15463b097b5e3e2d5" },
+    { "path": "docs/uiux-migration/api-dev-check.md", "sha256": "c82c708ef5f335a09d6bbb23e339cf0cef0f8f953f728103be03644896bdaebe" },
+    { "path": "docs/uiux-migration/evidence/reference/user-confirmation-g1-revalidation-2026-09-09.md", "sha256": "fc5d1f12d611718368a6c15bedec5916b08fb7ae773d61def2b7e02738aa7db4" },
+    { "path": "docs/uiux-migration/evidence/reference/api-green-g1-revalidation-2026-09-09.json", "sha256": "b5419e8c9e99e9df1b76d14e03b70a9c26190439dfa428860a886db0871ab831" }
+  ],
+  "checks": [
+    {
+      "id": "target-lineage",
+      "expected": "HEAD and origin/mini_product resolve to locked base SHA",
+      "actual": "HEAD and origin/mini_product both resolve to 411ba4d3ae4e287ef40626aba8ca6794924be1ef.",
+      "status": "PASS",
+      "evidence_paths": ["docs/uiux-migration/evidence/reference/source-manifest.json"],
+      "command": "git rev-parse HEAD; git rev-parse origin/mini_product",
+      "exit_code": 0
+    },
+    {
+      "id": "design-baseline-lineage",
+      "expected": "Locked Designer snapshot remains the approved source baseline",
+      "actual": "The approved locked source SHA remains 86079f965f2fcb43a7e3efbbc9467d119b47921f; source-manifest records the source file hashes. No live URL is substituted for this snapshot.",
+      "status": "PASS",
+      "evidence_paths": ["docs/uiux-migration/baseline.json", "docs/uiux-migration/evidence/reference/source-manifest.json", "docs/uiux-migration/decisions.json"],
+      "command": null,
+      "exit_code": null
+    },
+    {
+      "id": "user-decision-resolution",
+      "expected": "D01-D05 have implementation-specific authority; D06-D08 have an explicit future-gate owner",
+      "actual": "D01 runtime contract, D02 idempotency/consent/province behavior and D03 Green-only data authorization are confirmed. D04-D05 remain approved. D06/D08 are owned by G2 and D07 by G5 without waiving their future proof.",
+      "status": "PASS",
+      "evidence_paths": ["docs/uiux-migration/decisions.json", "docs/uiux-migration/evidence/reference/user-confirmation-g1-revalidation-2026-09-09.md"],
+      "command": null,
+      "exit_code": null
+    },
+    {
+      "id": "green-contract-and-catalogue",
+      "expected": "Green public DTO/config/OpenAPI is compatible with the authorized target integration",
+      "actual": "Config/health are 1.1.0; 933 products over 19 pages have valid domain/availability; POWER_TOOLS categories return 51 entries; OpenAPI exposes multi-product quote and item variant_id.",
+      "status": "PASS",
+      "evidence_paths": ["docs/uiux-migration/evidence/reference/api-green-g1-revalidation-2026-09-09.json"],
+      "command": "GET Green config, health, home, POWER_TOOLS categories, all product pages and OpenAPI JSON",
+      "exit_code": 0
+    },
+    {
+      "id": "quote-runtime-contract",
+      "expected": "One authorized Green QA request proves multi-product acceptance, same-key replay and changed-payload conflict",
+      "actual": "A two-item request with item variant_id returned 201/RECEIVED; identical retry returned 200 with the same request_id; changed note with the same key returned 409 IDEMPOTENCY_CONFLICT. Exactly one QA record was created.",
+      "status": "PASS",
+      "evidence_paths": ["docs/uiux-migration/evidence/reference/api-green-g1-revalidation-2026-09-09.json"],
+      "command": "Authorized Green QA POST sequence completed before this revalidation; exact event time not retained and is not invented.",
+      "exit_code": 0
+    },
+    {
+      "id": "authorized-post-g1-code-revalidation",
+      "expected": "Authorized quote/config changes are traceable and pass affected local checks",
+      "actual": "Current source hashes are recorded in input artifacts. FE maps Green config and canonical quote items; official consent text is present; province is not collected. Typecheck, lint, 50 tests and backend-preview build pass.",
+      "status": "PASS",
+      "evidence_paths": ["docs/uiux-migration/g1-revalidation.md"],
+      "command": "npm run typecheck; npm run lint; npm run test; npm run build:backend-preview",
+      "exit_code": 0
+    },
+    {
+      "id": "visual-device-boundary",
+      "expected": "G1 must not falsely claim G2 visual proof or G5 real-device evidence",
+      "actual": "No pixel match, visual baseline, scroll-owner measurement or physical-device QA is claimed. The user assigns those mandatory checks to G2/G5.",
+      "status": "PASS",
+      "evidence_paths": ["docs/uiux-migration/decisions.json", "docs/uiux-migration/g1-revalidation.md"],
+      "command": null,
+      "exit_code": null
+    }
+  ],
+  "unresolved_blockers": [],
+  "approved_decision_ids": ["D01", "D02", "D03", "D04", "D05", "D06", "D07", "D08"],
+  "changed_files": [
+    "src/components/catalogue/contact-actions.test.ts",
+    "src/pages/quote-request.tsx",
+    "src/services/backend-public-mappers.test.ts",
+    "src/services/backend-public-mappers.ts",
+    "src/services/dev-quote-mock.ts",
+    "src/services/dev-quote-mock.test.ts",
+    "src/services/public-api.ts",
+    "src/services/quote-service.test.ts",
+    "src/services/quote-service.ts",
+    "src/state/system-state.test.ts",
+    "src/types/public-api.ts",
+    "docs/uiux-migration/decisions.json",
+    "docs/uiux-migration/api-impact.md",
+    "docs/uiux-migration/api-dev-check.md",
+    "docs/uiux-migration/g1-revalidation.md",
+    "docs/uiux-migration/evidence/reference/user-confirmation-g1-revalidation-2026-09-09.md",
+    "docs/uiux-migration/evidence/reference/api-green-g1-revalidation-2026-09-09.json",
+    "docs/uiux-migration/gates/UIUX-G1.json",
+    "docs/uiux-migration/gates/UIUX-G1.md"
+  ],
+  "api_impact": "The authorized Green/DEV-TEST client now sends canonical v1.1 items[] quote payloads and maps root public config fields with legacy fallback. No endpoint, backend, Customer/Production or deployment change was made from this workspace.",
+  "data_impact": "Exactly one authorized QA quote record already exists in Green/DEV-TEST. Green public API/config/media are approved for UI integration test only. No Designer fixture/runtime data, Customer/Production data or additional test quote was created during revalidation.",
+  "next_prompt_allowed": true
+}

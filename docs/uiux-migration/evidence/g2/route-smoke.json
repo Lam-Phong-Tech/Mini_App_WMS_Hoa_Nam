@@ -1,0 +1,398 @@
+{
+  "recordedAt": "2026-09-09T09:26:12.621Z",
+  "browser": "Chrome headless local DEV/TEST adapter",
+  "viewport": {
+    "width": 390,
+    "height": 844,
+    "dpr": 1
+  },
+  "routes": [
+    {
+      "path": "/home",
+      "check": {
+        "href": "http://localhost:3100/home",
+        "shell": true,
+        "topbar": true,
+        "navigation": true,
+        "loading": false,
+        "text": "HOA NAM\nTOOLS\nTìm theo tên, model hoặc công dụng\n\nCATALOGUE HOA NAM\n\nTìm đúng dụng cụ.\nLàm tốt công việc.\n\nKhám phá sản phẩm công khai theo "
+      }
+    },
+    {
+      "path": "/categories",
+      "check": {
+        "href": "http://localhost:3100/categories",
+        "shell": true,
+        "topbar": true,
+        "navigation": true,
+        "loading": false,
+        "text": "HOA NAM\nTOOLS\nMáy và thiết bị động lực\nDụng cụ cầm tay\nPhụ tùng và phụ kiện\nĐANG XEM\nMáy và thiết bị động lực\n\nDanh mục chỉ hiển thị khi đã "
+      }
+    },
+    {
+      "path": "/products",
+      "check": {
+        "href": "http://localhost:3100/products",
+        "shell": true,
+        "topbar": true,
+        "navigation": true,
+        "loading": false,
+        "text": "HOA NAM\nTOOLS\nTìm theo tên, model hoặc công dụng\nTìm kiếm\nLọc & sắp xếp\nCòn hàng\nBộ combo không dây không chổi than – DCKIT10 (BK)\nDongCheng"
+      }
+    },
+    {
+      "path": "/search",
+      "check": {
+        "href": "http://localhost:3100/search",
+        "shell": true,
+        "topbar": true,
+        "navigation": true,
+        "loading": false,
+        "text": "HOA NAM\nTOOLS\nGợi ý sản phẩm\n50\nBộ combo không dây không chổi than – DCKIT10 (BK)\nDongCheng sê-ri DCKIT · Bộ combo không dây không chổi than"
+      }
+    },
+    {
+      "path": "/contact",
+      "check": {
+        "href": "http://localhost:3100/contact",
+        "shell": true,
+        "topbar": true,
+        "navigation": true,
+        "loading": false,
+        "text": "HOA NAM\nTOOLS\nCần hỗ trợ về sản phẩm?\n\nChọn một trong hai kênh liên hệ chính thức của Hoa Nam.\n\nGọi hotline\n098 636 6675\nZ\nChat Zalo OA\nTính"
+      }
+    }
+  ],
+  "logEntries": [
+    {
+      "level": "error",
+      "text": "Failed to load resource: net::ERR_NETWORK_ACCESS_DENIED",
+      "url": "https://images.bigk.click/Power_Tool/DCKIT10.jpg?v=r2-20260906"
+    },
+    {
+      "level": "error",
+      "text": "Failed to load resource: net::ERR_NETWORK_ACCESS_DENIED",
+      "url": "https://images.bigk.click/Power_Tool/DCKIT12.jpg?v=r2-20260906"
+    },
+    {
+      "level": "error",
+      "text": "Failed to load resource: net::ERR_NETWORK_ACCESS_DENIED",
+      "url": "https://images.bigk.click/Power_Tool/DCKIT25.jpg?v=r2-20260906"
+    },
+    {
+      "level": "error",
+      "text": "Failed to load resource: net::ERR_NETWORK_ACCESS_DENIED",
+      "url": "https://images.bigk.click/Power_Tool/DCKIT26.jpg?v=r2-20260906"
+    },
+    {
+      "level": "error",
+      "text": "Failed to load resource: net::ERR_NETWORK_ACCESS_DENIED",
+      "url": "https://images.bigk.click/Power_Tool/DCKIT27.jpg?v=r2-20260906"
+    },
+    {
+      "level": "error",
+      "text": "Failed to load resource: net::ERR_NETWORK_ACCESS_DENIED",
+      "url": "https://images.bigk.click/Power_Tool/DCKIT28.jpg?v=r2-20260906"
+    },
+    {
+      "level": "error",
+      "text": "Failed to load resource: net::ERR_NETWORK_ACCESS_DENIED",
+      "url": "https://images.bigk.click/Power_Tool/DCKIT29.jpg?v=r2-20260906"
+    },
+    {
+      "level": "error",
+      "text": "Failed to load resource: net::ERR_NETWORK_ACCESS_DENIED",
+      "url": "https://images.bigk.click/Power_Tool/DCKIT34.jpg?v=r2-20260906"
+    },
+    {
+      "level": "error",
+      "text": "Failed to load resource: net::ERR_NETWORK_ACCESS_DENIED",
+      "url": "https://images.bigk.click/Power_Tool/DCKIT36.jpg?v=r2-20260906"
+    },
+    {
+      "level": "error",
+      "text": "Failed to load resource: net::ERR_NETWORK_ACCESS_DENIED",
+      "url": "https://images.bigk.click/Power_Tool/DCKIT37.jpg?v=r2-20260906"
+    },
+    {
+      "level": "error",
+      "text": "Failed to load resource: net::ERR_NETWORK_ACCESS_DENIED",
+      "url": "https://images.bigk.click/Power_Tool/DCKIT42.jpg?v=r2-20260906"
+    },
+    {
+      "level": "error",
+      "text": "Failed to load resource: net::ERR_NETWORK_ACCESS_DENIED",
+      "url": "https://images.bigk.click/Power_Tool/DCKIT43.jpg?v=r2-20260906"
+    },
+    {
+      "level": "error",
+      "text": "Failed to load resource: net::ERR_NETWORK_ACCESS_DENIED",
+      "url": "https://images.bigk.click/Power_Tool/DCKIT45.jpg?v=r2-20260906"
+    },
+    {
+      "level": "error",
+      "text": "Failed to load resource: net::ERR_NETWORK_ACCESS_DENIED",
+      "url": "https://images.bigk.click/Power_Tool/DCKIT46.jpg?v=r2-20260906"
+    },
+    {
+      "level": "error",
+      "text": "Failed to load resource: net::ERR_NETWORK_ACCESS_DENIED",
+      "url": "https://images.bigk.click/Power_Tool/DCKIT47.jpg?v=r2-20260906"
+    },
+    {
+      "level": "error",
+      "text": "Failed to load resource: net::ERR_NETWORK_ACCESS_DENIED",
+      "url": "https://images.bigk.click/Power_Tool/DCKIT49.jpg?v=r2-20260906"
+    },
+    {
+      "level": "error",
+      "text": "Failed to load resource: net::ERR_NETWORK_ACCESS_DENIED",
+      "url": "https://images.bigk.click/Power_Tool/DCKIT50.jpg?v=r2-20260906"
+    },
+    {
+      "level": "error",
+      "text": "Failed to load resource: net::ERR_NETWORK_ACCESS_DENIED",
+      "url": "https://images.bigk.click/Power_Tool/DCKIT51.jpg?v=r2-20260906"
+    },
+    {
+      "level": "error",
+      "text": "Failed to load resource: net::ERR_NETWORK_ACCESS_DENIED",
+      "url": "https://images.bigk.click/Power_Tool/DCKIT52.jpg?v=r2-20260906"
+    },
+    {
+      "level": "error",
+      "text": "Failed to load resource: net::ERR_NETWORK_ACCESS_DENIED",
+      "url": "https://images.bigk.click/Power_Tool/DCKIT53.jpg?v=r2-20260906"
+    },
+    {
+      "level": "error",
+      "text": "Failed to load resource: net::ERR_NETWORK_ACCESS_DENIED",
+      "url": "https://images.bigk.click/Power_Tool/DCKIT55.jpg?v=r2-20260906"
+    },
+    {
+      "level": "error",
+      "text": "Failed to load resource: net::ERR_NETWORK_ACCESS_DENIED",
+      "url": "https://images.bigk.click/Power_Tool/DCKIT10.jpg?v=r2-20260906"
+    },
+    {
+      "level": "error",
+      "text": "Failed to load resource: net::ERR_NETWORK_ACCESS_DENIED",
+      "url": "https://images.bigk.click/Power_Tool/DCKIT12.jpg?v=r2-20260906"
+    },
+    {
+      "level": "error",
+      "text": "Failed to load resource: net::ERR_NETWORK_ACCESS_DENIED",
+      "url": "https://images.bigk.click/Power_Tool/DCKIT25.jpg?v=r2-20260906"
+    },
+    {
+      "level": "error",
+      "text": "Failed to load resource: net::ERR_NETWORK_ACCESS_DENIED",
+      "url": "https://images.bigk.click/Power_Tool/DCKIT26.jpg?v=r2-20260906"
+    },
+    {
+      "level": "error",
+      "text": "Failed to load resource: net::ERR_NETWORK_ACCESS_DENIED",
+      "url": "https://images.bigk.click/Handtool/D170906.jpg?v=r2-20260906"
+    },
+    {
+      "level": "error",
+      "text": "Failed to load resource: net::ERR_NETWORK_ACCESS_DENIED",
+      "url": "https://images.bigk.click/Handtool/D171101.jpg?v=r2-20260906"
+    },
+    {
+      "level": "error",
+      "text": "Failed to load resource: net::ERR_NETWORK_ACCESS_DENIED",
+      "url": "https://images.bigk.click/Handtool/D171102.jpg?v=r2-20260906"
+    },
+    {
+      "level": "error",
+      "text": "Failed to load resource: net::ERR_NETWORK_ACCESS_DENIED",
+      "url": "https://images.bigk.click/Handtool/D171103.jpg?v=r2-20260906"
+    },
+    {
+      "level": "error",
+      "text": "Failed to load resource: net::ERR_NETWORK_ACCESS_DENIED",
+      "url": "https://images.bigk.click/Power_Tool/DCKIT10.jpg?v=r2-20260906"
+    },
+    {
+      "level": "error",
+      "text": "Failed to load resource: net::ERR_NETWORK_ACCESS_DENIED",
+      "url": "https://images.bigk.click/Power_Tool/DCKIT12.jpg?v=r2-20260906"
+    },
+    {
+      "level": "error",
+      "text": "Failed to load resource: net::ERR_NETWORK_ACCESS_DENIED",
+      "url": "https://images.bigk.click/Power_Tool/DCKIT25.jpg?v=r2-20260906"
+    },
+    {
+      "level": "error",
+      "text": "Failed to load resource: net::ERR_NETWORK_ACCESS_DENIED",
+      "url": "https://images.bigk.click/Power_Tool/DCKIT26.jpg?v=r2-20260906"
+    },
+    {
+      "level": "error",
+      "text": "Failed to load resource: net::ERR_NETWORK_ACCESS_DENIED",
+      "url": "https://images.bigk.click/Power_Tool/DCKIT27.jpg?v=r2-20260906"
+    },
+    {
+      "level": "error",
+      "text": "Failed to load resource: net::ERR_NETWORK_ACCESS_DENIED",
+      "url": "https://images.bigk.click/Power_Tool/DCKIT28.jpg?v=r2-20260906"
+    },
+    {
+      "level": "error",
+      "text": "Failed to load resource: net::ERR_NETWORK_ACCESS_DENIED",
+      "url": "https://images.bigk.click/Power_Tool/DCKIT29.jpg?v=r2-20260906"
+    },
+    {
+      "level": "error",
+      "text": "Failed to load resource: net::ERR_NETWORK_ACCESS_DENIED",
+      "url": "https://images.bigk.click/Power_Tool/DCKIT34.jpg?v=r2-20260906"
+    },
+    {
+      "level": "error",
+      "text": "Failed to load resource: net::ERR_NETWORK_ACCESS_DENIED",
+      "url": "https://images.bigk.click/Power_Tool/DCKIT36.jpg?v=r2-20260906"
+    },
+    {
+      "level": "error",
+      "text": "Failed to load resource: net::ERR_NETWORK_ACCESS_DENIED",
+      "url": "https://images.bigk.click/Power_Tool/DCKIT37.jpg?v=r2-20260906"
+    },
+    {
+      "level": "error",
+      "text": "Failed to load resource: net::ERR_NETWORK_ACCESS_DENIED",
+      "url": "https://images.bigk.click/Power_Tool/DCKIT42.jpg?v=r2-20260906"
+    },
+    {
+      "level": "error",
+      "text": "Failed to load resource: net::ERR_NETWORK_ACCESS_DENIED",
+      "url": "https://images.bigk.click/Power_Tool/DCKIT43.jpg?v=r2-20260906"
+    },
+    {
+      "level": "error",
+      "text": "Failed to load resource: net::ERR_NETWORK_ACCESS_DENIED",
+      "url": "https://images.bigk.click/Power_Tool/DCKIT45.jpg?v=r2-20260906"
+    },
+    {
+      "level": "error",
+      "text": "Failed to load resource: net::ERR_NETWORK_ACCESS_DENIED",
+      "url": "https://images.bigk.click/Power_Tool/DCKIT46.jpg?v=r2-20260906"
+    },
+    {
+      "level": "error",
+      "text": "Failed to load resource: net::ERR_NETWORK_ACCESS_DENIED",
+      "url": "https://images.bigk.click/Power_Tool/DCKIT47.jpg?v=r2-20260906"
+    },
+    {
+      "level": "error",
+      "text": "Failed to load resource: net::ERR_NETWORK_ACCESS_DENIED",
+      "url": "https://images.bigk.click/Power_Tool/DCKIT49.jpg?v=r2-20260906"
+    },
+    {
+      "level": "error",
+      "text": "Failed to load resource: net::ERR_NETWORK_ACCESS_DENIED",
+      "url": "https://images.bigk.click/Power_Tool/DCKIT50.jpg?v=r2-20260906"
+    },
+    {
+      "level": "error",
+      "text": "Failed to load resource: net::ERR_NETWORK_ACCESS_DENIED",
+      "url": "https://images.bigk.click/Power_Tool/DCKIT51.jpg?v=r2-20260906"
+    },
+    {
+      "level": "error",
+      "text": "Failed to load resource: net::ERR_NETWORK_ACCESS_DENIED",
+      "url": "https://images.bigk.click/Power_Tool/DCKIT52.jpg?v=r2-20260906"
+    },
+    {
+      "level": "error",
+      "text": "Failed to load resource: net::ERR_NETWORK_ACCESS_DENIED",
+      "url": "https://images.bigk.click/Power_Tool/DCKIT53.jpg?v=r2-20260906"
+    },
+    {
+      "level": "error",
+      "text": "Failed to load resource: net::ERR_NETWORK_ACCESS_DENIED",
+      "url": "https://images.bigk.click/Power_Tool/DCKIT47.jpg?v=r2-20260906"
+    },
+    {
+      "level": "error",
+      "text": "Failed to load resource: net::ERR_NETWORK_ACCESS_DENIED",
+      "url": "https://images.bigk.click/Power_Tool/DCKIT49.jpg?v=r2-20260906"
+    },
+    {
+      "level": "error",
+      "text": "Failed to load resource: net::ERR_NETWORK_ACCESS_DENIED",
+      "url": "https://images.bigk.click/Power_Tool/DCKIT10.jpg?v=r2-20260906"
+    },
+    {
+      "level": "error",
+      "text": "Failed to load resource: net::ERR_NETWORK_ACCESS_DENIED",
+      "url": "https://images.bigk.click/Power_Tool/DCKIT12.jpg?v=r2-20260906"
+    },
+    {
+      "level": "error",
+      "text": "Failed to load resource: net::ERR_NETWORK_ACCESS_DENIED",
+      "url": "https://images.bigk.click/Power_Tool/DCKIT25.jpg?v=r2-20260906"
+    },
+    {
+      "level": "error",
+      "text": "Failed to load resource: net::ERR_NETWORK_ACCESS_DENIED",
+      "url": "https://images.bigk.click/Power_Tool/DCKIT26.jpg?v=r2-20260906"
+    },
+    {
+      "level": "error",
+      "text": "Failed to load resource: net::ERR_NETWORK_ACCESS_DENIED",
+      "url": "https://images.bigk.click/Power_Tool/DCKIT27.jpg?v=r2-20260906"
+    },
+    {
+      "level": "error",
+      "text": "Failed to load resource: net::ERR_NETWORK_ACCESS_DENIED",
+      "url": "https://images.bigk.click/Power_Tool/DCKIT28.jpg?v=r2-20260906"
+    },
+    {
+      "level": "error",
+      "text": "Failed to load resource: net::ERR_NETWORK_ACCESS_DENIED",
+      "url": "https://images.bigk.click/Power_Tool/DCKIT29.jpg?v=r2-20260906"
+    },
+    {
+      "level": "error",
+      "text": "Failed to load resource: net::ERR_NETWORK_ACCESS_DENIED",
+      "url": "https://images.bigk.click/Power_Tool/DCKIT34.jpg?v=r2-20260906"
+    },
+    {
+      "level": "error",
+      "text": "Failed to load resource: net::ERR_NETWORK_ACCESS_DENIED",
+      "url": "https://images.bigk.click/Power_Tool/DCKIT36.jpg?v=r2-20260906"
+    },
+    {
+      "level": "error",
+      "text": "Failed to load resource: net::ERR_NETWORK_ACCESS_DENIED",
+      "url": "https://images.bigk.click/Power_Tool/DCKIT37.jpg?v=r2-20260906"
+    },
+    {
+      "level": "error",
+      "text": "Failed to load resource: net::ERR_NETWORK_ACCESS_DENIED",
+      "url": "https://images.bigk.click/Power_Tool/DCKIT42.jpg?v=r2-20260906"
+    },
+    {
+      "level": "error",
+      "text": "Failed to load resource: net::ERR_NETWORK_ACCESS_DENIED",
+      "url": "https://images.bigk.click/Power_Tool/DCKIT43.jpg?v=r2-20260906"
+    },
+    {
+      "level": "error",
+      "text": "Failed to load resource: net::ERR_NETWORK_ACCESS_DENIED",
+      "url": "https://images.bigk.click/Power_Tool/DCKIT45.jpg?v=r2-20260906"
+    },
+    {
+      "level": "error",
+      "text": "Failed to load resource: net::ERR_NETWORK_ACCESS_DENIED",
+      "url": "https://images.bigk.click/Power_Tool/DCKIT46.jpg?v=r2-20260906"
+    },
+    {
+      "level": "error",
+      "text": "Failed to load resource: net::ERR_NETWORK_ACCESS_DENIED",
+      "url": "https://images.bigk.click/Power_Tool/DCKIT55.jpg?v=r2-20260906"
+    }
+  ]
+}

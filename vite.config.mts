@@ -20,6 +20,12 @@ export default ({ mode }: { mode: string }) => {
       assetsInlineLimit: 0,
     },
     server: {
+      // Local QA stores Chrome profiles and captured evidence beneath .tmp.
+      // They are not source files; watching a locked browser Cookie database
+      // aborts Vite before the Mini App can be tested.
+      watch: {
+        ignored: ["**/.tmp/**"],
+      },
       // ZMP's outer frame listens on :3000, while the Mini App iframe is served
       // from :2999. Proxy non-mock DEV traffic so the iframe never depends on a
       // brittle per-port CORS allowlist. Production builds keep their absolute

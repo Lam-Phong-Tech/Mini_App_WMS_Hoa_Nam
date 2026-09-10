@@ -1,10 +1,24 @@
+import {
+  KeyboardEvent,
+  ReactNode,
+  TouchEventHandler,
+  useEffect,
+  useRef,
+  useState,
+} from "react";
 import { Page, useLocation, useNavigate } from "zmp-ui";
-import { ReactNode, TouchEventHandler } from "react";
 
 import { BOTTOM_NAVIGATION, FoundationRoute, getBottomNavigationKey } from "@/routes";
 import { UiIcon, UiIconName } from "@/components/ui-icon";
 
 type BottomNavigationKey = (typeof BOTTOM_NAVIGATION)[number]["key"];
+
+const MENU_DESTINATIONS = [
+  { label: "Trang chủ", path: "/home", icon: "home" },
+  { label: "Danh mục", path: "/categories", icon: "grid" },
+  { label: "Tìm kiếm", path: "/search", icon: "search" },
+  { label: "Liên hệ", path: "/contact", icon: "phone" },
+] as const satisfies ReadonlyArray<{ label: string; path: string; icon: UiIconName }>;
 
 const BottomNavigationIcon = ({ itemKey }: { itemKey: BottomNavigationKey }) => {
   const iconByItemKey: Record<BottomNavigationKey, UiIconName> = {
@@ -12,7 +26,7 @@ const BottomNavigationIcon = ({ itemKey }: { itemKey: BottomNavigationKey }) => 
     categories: "grid",
     contact: "phone",
   };
-  return <UiIcon name={iconByItemKey[itemKey]} size={24} strokeWidth={1.8} />;
+  return <UiIcon name={iconByItemKey[itemKey]} size={22} strokeWidth={1.8} />;
 };
 
 interface AppShellProps {
@@ -24,6 +38,10 @@ interface AppShellProps {
   onContentTouchEnd?: TouchEventHandler<HTMLElement>;
 }
 
+/**
+ * Shared G2 shell. ZaUI Page remains the only scroll owner until D06's
+ * compatibility evidence approves a different controller.
+ */
 export const AppShell = ({
   route,
   children,
@@ -35,43 +53,154 @@ export const AppShell = ({
   const location = useLocation();
   const navigate = useNavigate();
   const activeKey = getBottomNavigationKey(location.pathname);
-  const isHome = route.key === "home";
-  const headerTitle = isHome ? "Product Viewer" : route.title;
-  // The prototype keeps a consistent app identity line on every screen.
-  // Route context is already conveyed by the title, so do not replace it
-  // with an all-caps eyebrow (that caused the header to drift from wireframe).
-  const headerSubtitle = "Hoa Nam · Catalogue công khai";
+  const [menuOpen, setMenuOpen] = useState(false);
+  const menuButtonRef = useRef<HTMLButtonElement | null>(null);
+  const menuDialogRef = useRef<HTMLDivElement | null>(null);
+  const shouldRestoreMenuFocus = useRef(false);
+  const showTopbarSearch = route.key === "home" || route.key === "products";
+
+  const closeMenu = () => setMenuOpen(false);
+
+  useEffect(() => {
+    if (!menuOpen) {
+      if (shouldRestoreMenuFocus.current) {
+        menuButtonRef.current?.focus();
+        shouldRestoreMenuFocus.current = false;
+      }
+      return undefined;
+    }
+
+    shouldRestoreMenuFocus.current = true;
+    const scrollRoot = document.querySelector<HTMLElement>(".hn-page");
+    const restoreScrollTop = scrollRoot?.scrollTop;
+    scrollRoot?.classList.add("hn-page--menu-open");
+    const focusTimer = window.setTimeout(() => {
+      menuDialogRef.current?.querySelector<HTMLButtonElement>("button:not([disabled])")?.focus();
+    }, 0);
+    const onKeyDown = (event: globalThis.KeyboardEvent) => {
+      if (event.key === "Escape") closeMenu();
+    };
+    const originalHistoryBack = window.history.back;
+    // ZaUI's runtime owns the native-back message listener. During this modal
+    // state, consume its history.back call and restore the exact handler after
+    // the menu closes so normal route back behaviour is unchanged.
+    window.history.back = () => closeMenu();
+    document.addEventListener("keydown", onKeyDown);
+
+    return () => {
+      window.clearTimeout(focusTimer);
+      document.removeEventListener("keydown", onKeyDown);
+      window.history.back = originalHistoryBack;
+      scrollRoot?.classList.remove("hn-page--menu-open");
+      if (scrollRoot && typeof restoreScrollTop === "number") scrollRoot.scrollTop = restoreScrollTop;
+    };
+  }, [menuOpen]);
+
+  const trapMenuFocus = (event: KeyboardEvent<HTMLDivElement>) => {
+    if (event.key !== "Tab") return;
+    const focusable = Array.from(
+      menuDialogRef.current?.querySelectorAll<HTMLElement>("button:not([disabled]), a[href]") ?? [],
+    );
+    if (!focusable.length) return;
+    const first = focusable[0];
+    const last = focusable[focusable.length - 1];
+    if (event.shiftKey && document.activeElement === first) {
+      event.preventDefault();
+      last.focus();
+    } else if (!event.shiftKey && document.activeElement === last) {
+      event.preventDefault();
+      first.focus();
+    }
+  };
+
+  const navigateFromMenu = (path: string) => {
+    closeMenu();
+    if (path !== location.pathname) navigate(path, { animate: false });
+  };
 
   return (
     <Page
       name={scrollKey ?? route.key}
-      className={`hn-page hn-page--${route.key}`}
+      className={`hn-page hn-page--${route.key}${menuOpen ? " hn-page--menu-open" : ""}`}
       resetScroll
       restoreScrollOnBack
       hideScrollbar
     >
-      <div className="hn-shell">
-        <header className={`hn-header app-header${isHome ? " app-header--home" : ""}`}>
-          {isHome ? <span className="mini-mark" aria-hidden="true">HN</span> : <button className="header-back" type="button" aria-label="Quay lại" onClick={() => {
-            // Preserve the user's navigation context (category → list → detail)
-            // and only fall back to Home when the screen was opened directly.
-            if (window.history.length > 1) {
-              navigate(-1);
-            } else {
-              navigate("/home", { animate: false });
-            }
-          }}><UiIcon name="chevronLeft" size={24} /></button>}
-          <div className="app-title">
-            <strong>{headerTitle}</strong>
-            <span>{headerSubtitle}</span>
-          </div>
-          {/* Search remains available in its own dedicated screen and Home field.
-              Keeping this spacer makes the title sit in the same visual frame
-              on all screens without a redundant corner search control. */}
-          <span className="header-spacer" aria-hidden="true" />
-        </header>
-        <main className={`hn-content app-content${isHome ? " app-content--home" : ""}`} onTouchStart={onContentTouchStart} onTouchEnd={onContentTouchEnd}>{children}</main>
+      <div className="hn-shell hn-theme">
+        <div className="hn-topbar">
+          <header className="hn-header" aria-label="Điều hướng Hoa Nam Tools">
+            <button
+              ref={menuButtonRef}
+              className="hn-header-action"
+              type="button"
+              aria-label="Mở menu"
+              aria-expanded={menuOpen}
+              aria-controls="hn-navigation-menu"
+              onClick={() => setMenuOpen(true)}
+            >
+              <UiIcon name="menu" size={22} />
+            </button>
+            <button className="hn-wordmark" type="button" onClick={() => navigate("/home", { animate: false })} aria-label="Hoa Nam Tools, về Trang chủ">
+              <span className="hn-wordmark__brand" aria-hidden="true"><span>HOA<br />NAM</span></span>
+              <span className="hn-wordmark__copy">
+                <span className="hn-wordmark__name">HOA NAM</span>
+                <span className="hn-wordmark__caption">TOOLS</span>
+              </span>
+            </button>
+            <button
+              className="hn-header-action"
+              type="button"
+              aria-label="Chọn sản phẩm để gửi yêu cầu tư vấn"
+              onClick={() => navigate("/products", { animate: false })}
+            >
+              <UiIcon name="send" size={21} />
+            </button>
+          </header>
+          {showTopbarSearch ? (
+            <button className="hn-topbar-search" type="button" onClick={() => navigate("/search", { animate: false })}>
+              <UiIcon name="search" size={20} />
+              <span>Tìm theo tên, model hoặc công dụng</span>
+              <UiIcon name="arrowRight" size={20} className="hn-topbar-search__arrow" />
+            </button>
+          ) : null}
+        </div>
+        <main className="hn-content" onTouchStart={onContentTouchStart} onTouchEnd={onContentTouchEnd}>{children}</main>
       </div>
+
+      {menuOpen ? (
+        <div className="hn-menu-layer" role="presentation">
+          <button className="hn-menu-backdrop" type="button" aria-label="Đóng menu" onClick={closeMenu} />
+          <div
+            id="hn-navigation-menu"
+            ref={menuDialogRef}
+            className="hn-menu-dialog"
+            role="dialog"
+            aria-modal="true"
+            aria-label="Menu điều hướng"
+            onKeyDown={trapMenuFocus}
+          >
+            <div className="hn-menu-dialog__heading">
+              <span>HOA NAM TOOLS</span>
+              <button type="button" aria-label="Đóng menu" onClick={closeMenu}><UiIcon name="chevronLeft" size={22} /></button>
+            </div>
+            <div className="hn-menu-dialog__items">
+              {MENU_DESTINATIONS.map((item) => (
+                <button
+                  key={item.path}
+                  type="button"
+                  aria-current={location.pathname === item.path ? "page" : undefined}
+                  onClick={() => navigateFromMenu(item.path)}
+                >
+                  <UiIcon name={item.icon} size={21} />
+                  <span>{item.label}</span>
+                  <UiIcon name="chevronRight" size={19} />
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+      ) : null}
+
       {showNavigation ? (
         <nav className="hn-bottom-navigation" aria-label="Điều hướng chính">
           {BOTTOM_NAVIGATION.map((item) => (

@@ -1,0 +1,36 @@
+{
+  "recorded_at": "2026-09-10T00:33:56.0941164+07:00",
+  "environment": "Green/DEV-TEST read-only",
+  "base_url": "https://khohoanamdev.lptech.info.vn/api/v1/public",
+  "authorization": "D03 Green public API/config/media UI integration test only",
+  "operations": [
+    {
+      "method": "GET",
+      "path": "/products",
+      "openapi_documented_query_parameters": ["q", "domain", "category", "power_source", "feature", "sort", "cursor", "limit"],
+      "has_documented_product_id_lookup": false,
+      "has_documented_batch_ids_lookup": false
+    },
+    {
+      "method": "GET",
+      "path": "/products/{slug}",
+      "lookup_key": "slug",
+      "is_product_id_lookup": false
+    },
+    {
+      "method": "GET",
+      "path": "/products?q=<published-public-uuid>&limit=5",
+      "response_success": true,
+      "returned_item_count": 0,
+      "matching_public_id_count": 0,
+      "conclusion": "The generic q parameter is not a product-ID rehydration contract."
+    }
+  ],
+  "writes": {
+    "quote_post": 0,
+    "green_write": 0,
+    "sale_or_crm_write": 0,
+    "fixture_publication": 0
+  },
+  "result": "BLOCKED: D04 ID-only persistent recent/saved storage cannot rehydrate authoritative current public product data after reload with the current documented contract."
+}

@@ -10,7 +10,7 @@ import { UiIcon } from "@/components/ui-icon";
 import { useProductDetail } from "@/hooks/use-product-detail";
 import { getFoundationRoute } from "@/routes";
 import { useAppContext } from "@/state/app-context";
-import { createQuoteSubmissionGuard, generateIdempotencyKey, QuoteDraftInput, validateQuoteDraft } from "@/services/quote-service";
+import { createQuoteIdempotencyKeyTracker, createQuoteSubmissionGuard, getVietnamesePhoneValidationError, QuoteDraftInput, validateQuoteDraft } from "@/services/quote-service";
 import { createLoadingState, getSystemStateForFailure } from "@/state/system-state";
 import { ApiFailure, VariantDto, isApiSuccess } from "@/types/public-api";
 
@@ -19,12 +19,11 @@ const quoteRoute = getFoundationRoute("quote-request");
 interface QuoteFormState {
   full_name: string;
   phone: string;
-  province_code: string;
   note: string;
   consent: boolean;
 }
 
-const EMPTY_FORM: QuoteFormState = { full_name: "", phone: "", province_code: "", note: "", consent: false };
+const EMPTY_FORM: QuoteFormState = { full_name: "", phone: "", note: "", consent: false };
 
 const inputError = (errors: Record<string, string[]>, field: string): string | null => errors[field]?.[0] ?? null;
 
@@ -39,13 +38,13 @@ const QuoteRequestPage = () => {
   const [submitting, setSubmitting] = useState(false);
   const [responseFailure, setResponseFailure] = useState<ApiFailure | null>(null);
   const [acceptedRequestId, setAcceptedRequestId] = useState<string | null>(null);
-  const idempotencyKey = useRef(generateIdempotencyKey());
+  const idempotencyKeys = useRef(createQuoteIdempotencyKeyTracker());
   const guard = useRef(createQuoteSubmissionGuard());
   const returnPath = getSafeReturnPath(location.search) ?? (slug ? `/products/${slug}` : "/products");
   const selectedVariantId = new URLSearchParams(location.search).get("variant_id");
   const variants = useMemo(() => getVisibleVariants(detail.product?.variants), [detail.product?.variants]);
   const selectedVariant: VariantDto | null = variants.find((variant) => variant.variant_id === selectedVariantId) ?? variants[0] ?? null;
-  const privacyVersion = config?.config_version ?? "";
+  const privacyVersion = config?.privacy_version ?? "";
 
   if (phase === "loading") return <AppShell route={quoteRoute}><SystemStatePanel state={createLoadingState()} /></AppShell>;
   if (systemState) return <AppShell route={quoteRoute}><SystemStatePanel state={systemState} onRetry={() => void refresh()} /></AppShell>;
@@ -58,11 +57,13 @@ const QuoteRequestPage = () => {
   const isPreorder = isPreorderAvailability(product.availability);
   const requestLabel = isPreorder ? "đặt trước" : "tư vấn";
   const draft: QuoteDraftInput = {
-    product_id: product.product_id,
-    variant_id: selectedVariant?.variant_id ?? null,
+    items: [{
+      product_id: product.product_id,
+      variant_id: selectedVariant?.variant_id ?? null,
+      quantity: null,
+    }],
     full_name: form.full_name,
     phone: form.phone,
-    province_code: form.province_code,
     note: form.note,
     consent: form.consent,
     privacy_version: privacyVersion,
@@ -74,20 +75,25 @@ const QuoteRequestPage = () => {
     setResponseFailure(null);
   };
 
+  const validatePhoneField = (phone: string) => {
+    const error = getVietnamesePhoneValidationError(phone);
+    setFieldErrors((current) => ({ ...current, phone: error ? [error] : [] }));
+  };
+
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     if (submitting || acceptedRequestId) return;
     const validation = validateQuoteDraft(draft);
     setFieldErrors(validation.errors);
-    if (!validation.valid) return;
+    if (!validation.valid || !validation.value) return;
 
     setSubmitting(true);
     setResponseFailure(null);
-    const response = await guard.current.submit(api, draft, idempotencyKey.current);
+    const response = await guard.current.submit(api, draft, idempotencyKeys.current.getKey(validation.value));
     setSubmitting(false);
     if (isApiSuccess(response)) setAcceptedRequestId(response.data.request_id);
     else {
-      if (response.error_code === "VALIDATION_ERROR" && response.errors) {
+      if (response.errors) {
         setFieldErrors(response.errors);
       }
       setResponseFailure(response);
@@ -134,28 +140,37 @@ const QuoteRequestPage = () => {
       <form className="quote-form" onSubmit={(event) => void handleSubmit(event)} noValidate>
         <label>
           Họ và tên
-          <input value={form.full_name} onChange={(event) => update("full_name", event.target.value)} maxLength={80} autoComplete="name" aria-invalid={Boolean(inputError(fieldErrors, "full_name"))} />
+          <input value={form.full_name} onChange={(event) => update("full_name", event.target.value)} maxLength={100} autoComplete="name" disabled={submitting} aria-invalid={Boolean(inputError(fieldErrors, "full_name"))} />
           {inputError(fieldErrors, "full_name") ? <span className="field-error">{inputError(fieldErrors, "full_name")}</span> : null}
         </label>
         <label>
-          Số điện thoại
-          <input value={form.phone} onChange={(event) => update("phone", event.target.value)} inputMode="tel" autoComplete="tel" aria-invalid={Boolean(inputError(fieldErrors, "phone"))} />
-          {inputError(fieldErrors, "phone") ? <span className="field-error">{inputError(fieldErrors, "phone")}</span> : null}
-        </label>
-        <label>
-          Tỉnh/thành (không bắt buộc)
-          <input value={form.province_code} onChange={(event) => update("province_code", event.target.value)} maxLength={32} />
-          {inputError(fieldErrors, "province_code") ? <span className="field-error">{inputError(fieldErrors, "province_code")}</span> : null}
+          <span className="field-label">Số điện thoại <span className="required-mark" aria-hidden="true">*</span></span>
+          <input
+            type="tel"
+            value={form.phone}
+            onChange={(event) => update("phone", event.target.value.replace(/\D/g, "").slice(0, 10))}
+            onBlur={(event) => validatePhoneField(event.target.value)}
+            inputMode="numeric"
+            pattern="[0-9]*"
+            autoComplete="tel"
+            maxLength={10}
+            required
+            aria-required="true"
+            disabled={submitting}
+            aria-invalid={Boolean(inputError(fieldErrors, "phone"))}
+            aria-describedby={inputError(fieldErrors, "phone") ? "quote-phone-error" : undefined}
+          />
+          {inputError(fieldErrors, "phone") ? <span id="quote-phone-error" className="field-error">{inputError(fieldErrors, "phone")}</span> : null}
         </label>
         <label>
           Ghi chú (không bắt buộc)
-          <textarea value={form.note} onChange={(event) => update("note", event.target.value)} maxLength={500} rows={4} />
-          <span className="field-hint">{form.note.length}/500</span>
+          <textarea value={form.note} onChange={(event) => update("note", event.target.value)} maxLength={1000} rows={4} disabled={submitting} />
+          <span className="field-hint">{form.note.length}/1000</span>
           {inputError(fieldErrors, "note") ? <span className="field-error">{inputError(fieldErrors, "note")}</span> : null}
         </label>
         <label className="consent-field">
-          <input type="checkbox" checked={form.consent} onChange={(event) => update("consent", event.target.checked)} aria-invalid={Boolean(inputError(fieldErrors, "consent"))} />
-          <span>Tôi đồng ý để Hoa Nam sử dụng thông tin này cho yêu cầu tư vấn theo chính sách dữ liệu.</span>
+          <input type="checkbox" checked={form.consent} onChange={(event) => update("consent", event.target.checked)} disabled={submitting} aria-invalid={Boolean(inputError(fieldErrors, "consent"))} />
+          <span>Tôi đồng ý để Hoa Nam sử dụng họ tên, số điện thoại, sản phẩm quan tâm và ghi chú tôi cung cấp nhằm tiếp nhận yêu cầu và liên hệ tư vấn theo Chính sách sử dụng thông tin.</span>
           {inputError(fieldErrors, "consent") ? <span className="field-error">{inputError(fieldErrors, "consent")}</span> : null}
         </label>
         {inputError(fieldErrors, "privacy_version") ? <p className="field-error">{inputError(fieldErrors, "privacy_version")}</p> : null}

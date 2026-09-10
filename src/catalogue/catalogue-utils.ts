@@ -1,6 +1,7 @@
 import {
   CategoryDto,
   DOMAIN_CODES,
+  DomainDto,
   DomainCode,
   FacetDto,
   HomeSectionDto,
@@ -14,8 +15,13 @@ import {
 } from "@/types/public-api";
 
 export const MOBILE_TOUCH_TARGET_PX = 44;
-export const SEARCH_DEBOUNCE_MS = 300;
+export const SEARCH_DEBOUNCE_MS = 220;
 export const PRODUCT_PAGE_LIMIT = 20;
+export const PROGRESSIVE_INITIAL_BATCH = 4;
+export const PROGRESSIVE_BATCH_SIZE = 4;
+export const RELATED_INITIAL_BATCH = 2;
+export const RELATED_BATCH_SIZE = 2;
+export const VIRTUAL_PRODUCT_THRESHOLD = 80;
 
 const EMPTY_MARKERS = new Set(["", "-", "n/a", "null", "undefined"]);
 const SORTS: ProductSort[] = ["featured", "updated_desc", "name_asc"];
@@ -80,6 +86,34 @@ export const getVisibleCategories = (
   (categories ?? []).filter(
     (category) => Boolean(visibleText(category.code) && visibleText(category.display_name)),
   );
+
+/** Keep the three public domain codes in the approved visual order without
+ * manufacturing a missing DTO record or its display name. */
+export const getCanonicalDomains = (
+  domains: DomainDto[] | undefined,
+): DomainDto[] => Array.from(DOMAIN_CODES).reduce<DomainDto[]>((ordered, code) => {
+  const match = (domains ?? []).find((domain) => domain.code === code && visibleText(domain.display_name));
+  if (match) ordered.push(match);
+  return ordered;
+}, []);
+
+/** The UI may reveal only a small batch even when one opaque API page has been
+ * loaded. This never changes the server cursor or pretends more records exist. */
+export const getNextRenderedProductCount = (
+  loadedCount: number,
+  currentRenderedCount: number,
+  batchSize = PROGRESSIVE_BATCH_SIZE,
+): number => Math.min(
+  Math.max(0, loadedCount),
+  Math.max(0, currentRenderedCount) + Math.max(1, batchSize),
+);
+
+export const isVirtualProductGridEligible = (
+  loadedEligibleCount: number,
+  renderedEligibleCount: number,
+): boolean =>
+  loadedEligibleCount >= VIRTUAL_PRODUCT_THRESHOLD &&
+  renderedEligibleCount >= VIRTUAL_PRODUCT_THRESHOLD;
 
 export const getVisibleVariants = (
   variants: VariantDto[] | undefined,

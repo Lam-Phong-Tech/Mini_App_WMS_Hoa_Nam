@@ -4,7 +4,9 @@ import {
   MOBILE_TOUCH_TARGET_PX,
   countActiveFilters,
   createProductDetailPath,
+  getCanonicalDomains,
   getAvailabilityLabel,
+  getNextRenderedProductCount,
   getPublicProducts,
   getSearchMatchRank,
   getVisibleDetailSections,
@@ -13,6 +15,7 @@ import {
   isEligiblePublicProduct,
   isPreorderAvailability,
   isPublicMediaUrl,
+  isVirtualProductGridEligible,
   mergeUniqueProducts,
   normalizeSearchText,
   parseProductQuery,
@@ -25,7 +28,7 @@ import {
 } from "@/catalogue/catalogue-session";
 import { shouldRefreshFromPull } from "@/hooks/use-pull-to-refresh";
 import { getSystemStateForFailure } from "@/state/system-state";
-import { ApiFailure, CategoryDto, ProductCardDto, ProductDetailDto, VariantDto } from "@/types/public-api";
+import { ApiFailure, CategoryDto, DomainDto, ProductCardDto, ProductDetailDto, VariantDto } from "@/types/public-api";
 
 // TEST-ONLY contract values. They are never imported by a runtime adapter, fixture, UAT, or Production build.
 const category: CategoryDto = {
@@ -59,6 +62,24 @@ describe("catalogue contract presentation", () => {
   it("does not render an empty Home section and preserves the three canonical domains", () => {
     expect(getVisibleHomeSections([{ kind: "FEATURED_PRODUCTS", title: "Empty", items: [] }])).toEqual([]);
     expect(["POWER_TOOLS", "HAND_TOOLS", "ACCESSORIES"]).toHaveLength(3);
+  });
+
+  it("orders only supplied canonical domains and never manufactures a missing DTO", () => {
+    const domains: DomainDto[] = [
+      { code: "ACCESSORIES", display_name: "Accessories" },
+      { code: "POWER_TOOLS", display_name: "Power tools" },
+    ];
+    expect(getCanonicalDomains(domains).map((domain) => domain.code)).toEqual(["POWER_TOOLS", "ACCESSORIES"]);
+  });
+
+  it("keeps loaded records separate from four-card progressive rendering and enables virtual rows only at 80", () => {
+    expect(getNextRenderedProductCount(20, 0)).toBe(4);
+    expect(getNextRenderedProductCount(20, 4)).toBe(8);
+    expect(getNextRenderedProductCount(5, 4)).toBe(5);
+    expect(isVirtualProductGridEligible(79, 79)).toBe(false);
+    expect(isVirtualProductGridEligible(80, 79)).toBe(false);
+    expect(isVirtualProductGridEligible(80, 80)).toBe(true);
+    expect(isVirtualProductGridEligible(81, 81)).toBe(true);
   });
 
   it("normalizes Vietnamese search and asserts exact model/item-code priority", () => {

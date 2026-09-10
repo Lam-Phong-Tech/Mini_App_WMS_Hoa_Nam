@@ -1,4 +1,4 @@
-import { ChangeEvent, useEffect, useMemo, useState } from "react";
+import { ChangeEvent, KeyboardEvent, useEffect, useMemo, useState } from "react";
 import { useLocation, useNavigate } from "zmp-ui";
 
 import {
@@ -10,6 +10,7 @@ import {
   isPreorderAvailability,
   normalizeProductQuery,
   parseProductQuery,
+  productQueryCacheKey,
   serializeProductQuery,
   visibleText,
 } from "@/catalogue/catalogue-utils";
@@ -27,6 +28,7 @@ import { SystemStatePanel } from "@/components/system-state-panel";
 import { UiIcon } from "@/components/ui-icon";
 import { useDebouncedValue } from "@/hooks/use-debounced-value";
 import { useProductResults } from "@/hooks/use-product-results";
+import { useScrollRestoration } from "@/hooks/use-scroll-restoration";
 import { getFoundationRoute } from "@/routes";
 import { useAppContext } from "@/state/app-context";
 import { createLoadingState } from "@/state/system-state";
@@ -73,15 +75,16 @@ const SearchPage = () => {
   const [filters, setFilters] = useState(initialQuery);
   const [searchInput, setSearchInput] = useState(initialQuery.q ?? "");
   const [filterVisible, setFilterVisible] = useState(false);
-  const debouncedSearch = useDebouncedValue(searchInput, SEARCH_DEBOUNCE_MS);
+  const [isComposing, setIsComposing] = useState(false);
+  const { value: debouncedSearch, flush: flushSearch } = useDebouncedValue(searchInput, SEARCH_DEBOUNCE_MS, !isComposing);
   const query = useMemo(
-    // The suggestion screen deliberately requests the public page maximum so
-    // all approved demo products are immediately visible before a term is typed.
-    () => normalizeProductQuery({ ...filters, q: debouncedSearch, limit: 50 }),
+    () => normalizeProductQuery({ ...filters, q: debouncedSearch }),
     [debouncedSearch, filters],
   );
   const hasSearch = Boolean(visibleText(debouncedSearch));
   const results = useProductResults(api, query);
+  const scrollKey = `search:${productQueryCacheKey(query)}`;
+  useScrollRestoration(scrollKey, results.kind === "success-data" || results.kind === "success-empty" || results.kind === "load-more-error");
   const returnPath = createProductReturnPath(
     "/search",
     serializeProductQuery({ ...filters, q: searchInput }),
@@ -93,45 +96,59 @@ const SearchPage = () => {
   }, [initialQuery]);
 
   if (phase === "loading") {
-    return <AppShell route={searchRoute} scrollKey={`search:${location.search}`}><SystemStatePanel state={createLoadingState()} /></AppShell>;
+    return <AppShell route={searchRoute} scrollKey={scrollKey}><SystemStatePanel state={createLoadingState()} /></AppShell>;
   }
   if (systemState) {
-    return <AppShell route={searchRoute} scrollKey={`search:${location.search}`}><SystemStatePanel state={systemState} onRetry={() => void refresh()} /></AppShell>;
+    return <AppShell route={searchRoute} scrollKey={scrollKey}><SystemStatePanel state={systemState} onRetry={() => void refresh()} /></AppShell>;
   }
 
   const handleSearchChange = (event: ChangeEvent<HTMLInputElement>) => setSearchInput(event.target.value);
+  const handleCompositionStart = () => setIsComposing(true);
+  const handleCompositionEnd = () => setIsComposing(false);
+  const handleSearchKeyDown = (event: KeyboardEvent<HTMLInputElement>) => {
+    if (event.key === "Enter" && !isComposing) {
+      event.preventDefault();
+      flushSearch();
+    }
+  };
   const filterCount = countActiveFilters(query);
   const hasProducts = results.products.length > 0;
+  const queryPending = !isComposing && searchInput !== debouncedSearch;
 
   return (
-    <AppShell route={searchRoute} scrollKey={`search:${location.search}`}>
+    <AppShell route={searchRoute} scrollKey={scrollKey}>
       <section className="search-entry search-entry--page" aria-label="Tìm kiếm sản phẩm">
         <UiIcon name="search" size={23} strokeWidth={2} />
         <input
           type="search"
           value={searchInput}
           onChange={handleSearchChange}
+          onCompositionStart={handleCompositionStart}
+          onCompositionEnd={handleCompositionEnd}
+          onKeyDown={handleSearchKeyDown}
           placeholder="Tên sản phẩm, model, công dụng..."
           autoComplete="off"
           maxLength={160}
         />
         {searchInput ? <button type="button" onClick={() => setSearchInput("")}>Xóa</button> : null}
       </section>
+      {queryPending || isComposing ? <p className="search-pending" role="status">Đang cập nhật kết quả tìm kiếm…</p> : null}
       {hasSearch ? <section className="catalogue-toolbar">
-        <p>Ưu tiên model/mã hàng chính xác trước tên gần đúng.</p>
         <button type="button" onClick={() => setFilterVisible(true)}>
           Lọc{filterCount ? ` (${filterCount})` : ""}
         </button>
+        <output aria-live="polite">Đã hiển thị {results.renderedCount}</output>
+        <p>Ưu tiên model/mã hàng chính xác.</p>
       </section> : null}
 
       {results.kind === "loading" ? <CatalogueSkeleton /> : null}
-      {results.failure ? <CatalogueFailure failure={results.failure} onRetry={() => void results.reload()} /> : null}
+      {!hasProducts && results.failure ? <CatalogueFailure failure={results.failure} onRetry={() => void results.reload()} /> : null}
       {hasSearch && results.kind === "success-empty" ? (
         <EmptyCatalogue title="Không tìm thấy sản phẩm" message="Kiểm tra lại model, mã hàng hoặc thử từ khóa ngắn hơn." onRetry={() => void results.reload()} />
       ) : null}
-      {hasSearch && hasProducts ? <ProductGrid products={results.products} returnPath={returnPath} label="Kết quả tìm kiếm" /> : null}
+      {hasSearch && hasProducts ? <ProductGrid products={results.products} loadedCount={results.loadedCount} returnPath={returnPath} label="Kết quả tìm kiếm" /> : null}
       {!hasSearch && hasProducts ? <SearchSuggestions products={results.products} returnPath={returnPath} /> : null}
-      {hasSearch && hasProducts ? <InfiniteLoadTrigger loading={results.kind === "loading-more"} hasMore={Boolean(results.nextCursor)} onLoadMore={results.loadMore} /> : null}
+      {hasProducts ? <InfiniteLoadTrigger loading={results.kind === "loading-more"} failure={results.kind === "load-more-error" ? results.failure : null} hasMore={results.renderedCount < results.loadedCount || Boolean(results.nextCursor)} onLoadMore={results.loadMore} /> : null}
 
       <FilterSheet
         api={api}

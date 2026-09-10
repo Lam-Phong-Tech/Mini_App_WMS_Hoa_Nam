@@ -1,5 +1,4 @@
 import { Suspense, lazy } from "react";
-import { getSystemInfo } from "zmp-sdk";
 import {
   AnimationRoutes,
   App,
@@ -7,7 +6,6 @@ import {
   SnackbarProvider,
   ZMPRouter,
 } from "zmp-ui";
-import { AppProps } from "zmp-ui/app";
 
 import { AppProvider } from "@/state/app-context";
 
@@ -25,7 +23,10 @@ const RouteLoading = () => <div className="route-loading" role="status">Äang má
 
 const Layout = () => {
   return (
-    <App theme={getSystemInfo().zaloTheme as AppProps["theme"]}>
+    // The approved Preview baseline is a light surface.  Do not inherit Zalo's
+    // dark theme here because it changes the locked colour contract; controls
+    // remain explicitly readable with the shared token theme.
+    <App theme="light">
       <SnackbarProvider>
         <AppProvider>
           <ZMPRouter>

@@ -4,11 +4,9 @@ import { DevQuotePersistenceMock } from "@/services/dev-quote-mock";
 import { isApiSuccess } from "@/types/public-api";
 
 const input = {
-  product_id: "product-1",
-  variant_id: "variant-1",
+  items: [{ product_id: "product-1", variant_id: "variant-1", quantity: 1 }],
   full_name: "Nguyễn Văn A",
   phone: "+84912345678",
-  province_code: "HCM",
   note: "Xin tư vấn",
   consent: true as const,
   privacy_version: "2026-08",

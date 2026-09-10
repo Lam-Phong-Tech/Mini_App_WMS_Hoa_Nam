@@ -1,0 +1,30 @@
+{
+  "recorded_at": "2026-09-08T19:16:51.0215531+07:00",
+  "source": {
+    "kind": "user-pasted attachment",
+    "sha256": "d30e44eb18a815d3ec073546542007e3a696048eb82888971cabd04ec0e3a6b9",
+    "description": "BE multi-product quote instruction, 113 lines / 4,846 characters"
+  },
+  "claims_recorded_without_reclassification_as_runtime_proof": {
+    "quote_endpoint": "POST {BASE_URL}/api/v1/public/quote-requests",
+    "claimed_config_contract_version": "1.1.0",
+    "items_constraint": "1..20 unique product items; optional quantity 1..9999; variant rule described but item-level OpenAPI field placement is not present in the pasted JSON",
+    "response": "201 created or 200 idempotent replay; data contains request_id and RECEIVED",
+    "base_urls": { "DEV": "http://localhost:8080", "UAT": "not supplied", "PRODUCTION": "not supplied" }
+  },
+  "local_read_only_verification": {
+    "config_endpoint": "GET http://localhost:8080/api/v1/public/config",
+    "result": "unavailable from this workspace at time of check; no contract_version observed",
+    "backend_contract_documents_present_in_target_checkout": false,
+    "missing_paths": [
+      "docs/api-contract/HN-BE-API-007_PUBLIC_QUOTE_REQUEST.md",
+      "docs/api-contract/HN-BE-API-007-public-quote-request-openapi.yaml",
+      "docs/api-contract/HN-BE-API-007-public-quote-request-samples.json"
+    ]
+  },
+  "unresolved_conflicts": [
+    "Earlier user decision normalized product order for idempotency and said changing display order does not create new content; this attachment says changing order creates a new key. Confirmation is required before implementation.",
+    "Earlier user decision specifies a root public-config privacy_version; the attachment example reads appConfig.privacy.version. The authoritative config schema is still needed.",
+    "The attachment describes variant_id but does not show its exact JSON location in an items[] object; use the OpenAPI document instead of inferring it."
+  ]
+}

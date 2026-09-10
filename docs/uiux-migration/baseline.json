@@ -1,0 +1,50 @@
+{
+  "schema_version": "1.0",
+  "baseline_id": "UIUX-G1-2026-09-08-source-01",
+  "captured_at": "2026-09-08T17:22:02+07:00",
+  "purpose": "UIUX-G1 source baseline; not a pixel or device baseline",
+  "target": {
+    "repository": "https://github.com/Lam-Phong-Tech/Mini_App_WMS_Hoa_Nam.git",
+    "branch": "mini_product",
+    "base_sha": "411ba4d3ae4e287ef40626aba8ca6794924be1ef",
+    "implementation_head_sha": "411ba4d3ae4e287ef40626aba8ca6794924be1ef",
+    "stack": ["React 18.3.1", "Vite 5.2.13", "TypeScript 5.7.3", "ZMP SDK", "ZaUI"],
+    "direct_motion_dependencies": []
+  },
+  "designer": {
+    "repository": "https://github.com/Duc-Nguyen98/WMS_UIUX_HoaNamv2.git",
+    "source_sha": "86079f965f2fcb43a7e3efbbc9467d119b47921f",
+    "live_url": "https://duc-nguyen98.github.io/WMS_UIUX_HoaNamv2/preview/?zarsrc=30#view=home",
+    "transport_status": "HTTP 200 from HEAD",
+    "reference_mode": "user-approved locked source snapshot for implementation and acceptance; live URL is reference-only and cannot silently replace this snapshot",
+    "approval_reference": "docs/uiux-migration/decisions.json#D05"
+  },
+  "environment": {
+    "os": "Windows",
+    "browser": null,
+    "device": null,
+    "viewport": null,
+    "dpr": null,
+    "font_runtime_confirmation": null,
+    "asset_runtime_confirmation": null,
+    "route_state": null,
+    "scroll_position": null,
+    "animation_mark": null
+  },
+  "cases": {
+    "coverage_target": ["PV-01", "PV-02", "PV-03", "PV-04", "PV-05", "PV-06", "PV-07", "PV-08", "PV-09", "PV-10", "PV-11", "PV-12", "PV-13", "PV-14", "PV-15", "PV-16", "PV-17", "PV-18"],
+    "current_evidence": "source mapping only; no visual PASS case"
+  },
+  "source_manifest_path": "docs/uiux-migration/evidence/reference/source-manifest.json",
+  "dirty_worktree": {
+    "tracked_or_staged_code_diff": false,
+    "preserved_user_local_untracked": [".env.backend-preview", ".env.dev-preview", ".tmp/"],
+    "new_uiux_artifacts": "created only under docs/uiux-migration/"
+  },
+  "limitations": [
+    "No screenshot, DOM/geometry capture, browser console/network trace, or target device run was produced.",
+    "The live URL transport response does not prove it serves the locked Designer source commit.",
+    "No approved operational product/media/contact/config/fixture data was supplied for image comparison.",
+    "This file cannot support a claim of pixel match or 100% coverage."
+  ]
+}

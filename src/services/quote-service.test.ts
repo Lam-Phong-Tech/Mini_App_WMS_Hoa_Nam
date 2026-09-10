@@ -2,7 +2,10 @@ import { describe, expect, it, vi } from "vitest";
 
 import { createSafeFailure } from "@/services/api-client";
 import {
+  createQuoteIdempotencyKeyTracker,
   createQuoteSubmissionGuard,
+  getQuoteFingerprint,
+  getVietnamesePhoneValidationError,
   normalizeVietnamesePhone,
   submitQuoteWithRetry,
   validateQuoteDraft,
@@ -20,11 +23,9 @@ const accepted = (requestId = "req-1"): ApiSuccess<QuoteAcceptedDto> => ({
 });
 
 const validDraft = () => ({
-  product_id: "product-1",
-  variant_id: "variant-1",
+  items: [{ product_id: "product-1", variant_id: "variant-1", quantity: 1 }],
   full_name: "Nguyễn Văn A",
   phone: "0912345678",
-  province_code: "HCM",
   note: "Tư vấn giúp tôi phiên bản phù hợp",
   consent: true,
   privacy_version: "2026-08",
@@ -38,15 +39,24 @@ describe("G3 quote validation and submission", () => {
     const result = validateQuoteDraft(validDraft());
     expect(result.valid).toBe(true);
     expect(result.value?.phone).toBe("+84912345678");
-    expect(normalizeVietnamesePhone(" +84912345678 ")).toBe("+84912345678");
+    expect(normalizeVietnamesePhone(" (+84) 912.345-678 ")).toBe("+84912345678");
+  });
+
+  it("validates only a 10-digit Vietnamese mobile number in the phone field", () => {
+    expect(getVietnamesePhoneValidationError("0912345678")).toBeNull();
+    expect(getVietnamesePhoneValidationError("+84912345678")).toBeTruthy();
+    expect(getVietnamesePhoneValidationError("0912 345 678")).toBeTruthy();
+    expect(getVietnamesePhoneValidationError("0212345678")).toBeTruthy();
+    expect(getVietnamesePhoneValidationError("091234567")).toBeTruthy();
+    expect(getVietnamesePhoneValidationError("0912abc678")).toBeTruthy();
   });
 
   it("returns field-level errors for name, phone, note, consent and privacy", () => {
     const result = validateQuoteDraft({
       ...validDraft(),
-      full_name: "A",
-      phone: "0123",
-      note: "x".repeat(501),
+      full_name: " ",
+      phone: "0123 ext 4",
+      note: "x".repeat(1_001),
       consent: false,
       privacy_version: "",
     });
@@ -80,24 +90,20 @@ describe("G3 quote validation and submission", () => {
     await expect(Promise.all([first, second])).resolves.toHaveLength(2);
   });
 
-  it("retries an unavailable upstream with the same idempotency key", async () => {
+  it("does not automatically retry an unavailable upstream", async () => {
     const create = vi.fn()
-      .mockResolvedValueOnce(createSafeFailure("UPSTREAM_UNAVAILABLE"))
-      .mockResolvedValueOnce(accepted("req-retry"));
+      .mockResolvedValueOnce(createSafeFailure("UPSTREAM_UNAVAILABLE"));
     const response = await submitQuoteWithRetry(apiWith(create), validDraft(), "key-retry-000001");
-    expect(response.success).toBe(true);
-    expect(create).toHaveBeenCalledTimes(2);
-    expect(create.mock.calls.map((call) => call[1])).toEqual(["key-retry-000001", "key-retry-000001"]);
+    expect(response.success).toBe(false);
+    expect(create).toHaveBeenCalledTimes(1);
   });
 
-  it("maps a rejected network call to a safe error and retries once", async () => {
+  it("maps a rejected network call to a safe error without submitting again", async () => {
     const create = vi.fn()
-      .mockRejectedValueOnce(new Error("private upstream detail"))
-      .mockResolvedValueOnce(accepted("req-network"));
+      .mockRejectedValueOnce(new Error("private upstream detail"));
     const response = await submitQuoteWithRetry(apiWith(create), validDraft(), "key-network-00001");
-    expect(response.success).toBe(true);
-    expect(create).toHaveBeenCalledTimes(2);
-    expect(create.mock.calls.every((call) => call[1] === "key-network-00001")).toBe(true);
+    expect(response.success).toBe(false);
+    expect(create).toHaveBeenCalledTimes(1);
   });
 
   it("does not retry rate limits and preserves safe error code", async () => {
@@ -106,5 +112,48 @@ describe("G3 quote validation and submission", () => {
     expect(response.success).toBe(false);
     if (!response.success) expect(response.error_code).toBe("RATE_LIMITED");
     expect(create).toHaveBeenCalledTimes(1);
+  });
+
+  it("uses one key for a canonical product order and a new key when content changes", () => {
+    const tracker = createQuoteIdempotencyKeyTracker(vi.fn()
+      .mockReturnValueOnce("key-canonical-0001")
+      .mockReturnValueOnce("key-changed-000002"));
+    const first = validateQuoteDraft({
+      ...validDraft(),
+      items: [
+        { product_id: "product-b", variant_id: null, quantity: 1 },
+        { product_id: "product-a", variant_id: null, quantity: 1 },
+      ],
+    }).value;
+    const reordered = validateQuoteDraft({
+      ...validDraft(),
+      items: [
+        { product_id: "product-a", variant_id: null, quantity: 1 },
+        { product_id: "product-b", variant_id: null, quantity: 1 },
+      ],
+    }).value;
+    const changed = validateQuoteDraft({
+      ...validDraft(),
+      items: [{ product_id: "product-a", variant_id: null, quantity: 2 }],
+    }).value;
+    if (!first || !reordered || !changed) throw new Error("Expected valid drafts");
+
+    expect(getQuoteFingerprint(first)).toBe(getQuoteFingerprint(reordered));
+    expect(tracker.getKey(first)).toBe("key-canonical-0001");
+    expect(tracker.getKey(reordered)).toBe("key-canonical-0001");
+    expect(tracker.getKey(changed)).toBe("key-changed-000002");
+  });
+
+  it("rejects duplicate products and accepts 1,000-character notes", () => {
+    expect(validateQuoteDraft({ ...validDraft(), note: "x".repeat(1_000) }).valid).toBe(true);
+    const duplicate = validateQuoteDraft({
+      ...validDraft(),
+      items: [
+        { product_id: "product-1", variant_id: null },
+        { product_id: "product-1", variant_id: "variant-2" },
+      ],
+    });
+    expect(duplicate.valid).toBe(false);
+    expect(duplicate.errors.items).toBeDefined();
   });
 });

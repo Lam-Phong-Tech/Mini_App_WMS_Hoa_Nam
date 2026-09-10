@@ -980,6 +980,10 @@ a {
   font-weight: 600;
 }
 
+.required-mark {
+  color: var(--hn-danger);
+}
+
 .quote-form input:not([type="checkbox"]),
 .quote-form textarea {
   width: 100%;
@@ -3326,6 +3330,227 @@ button.contact-channel-card {
    request: there is no basket, order, stock count, CRM assignment or status. */
 .product-detail-template {
   padding-bottom: calc(168px + var(--hn-safe-bottom));
+}
+
+/* UIUX-G3 catalogue: all page scrolling remains on the surrounding ZaUI
+   .hn-page. These controls do not introduce a nested scroll controller. */
+.catalogue-toolbar > output {
+  min-width: 0;
+  margin-left: auto;
+  color: #777185;
+  font-size: 12px;
+  line-height: 1.35;
+  text-align: right;
+}
+
+.catalogue-availability-note,
+.search-pending,
+.infinite-load__error {
+  margin: -8px 2px 0;
+  color: #777185;
+  font-size: 12px;
+  line-height: 1.45;
+}
+
+.search-pending {
+  color: #615b71;
+}
+
+.infinite-load__error {
+  margin: 0;
+  color: #a14c00;
+  text-align: center;
+}
+
+.category-return,
+.detail-template__more-related,
+.detail-template__linked-list button {
+  min-height: 44px;
+  color: var(--hn-primary);
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+  border: 0;
+  background: transparent;
+}
+
+.category-return {
+  justify-self: start;
+  padding: 0 4px;
+}
+
+.product-grid--virtual {
+  display: block;
+}
+
+.product-grid__virtual-spacer {
+  position: relative;
+  width: 100%;
+}
+
+.product-grid__virtual-row {
+  position: absolute;
+  left: 0;
+  display: grid;
+  width: 100%;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 16px;
+  padding-bottom: 16px;
+  will-change: transform;
+}
+
+.detail-template__variants {
+  display: grid;
+  gap: 8px;
+  margin-top: 16px;
+}
+
+.detail-template__variants > span {
+  color: #777185;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.detail-template__variants > div {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.detail-template__variants button {
+  min-height: 40px;
+  padding: 7px 10px;
+  color: #3e394d;
+  font: inherit;
+  font-size: 13px;
+  cursor: pointer;
+  border: 1px solid #dcd9e3;
+  border-radius: 8px;
+  background: #ffffff;
+}
+
+.detail-template__variants button.is-selected {
+  color: #ffffff;
+  border-color: #7367f0;
+  background: #7367f0;
+}
+
+.detail-template__linked-list {
+  display: grid;
+  gap: 4px;
+  margin: 0;
+  padding-left: 20px;
+}
+
+.detail-template__linked-list li {
+  color: #4e495c;
+  line-height: 1.45;
+}
+
+.detail-template__linked-list button {
+  min-height: 32px;
+  padding: 0;
+  text-align: left;
+}
+
+.detail-template__related > p {
+  margin: 4px 0 12px;
+  color: #777185;
+  font-size: 13px;
+  line-height: 1.45;
+}
+
+.detail-template__more-related {
+  margin-top: 10px;
+  padding: 0;
+}
+
+.product-gallery--full {
+  min-height: calc(100dvh - 68px);
+  padding: 16px;
+  background: #ffffff;
+}
+
+.product-gallery--full .product-gallery__main {
+  display: grid;
+  min-height: min(62vh, 520px);
+  place-items: center;
+  overflow: auto;
+  background: #ffffff;
+}
+
+.product-gallery--full .product-gallery__main .public-image {
+  width: 100%;
+  height: 100%;
+  min-height: min(62vh, 520px);
+  background: #ffffff;
+}
+
+.product-gallery--full .product-gallery__main .public-image__source {
+  transform: scale(var(--product-gallery-zoom, 1));
+  transform-origin: center;
+  transition: transform 160ms ease;
+}
+
+.product-gallery__full-controls {
+  display: grid;
+  gap: 12px;
+}
+
+.product-gallery__zoom-controls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+.product-gallery__zoom-controls button,
+.product-gallery__close {
+  min-height: 40px;
+  padding: 7px 10px;
+  color: #4e495c;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  border: 1px solid #dcd9e3;
+  border-radius: 8px;
+  background: #ffffff;
+}
+
+.product-gallery__zoom-controls button:disabled {
+  color: #a7a3ae;
+  cursor: not-allowed;
+  background: #f7f7fb;
+}
+
+.product-gallery__zoom-controls output {
+  min-width: 42px;
+  color: #777185;
+  font-size: 13px;
+  text-align: center;
+}
+
+.product-gallery__close {
+  justify-self: end;
+  color: #ffffff;
+  border-color: #7367f0;
+  background: #7367f0;
+}
+
+@media (max-width: 700px) {
+  .product-grid__virtual-row {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 12px;
+    padding-bottom: 12px;
+  }
+
+  .hn-page--categories .catalogue-toolbar--domains > button {
+    min-height: 58px;
+    white-space: normal;
+    overflow-wrap: anywhere;
+    line-height: 1.2;
+  }
 }
 
 .detail-template__conversion {

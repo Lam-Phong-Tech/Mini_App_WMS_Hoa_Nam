@@ -1,0 +1,39 @@
+{
+  "captured_at": null,
+  "time_note": "Commands ran separately. The Vitest output reports its own start time; no common timestamp is asserted for the complete set.",
+  "environment": "local target checkout; documentation-only gate",
+  "checks": [
+    {
+      "command": "npm run typecheck",
+      "exit_code": 0,
+      "summary": "tsc --noEmit -p tsconfig.json completed without diagnostic output"
+    },
+    {
+      "command": "npm run lint",
+      "exit_code": 0,
+      "summary": "eslint src --max-warnings=0 completed without diagnostic output"
+    },
+    {
+      "command": "npm run test",
+      "exit_code": 0,
+      "summary": "Vitest v2.1.9: started at 17:17:00; 12 test files passed; 47 tests passed; duration 6.17s"
+    },
+    {
+      "command": "npm run build",
+      "exit_code": 0,
+      "summary": "npx --yes zmp-cli build completed"
+    },
+    {
+      "command": "Invoke-WebRequest -Method Head https://duc-nguyen98.github.io/WMS_UIUX_HoaNamv2/preview/?zarsrc=30",
+      "exit_code": 0,
+      "summary": "HTTP 200; Content-Type text/html; no rendered-page capture was performed"
+    }
+  ],
+  "omitted_evidence": [
+    "Screenshots and pixel diffs",
+    "DOM geometry",
+    "browser console/network trace",
+    "physical Zalo iOS/Android session",
+    "operational product/contact/PII data"
+  ]
+}

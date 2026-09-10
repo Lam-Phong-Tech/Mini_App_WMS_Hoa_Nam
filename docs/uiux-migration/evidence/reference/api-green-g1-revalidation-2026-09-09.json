@@ -1,0 +1,49 @@
+{
+  "recorded_at": "2026-09-09T14:55:10.6808353+07:00",
+  "base_url": "https://khohoanamdev.lptech.info.vn",
+  "scope": "Green/DEV-TEST only; public GET and OpenAPI reads. No quote was created during this revalidation command.",
+  "config": {
+    "success": true,
+    "contract_version": "1.1.0",
+    "hotline": { "display": "098 636 6675", "tel": "+84986366675" },
+    "zalo_oa": null,
+    "support_hours_has_intervals": true,
+    "privacy_policy_url": "https://hoanam.vn/chinh-sach-bao-mat",
+    "privacy_version": "1.0.0"
+  },
+  "health": { "success": true, "status": "OK", "contract_version": "1.1.0" },
+  "catalogue": {
+    "pages_read": 19,
+    "products_read": 933,
+    "products_with_invalid_domain_or_availability": 0,
+    "home_domains": [
+      { "code": "POWER_TOOLS", "product_count": 412 },
+      { "code": "HAND_TOOLS", "product_count": 521 },
+      { "code": "ACCESSORIES", "product_count": 0 }
+    ],
+    "power_tools_category_count": 51
+  },
+  "openapi": {
+    "version": "3.0.0",
+    "api_version": "2.0.0",
+    "quote_post_exists": true,
+    "idempotency_key": { "required": true, "min_length": 16, "max_length": 128 },
+    "multiple_products_example_has_items": true,
+    "multiple_products_example_has_item_variant_id": true,
+    "response_codes": [201, 200, 404, 409, 422, 428, 429, 503, 400, 401, 403, 412, 500],
+    "limitation": "The OpenAPI array schema does not machine-declare minItems/maxItems. The 1..20 unique-item rule is the user's approved application/backend contract decision."
+  },
+  "quote_runtime_test": {
+    "performed_before_this_revalidation": true,
+    "environment": "Green/DEV-TEST",
+    "created_records": 1,
+    "request_id": "01a0851b-6a15-71ac-99d0-e1e6c1eb4202",
+    "payload": "two products; first item contained a valid variant_id; no personal data or idempotency key is retained in this evidence",
+    "results": [
+      { "operation": "first valid submission", "http_status": 201, "success": true, "result": "RECEIVED" },
+      { "operation": "same payload and same key", "http_status": 200, "success": true, "result": "same request_id replayed" },
+      { "operation": "changed note and same key", "http_status": 409, "success": false, "error_code": "IDEMPOTENCY_CONFLICT" }
+    ],
+    "timestamp_note": "The precise command timestamp was not retained in the earlier tool transcript. This record is created during revalidation and does not claim a false event timestamp."
+  }
+}

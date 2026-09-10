@@ -1,0 +1,470 @@
+{
+  "environment": {
+    "appOrigin": "http://127.0.0.1:3201",
+    "viewport": {
+      "width": 390,
+      "height": 844,
+      "dpr": 1
+    },
+    "reducedMotion": true
+  },
+  "cases": {
+    "categories": {
+      "url": "http://127.0.0.1:3201/categories?domain=POWER_TOOLS",
+      "page": {
+        "scrollTop": 0,
+        "scrollHeight": 4879,
+        "clientHeight": 844,
+        "overflowY": "auto"
+      },
+      "windowScrollY": 0,
+      "grid": null,
+      "tabCount": 3,
+      "categoryCount": 52,
+      "labelsWrap": [
+        {
+          "text": "Máy và thiết bị động lực",
+          "whiteSpace": "normal",
+          "minWidth": "0px"
+        },
+        {
+          "text": "Dụng cụ cầm tay",
+          "whiteSpace": "normal",
+          "minWidth": "0px"
+        },
+        {
+          "text": "Phụ tùng và phụ kiện",
+          "whiteSpace": "normal",
+          "minWidth": "0px"
+        }
+      ]
+    },
+    "productsInitial": {
+      "url": "http://127.0.0.1:3201/products?domain=POWER_TOOLS",
+      "page": {
+        "scrollTop": 0,
+        "scrollHeight": 1667,
+        "clientHeight": 844,
+        "overflowY": "auto"
+      },
+      "windowScrollY": 0,
+      "grid": {
+        "className": "product-grid",
+        "loadedCount": "20",
+        "columns": "171px 171px",
+        "domCards": 8,
+        "virtualColumns": null
+      }
+    },
+    "detail": {
+      "url": "http://127.0.0.1:3201/products/bo-combo-khong-day-khong-choi-than-dckit10-bk-dckit10?from=%2Fproducts%3Fdomain%3DPOWER_TOOLS",
+      "page": {
+        "scrollTop": 0,
+        "scrollHeight": 2009,
+        "clientHeight": 844,
+        "overflowY": "auto"
+      },
+      "windowScrollY": 0,
+      "grid": null,
+      "hasGalleryLink": true,
+      "variantButtons": 35,
+      "relatedCards": 0
+    },
+    "gallery": {
+      "url": "http://127.0.0.1:3201/products/bo-combo-khong-day-khong-choi-than-dckit10-bk-dckit10/gallery?from=%2Fproducts%2Fbo-combo-khong-day-khong-choi-than-dckit10-bk-dckit10%3Ffrom%3D%252Fproducts%253Fdomain%253DPOWER_TOOLS&variant_id=01a07c56-332d-7193-86e3-ef6d05390532",
+      "page": {
+        "scrollTop": 0,
+        "scrollHeight": 969,
+        "clientHeight": 844,
+        "overflowY": "auto"
+      },
+      "windowScrollY": 0,
+      "grid": null,
+      "zoomControls": 3,
+      "closeControl": true
+    },
+    "filterSheet": {
+      "whileOpen": {
+        "open": true,
+        "pageOverflow": "hidden"
+      },
+      "closedByEscape": true
+    },
+    "virtualAt80": {
+      "metrics": {
+        "url": "http://127.0.0.1:3201/products?domain=POWER_TOOLS",
+        "page": {
+          "scrollTop": 0,
+          "scrollHeight": 13182,
+          "clientHeight": 844,
+          "overflowY": "auto"
+        },
+        "windowScrollY": 0,
+        "grid": {
+          "className": "product-grid product-grid--virtual",
+          "loadedCount": "80",
+          "columns": "171px 171px",
+          "domCards": 12,
+          "virtualColumns": "2"
+        }
+      },
+      "progress": [
+        {
+          "url": "http://127.0.0.1:3201/products?domain=POWER_TOOLS",
+          "page": {
+            "scrollTop": 0,
+            "scrollHeight": 2278,
+            "clientHeight": 844,
+            "overflowY": "auto"
+          },
+          "windowScrollY": 0,
+          "grid": {
+            "className": "product-grid",
+            "loadedCount": "20",
+            "columns": "171px 171px",
+            "domCards": 12,
+            "virtualColumns": null
+          }
+        },
+        {
+          "url": "http://127.0.0.1:3201/products?domain=POWER_TOOLS",
+          "page": {
+            "scrollTop": 0,
+            "scrollHeight": 2889,
+            "clientHeight": 844,
+            "overflowY": "auto"
+          },
+          "windowScrollY": 0,
+          "grid": {
+            "className": "product-grid",
+            "loadedCount": "20",
+            "columns": "171px 171px",
+            "domCards": 16,
+            "virtualColumns": null
+          }
+        },
+        {
+          "url": "http://127.0.0.1:3201/products?domain=POWER_TOOLS",
+          "page": {
+            "scrollTop": 0,
+            "scrollHeight": 3500,
+            "clientHeight": 844,
+            "overflowY": "auto"
+          },
+          "windowScrollY": 0,
+          "grid": {
+            "className": "product-grid",
+            "loadedCount": "20",
+            "columns": "171px 171px",
+            "domCards": 20,
+            "virtualColumns": null
+          }
+        },
+        {
+          "url": "http://127.0.0.1:3201/products?domain=POWER_TOOLS",
+          "page": {
+            "scrollTop": 0,
+            "scrollHeight": 4110,
+            "clientHeight": 844,
+            "overflowY": "auto"
+          },
+          "windowScrollY": 0,
+          "grid": {
+            "className": "product-grid",
+            "loadedCount": "40",
+            "columns": "171px 171px",
+            "domCards": 24,
+            "virtualColumns": null
+          }
+        },
+        {
+          "url": "http://127.0.0.1:3201/products?domain=POWER_TOOLS",
+          "page": {
+            "scrollTop": 0,
+            "scrollHeight": 4721,
+            "clientHeight": 844,
+            "overflowY": "auto"
+          },
+          "windowScrollY": 0,
+          "grid": {
+            "className": "product-grid",
+            "loadedCount": "40",
+            "columns": "171px 171px",
+            "domCards": 28,
+            "virtualColumns": null
+          }
+        },
+        {
+          "url": "http://127.0.0.1:3201/products?domain=POWER_TOOLS",
+          "page": {
+            "scrollTop": 0,
+            "scrollHeight": 5332,
+            "clientHeight": 844,
+            "overflowY": "auto"
+          },
+          "windowScrollY": 0,
+          "grid": {
+            "className": "product-grid",
+            "loadedCount": "40",
+            "columns": "171px 171px",
+            "domCards": 32,
+            "virtualColumns": null
+          }
+        },
+        {
+          "url": "http://127.0.0.1:3201/products?domain=POWER_TOOLS",
+          "page": {
+            "scrollTop": 0,
+            "scrollHeight": 5943,
+            "clientHeight": 844,
+            "overflowY": "auto"
+          },
+          "windowScrollY": 0,
+          "grid": {
+            "className": "product-grid",
+            "loadedCount": "40",
+            "columns": "171px 171px",
+            "domCards": 36,
+            "virtualColumns": null
+          }
+        },
+        {
+          "url": "http://127.0.0.1:3201/products?domain=POWER_TOOLS",
+          "page": {
+            "scrollTop": 0,
+            "scrollHeight": 6553,
+            "clientHeight": 844,
+            "overflowY": "auto"
+          },
+          "windowScrollY": 0,
+          "grid": {
+            "className": "product-grid",
+            "loadedCount": "40",
+            "columns": "171px 171px",
+            "domCards": 40,
+            "virtualColumns": null
+          }
+        },
+        {
+          "url": "http://127.0.0.1:3201/products?domain=POWER_TOOLS",
+          "page": {
+            "scrollTop": 0,
+            "scrollHeight": 7164,
+            "clientHeight": 844,
+            "overflowY": "auto"
+          },
+          "windowScrollY": 0,
+          "grid": {
+            "className": "product-grid",
+            "loadedCount": "60",
+            "columns": "171px 171px",
+            "domCards": 44,
+            "virtualColumns": null
+          }
+        },
+        {
+          "url": "http://127.0.0.1:3201/products?domain=POWER_TOOLS",
+          "page": {
+            "scrollTop": 0,
+            "scrollHeight": 7775,
+            "clientHeight": 844,
+            "overflowY": "auto"
+          },
+          "windowScrollY": 0,
+          "grid": {
+            "className": "product-grid",
+            "loadedCount": "60",
+            "columns": "171px 171px",
+            "domCards": 48,
+            "virtualColumns": null
+          }
+        },
+        {
+          "url": "http://127.0.0.1:3201/products?domain=POWER_TOOLS",
+          "page": {
+            "scrollTop": 0,
+            "scrollHeight": 8386,
+            "clientHeight": 844,
+            "overflowY": "auto"
+          },
+          "windowScrollY": 0,
+          "grid": {
+            "className": "product-grid",
+            "loadedCount": "60",
+            "columns": "171px 171px",
+            "domCards": 52,
+            "virtualColumns": null
+          }
+        },
+        {
+          "url": "http://127.0.0.1:3201/products?domain=POWER_TOOLS",
+          "page": {
+            "scrollTop": 0,
+            "scrollHeight": 8996,
+            "clientHeight": 844,
+            "overflowY": "auto"
+          },
+          "windowScrollY": 0,
+          "grid": {
+            "className": "product-grid",
+            "loadedCount": "60",
+            "columns": "171px 171px",
+            "domCards": 56,
+            "virtualColumns": null
+          }
+        },
+        {
+          "url": "http://127.0.0.1:3201/products?domain=POWER_TOOLS",
+          "page": {
+            "scrollTop": 0,
+            "scrollHeight": 9607,
+            "clientHeight": 844,
+            "overflowY": "auto"
+          },
+          "windowScrollY": 0,
+          "grid": {
+            "className": "product-grid",
+            "loadedCount": "60",
+            "columns": "171px 171px",
+            "domCards": 60,
+            "virtualColumns": null
+          }
+        },
+        {
+          "url": "http://127.0.0.1:3201/products?domain=POWER_TOOLS",
+          "page": {
+            "scrollTop": 0,
+            "scrollHeight": 10218,
+            "clientHeight": 844,
+            "overflowY": "auto"
+          },
+          "windowScrollY": 0,
+          "grid": {
+            "className": "product-grid",
+            "loadedCount": "80",
+            "columns": "171px 171px",
+            "domCards": 64,
+            "virtualColumns": null
+          }
+        },
+        {
+          "url": "http://127.0.0.1:3201/products?domain=POWER_TOOLS",
+          "page": {
+            "scrollTop": 0,
+            "scrollHeight": 10829,
+            "clientHeight": 844,
+            "overflowY": "auto"
+          },
+          "windowScrollY": 0,
+          "grid": {
+            "className": "product-grid",
+            "loadedCount": "80",
+            "columns": "171px 171px",
+            "domCards": 68,
+            "virtualColumns": null
+          }
+        },
+        {
+          "url": "http://127.0.0.1:3201/products?domain=POWER_TOOLS",
+          "page": {
+            "scrollTop": 0,
+            "scrollHeight": 11439,
+            "clientHeight": 844,
+            "overflowY": "auto"
+          },
+          "windowScrollY": 0,
+          "grid": {
+            "className": "product-grid",
+            "loadedCount": "80",
+            "columns": "171px 171px",
+            "domCards": 72,
+            "virtualColumns": null
+          }
+        },
+        {
+          "url": "http://127.0.0.1:3201/products?domain=POWER_TOOLS",
+          "page": {
+            "scrollTop": 0,
+            "scrollHeight": 12050,
+            "clientHeight": 844,
+            "overflowY": "auto"
+          },
+          "windowScrollY": 0,
+          "grid": {
+            "className": "product-grid",
+            "loadedCount": "80",
+            "columns": "171px 171px",
+            "domCards": 76,
+            "virtualColumns": null
+          }
+        },
+        {
+          "url": "http://127.0.0.1:3201/products?domain=POWER_TOOLS",
+          "page": {
+            "scrollTop": 0,
+            "scrollHeight": 13182,
+            "clientHeight": 844,
+            "overflowY": "auto"
+          },
+          "windowScrollY": 0,
+          "grid": {
+            "className": "product-grid product-grid--virtual",
+            "loadedCount": "80",
+            "columns": "171px 171px",
+            "domCards": 12,
+            "virtualColumns": "2"
+          }
+        }
+      ]
+    },
+    "virtualFocus": {
+      "focusedLabel": "Xem Bộ combo không dây không chổi than – DCKIT55 (EK/BK)",
+      "expectedLabel": "Xem Bộ combo không dây không chổi than – DCKIT55 (EK/BK)",
+      "retained": true
+    },
+    "virtualDesktopResize": {
+      "url": "http://127.0.0.1:3201/products?domain=POWER_TOOLS",
+      "page": {
+        "scrollTop": 7647,
+        "scrollHeight": 12740,
+        "clientHeight": 844,
+        "overflowY": "auto"
+      },
+      "windowScrollY": 0,
+      "grid": {
+        "className": "product-grid product-grid--virtual",
+        "loadedCount": "80",
+        "columns": "77.5px 77.5px 77.5px 77.5px",
+        "domCards": 20,
+        "virtualColumns": "4"
+      }
+    },
+    "searchImeAndRace": {
+      "input": "DCKIT55",
+      "caption": null,
+      "cards": 1,
+      "pageScrollY": 0
+    },
+    "desktopGrid": {
+      "url": "http://127.0.0.1:3201/products?domain=POWER_TOOLS",
+      "page": {
+        "scrollTop": 0,
+        "scrollHeight": 1149,
+        "clientHeight": 900,
+        "overflowY": "auto"
+      },
+      "windowScrollY": 0,
+      "grid": {
+        "className": "product-grid",
+        "loadedCount": "20",
+        "columns": "132px 132px 132px 132px",
+        "domCards": 8,
+        "virtualColumns": null
+      }
+    },
+    "optionalGsapMotion": {
+      "gsapChunkLoaded": true,
+      "visibleCards": true
+    }
+  }
+}

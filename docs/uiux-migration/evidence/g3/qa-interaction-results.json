@@ -1,0 +1,127 @@
+{
+  "recorded_at": "2026-09-09T17:07:36.136Z",
+  "scope": "Local-only in-memory G3 QA adapter; not runtime/UAT/Customer/Production.",
+  "environment": {
+    "app_origin": "http://127.0.0.1:3211",
+    "fixture_origin": "http://127.0.0.1:3210",
+    "browser_debug_port": 9330,
+    "viewport": {
+      "width": 390,
+      "height": 844,
+      "dpr": 1
+    }
+  },
+  "cases": {
+    "loading": {
+      "url": "http://127.0.0.1:3211/products?domain=POWER_TOOLS",
+      "output": "Đã hiển thị 0",
+      "state": null,
+      "cards": 0,
+      "fallbackImages": 0,
+      "skeleton": true,
+      "grid": null
+    },
+    "empty": {
+      "url": "http://127.0.0.1:3211/products?domain=POWER_TOOLS",
+      "output": "Đã hiển thị 0",
+      "state": "system-state system-state--empty",
+      "cards": 0,
+      "fallbackImages": 0,
+      "skeleton": false,
+      "grid": null
+    },
+    "append_error": {
+      "url": "http://127.0.0.1:3211/products?domain=POWER_TOOLS",
+      "output": "Đã hiển thị 4",
+      "state": null,
+      "cards": 4,
+      "fallbackImages": 4,
+      "skeleton": false,
+      "grid": {
+        "className": "product-grid",
+        "loadedCount": 4,
+        "virtualColumns": null
+      }
+    },
+    "rate_limit": {
+      "url": "http://127.0.0.1:3211/products?domain=POWER_TOOLS",
+      "output": "Đã hiển thị 0",
+      "state": "system-state system-state--rate-limited",
+      "cards": 0,
+      "fallbackImages": 0,
+      "skeleton": false,
+      "grid": null
+    },
+    "maintenance": {
+      "url": "http://127.0.0.1:3211/products?domain=POWER_TOOLS",
+      "output": null,
+      "state": "system-state system-state--maintenance",
+      "cards": 0,
+      "fallbackImages": 0,
+      "skeleton": false,
+      "grid": null
+    },
+    "unavailable": {
+      "url": "http://127.0.0.1:3211/products/qa-unavailable",
+      "output": null,
+      "state": "system-state system-state--unavailable",
+      "cards": 0,
+      "fallbackImages": 0,
+      "skeleton": false,
+      "grid": null
+    },
+    "image_error": {
+      "url": "http://127.0.0.1:3211/products?domain=POWER_TOOLS",
+      "output": "Đã hiển thị 8",
+      "state": null,
+      "cards": 8,
+      "fallbackImages": 8,
+      "skeleton": false,
+      "grid": {
+        "className": "product-grid",
+        "loadedCount": 20,
+        "virtualColumns": null
+      }
+    },
+    "threshold-79": {
+      "url": "http://127.0.0.1:3211/products?domain=POWER_TOOLS",
+      "output": "Đã hiển thị 79",
+      "state": null,
+      "cards": 79,
+      "fallbackImages": 12,
+      "skeleton": false,
+      "grid": {
+        "className": "product-grid",
+        "loadedCount": 79,
+        "virtualColumns": null
+      }
+    },
+    "threshold-80": {
+      "url": "http://127.0.0.1:3211/products?domain=POWER_TOOLS",
+      "output": "Đã hiển thị 80",
+      "state": null,
+      "cards": 12,
+      "fallbackImages": 12,
+      "skeleton": false,
+      "grid": {
+        "className": "product-grid product-grid--virtual",
+        "loadedCount": 80,
+        "virtualColumns": "2"
+      }
+    },
+    "threshold-81": {
+      "url": "http://127.0.0.1:3211/products?domain=POWER_TOOLS",
+      "output": "Đã hiển thị 81",
+      "state": null,
+      "cards": 12,
+      "fallbackImages": 12,
+      "skeleton": false,
+      "grid": {
+        "className": "product-grid product-grid--virtual",
+        "loadedCount": 81,
+        "virtualColumns": "2"
+      }
+    }
+  },
+  "writes": []
+}

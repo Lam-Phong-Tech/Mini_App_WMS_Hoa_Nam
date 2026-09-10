@@ -1,0 +1,62 @@
+{
+  "recorded_at": "2026-09-09T16:40:59.1227984+07:00",
+  "environment": {
+    "browser": "Chrome headless",
+    "target": "http://localhost:3100 (backend-preview; Green/DEV-TEST adapter)",
+    "viewport_css": { "width": 390, "height": 844 },
+    "dpr": 1,
+    "not_device_evidence": "This is not Zalo Android/iOS or G5 evidence."
+  },
+  "font": {
+    "family": "Public Sans",
+    "required_weights": [400, 500, 600, 700, 800],
+    "loaded_faces": [
+      { "weight": "400", "status": "loaded" },
+      { "weight": "500", "status": "loaded" },
+      { "weight": "600", "status": "loaded" },
+      { "weight": "700", "status": "loaded" },
+      { "weight": "800", "status": "loaded" }
+    ],
+    "document_fonts_check": [
+      { "weight": 400, "loaded": true },
+      { "weight": 500, "loaded": true },
+      { "weight": 600, "loaded": true },
+      { "weight": 700, "loaded": true },
+      { "weight": 800, "loaded": true }
+    ],
+    "loaded_resources": [
+      "/fonts/public-sans-400.ttf",
+      "/fonts/public-sans-500.ttf",
+      "/fonts/public-sans-600.ttf",
+      "/fonts/public-sans-700.ttf",
+      "/fonts/public-sans-800.ttf"
+    ],
+    "document_fonts_status": "loading",
+    "status_note": "An unrelated unloaded ZaUI icon face keeps the aggregate FontFaceSet status loading; each required Public Sans face is loaded."
+  },
+  "geometry": {
+    "page": { "overflow_y": "auto", "scroll_height": 3413, "client_height": 844 },
+    "after_scroll_to_420": { "page_scroll_top": 420, "window_scroll_y": 0 },
+    "topbar": { "position": "sticky", "x": 0, "y": 0, "width": 390, "height": 147, "background": "rgb(255, 255, 255)" },
+    "header_actions": [
+      { "x": 16, "y": 6, "width": 48, "height": 48 },
+      { "x": 326, "y": 6, "width": 48, "height": 48 }
+    ],
+    "bottom_navigation": { "x": 0, "y": 784, "width": 390, "height": 60, "position": "fixed" },
+    "low_viewport": { "width": 390, "height": 480, "screenshot": "home-low-390x480.png" },
+    "search_input_focus": { "focused": true, "x": 64, "y": 108, "width": 295, "height": 48 }
+  },
+  "menu": {
+    "at_initial_scroll_top": 420,
+    "dialog_role": "dialog",
+    "initial_focus": "Đóng menu",
+    "open_overflow_y": "hidden",
+    "escape": { "dialog_present": false, "focus_restored_to_trigger": true, "scroll_top": 420, "overflow_y": "auto" },
+    "native_back": { "dialog_present": false, "focus_restored_to_trigger": true, "scroll_top": 420, "route_unchanged": true }
+  },
+  "media_boundary": {
+    "headless_browser_result": "ERR_NETWORK_ACCESS_DENIED for images.bigk.click; fallback state rendered.",
+    "independent_public_head": { "status": 200, "content_type": "image/jpeg", "content_length": 216144 },
+    "conclusion": "The browser sandbox failure is not evidence that the Green media URL is unavailable."
+  }
+}

@@ -4,6 +4,8 @@ import "zmp-ui/zaui.css";
 import "@/css/tailwind.scss";
 // Your stylesheet
 import "@/css/app.scss";
+// Locked Hoa Nam Preview tokens and G2 shell overrides.
+import "@/css/hoa-nam-theme.scss";
 
 // React core
 import React from "react";

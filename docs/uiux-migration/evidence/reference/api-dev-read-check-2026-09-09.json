@@ -1,0 +1,43 @@
+{
+  "checked_at": "2026-09-09T10:25:38.4537800+07:00",
+  "base_url": "https://khohoanamfe.lptech.info.vn",
+  "method_scope": "GET only; no authorization header and no POST request was made",
+  "endpoints": [
+    { "path": "/api/v1/public/config", "status": 200, "success": true, "data_fields": ["contact", "support_hours", "privacy", "maintenance", "feature_flags", "quote_request", "catalog", "contract_version"] },
+    { "path": "/api/v1/public/health/version", "status": 200, "success": true, "data_fields": ["status", "contract_version", "maintenance", "server_time"] },
+    { "path": "/api/v1/public/home", "status": 200, "success": true, "data_fields": ["domains", "sections"] },
+    { "path": "/api/v1/public/categories", "status": 200, "success": true, "data_fields": ["items"], "item_count": 5 },
+    { "path": "/api/v1/public/products?limit=1", "status": 200, "success": true, "data_fields": ["items", "page_info"], "item_count": 1 },
+    { "path": "/api/v1/public/products/{public-slug}", "status": 200, "success": true, "data_fields": ["id", "slug", "name", "short_description", "description", "primary_code", "model", "unit", "domain", "brand", "category", "power_source", "features", "industries", "images", "is_featured", "updated_at", "specifications", "variants", "family"] },
+    { "path": "/api/v1/public/products/{public-slug}/related?limit=1", "status": 200, "success": true, "data_fields": ["items", "page_info"], "item_count": 1 },
+    { "path": "/api/v1/public/facets", "status": 200, "success": true, "data_fields": ["domain", "category", "power_source", "feature", "spec"] },
+    { "path": "/api/v1/public/categories?domain=POWER_TOOLS", "status": 200, "success": true, "data_fields": ["items"], "item_count": 0 },
+    { "path": "/api/v1/public/products?domain=POWER_TOOLS&limit=1", "status": 200, "success": true, "data_fields": ["items", "page_info"], "item_count": 0 },
+    { "path": "/api/v1/public/products?category={known-public-category}&limit=1", "status": 200, "success": true, "data_fields": ["items", "page_info"], "item_count": 1 }
+  ],
+  "config_contract_observed": {
+    "contract_version": "1.1.0",
+    "privacy_field_shape": ["url", "version"],
+    "quote_request": { "idempotency_key_min_length": 16, "idempotency_key_max_length": 128, "note_max_length": 1000 },
+    "hotline_present": true,
+    "zalo_oa_url_present": false
+  },
+  "product_contract_observed": {
+    "checked_product_count": 20,
+    "non_empty_domain_count": 0,
+    "availability_field_count": 0,
+    "variant_fields": ["id", "code", "name", "variant_label", "unit", "is_default"],
+    "image_fields": ["url", "alt_text", "is_primary"]
+  },
+  "quote_post": {
+    "path": "/api/v1/public/quote-requests",
+    "checked": false,
+    "reason": "A POST would create or rate-limit an anonymous consultation request. No mutation was authorized for this inspection."
+  },
+  "conclusions_limited_to_observation": [
+    "The public DEV GET API is reachable without an Authorization header and config advertises contract version 1.1.0.",
+    "This does not verify the quoted POST request schema, line-level error shape, idempotency replay or backend persistence.",
+    "It does not constitute business/legal approval of hotline, privacy policy, asset rights, OA configuration or QA fixture use.",
+    "The observed domain/availability omissions make the current target mapper's domain/status behavior unsafe to treat as compatible."
+  ]
+}

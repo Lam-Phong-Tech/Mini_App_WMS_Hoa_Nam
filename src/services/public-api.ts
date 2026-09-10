@@ -134,6 +134,7 @@ const devPreviewFixture: DevFixture = {
     zalo_oa: null,
     support_hours: null,
     privacy_policy_url: null,
+    privacy_version: null,
     maintenance: {
       enabled: false,
       message: null,
@@ -354,7 +355,7 @@ export class HttpPublicApiAdapter implements PublicApiAdapter {
         "X-Request-ID": createRequestId(),
       },
       body: JSON.stringify(input),
-    }), mapBackendQuoteAccepted);
+    }, fetch, 15_000), mapBackendQuoteAccepted);
   }
 }
 

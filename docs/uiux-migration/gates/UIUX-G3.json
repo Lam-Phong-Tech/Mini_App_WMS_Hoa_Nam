@@ -1,0 +1,144 @@
+{
+  "schema_version": "1.0",
+  "stage": "UIUX-G3",
+  "status": "PASS",
+  "recorded_at": "2026-09-10T00:17:35.2700580+07:00",
+  "revalidation_of": {
+    "prior_status": "BLOCKED",
+    "prior_gate_sha256": "828d03b33f88c22600bb6aad8dc4a539d787789b722a4f5993596bd7234851ca",
+    "reason": "The user supplied D11 local-only Designer visual authority and D12 local-only in-memory controlled-QA authority, resolving both G3 blockers."
+  },
+  "target_base_sha": "411ba4d3ae4e287ef40626aba8ca6794924be1ef",
+  "design_source_sha": "86079f965f2fcb43a7e3efbbc9467d119b47921f",
+  "implementation_head_sha": "411ba4d3ae4e287ef40626aba8ca6794924be1ef",
+  "dirty_diff": {
+    "preserved": "Uncommitted G1/G2/user changes and local .env*/.tmp files were preserved without reset, checkout, merge, push or deployment.",
+    "g3_revalidation_runtime_change": [
+      "src/components/catalogue/catalogue-feedback.tsx: stop the IntersectionObserver after append failure so retry is user initiated"
+    ],
+    "g3_revalidation_qa_only": [
+      "scripts/run-g3-browser-check.mjs",
+      "scripts/run-g3-qa-harness.mjs",
+      "scripts/run-g3-visual-compare.mjs",
+      "docs/uiux-migration/g3/",
+      "docs/uiux-migration/evidence/g3/",
+      "docs/uiux-migration/evidence/reference/user-confirmation-g3-revalidation-2026-09-10.md"
+    ]
+  },
+  "previous_gate_path": "docs/uiux-migration/gates/UIUX-G2.json",
+  "previous_gate_sha256": "7601b1cc6a689f7372698acfbadd154430b955f756767caa98b077efdc074ee4",
+  "baseline_id": "UIUX-G1-2026-09-08-source-01",
+  "baseline_manifest": {"path": "docs/uiux-migration/baseline.json", "sha256": "2d07c8c7d4268cd46ba4a42307e4302a6ccbaa40b2f02248c089907fe82bf1d5"},
+  "decisions": {"path": "docs/uiux-migration/decisions.json", "sha256": "1b5f9fa372dac7bd525c0d02eab6b8f725ab6fdd1045327af358caa7f4f399db"},
+  "input_artifacts": [
+    {"path": "docs/uiux-migration/gates/UIUX-G1.json", "sha256": "a8f83f5f6118cb840888b5c23a7a9df825f778d97e0653d965cca0352e3257d9"},
+    {"path": "docs/uiux-migration/gates/UIUX-G2.json", "sha256": "7601b1cc6a689f7372698acfbadd154430b955f756767caa98b077efdc074ee4"},
+    {"path": "docs/uiux-migration/baseline.json", "sha256": "2d07c8c7d4268cd46ba4a42307e4302a6ccbaa40b2f02248c089907fe82bf1d5"},
+    {"path": "docs/uiux-migration/decisions.json", "sha256": "1b5f9fa372dac7bd525c0d02eab6b8f725ab6fdd1045327af358caa7f4f399db"},
+    {"path": "docs/uiux-migration/evidence/reference/user-confirmation-g3-revalidation-2026-09-10.md", "sha256": "9550c2a2045f7a54c50292f8bdd36f5be8c4e9033b717a64d4ae4309501e8f7c"}
+  ],
+  "output_artifacts": [
+    {"path": "docs/uiux-migration/g3/catalogue-mapping.md", "sha256": "1be667133038b440cc6daeb90e2f96576decaad773ca33fcab070e2b1a921828"},
+    {"path": "docs/uiux-migration/g3/pagination-scroll-contract.md", "sha256": "503d4ffbd0d2b142aef743901c65f6e5d15a4f7dd8c1e4a7561c54b116bc058f"},
+    {"path": "docs/uiux-migration/g3/interaction-results.json", "sha256": "d3efb4cf67c827c118554b5ef915d550e2c4fefee265f15a9e2ec12d6137f2d3"},
+    {"path": "docs/uiux-migration/g3/virtualization-results.json", "sha256": "c41c95faf137f1d80b285c1947d3e379c32be660ad2586d6d9436ab84291896f"},
+    {"path": "docs/uiux-migration/g3/visual-results.json", "sha256": "634dd6247687a311a371ac3e24e65e26240df94dcc4de5da45ca013bb4a095c9"},
+    {"path": "docs/uiux-migration/g3/revalidation-2026-09-10.md", "sha256": "83de7207fae0054280500f19b189083faf2a2e7f0a59e44095e783eee554b688"},
+    {"path": "docs/uiux-migration/evidence/g3/interaction-results.json", "sha256": "fb95603e18d20a450d4a49e1db0ada8d1308bceedab1d06296a25d23fa5b8948"},
+    {"path": "docs/uiux-migration/evidence/g3/qa-interaction-results.json", "sha256": "09de6523a759d15cd512612de63777b3af6ff05024de3e83b8ac5fd7cd32bf04"},
+    {"path": "docs/uiux-migration/evidence/g3/visual-comparison-results.json", "sha256": "c138bf782871b64c76ca66f74b05d8e8b6f9dee6f77f865b10efaa30789fdcc7"},
+    {"path": "docs/uiux-migration/evidence/g3/qa-append-error-390x844.png", "sha256": "10b64752dd245b1651ce9e506bff5412f1fc481f3114851b6f2ed3371612a989"},
+    {"path": "docs/uiux-migration/evidence/g3/qa-threshold-79-390x844.png", "sha256": "1d80ebba4d4852991be658a3fa742d51409389d255fe09df0d834965c04adbe4"},
+    {"path": "docs/uiux-migration/evidence/g3/qa-threshold-80-390x844.png", "sha256": "9e6cbc87c537635d080218302ccd4fe191bdc379ddd0ec7f0691ea3987c08040"},
+    {"path": "docs/uiux-migration/evidence/g3/qa-threshold-81-390x844.png", "sha256": "bb63a35f9958b1eca9acbd6da439ab022be07ea85a9fb7830f82922b2531a3c4"},
+    {"path": "docs/uiux-migration/evidence/g3/visual-designer-catalog-390x844.png", "sha256": "81ef0f14ce33c9b4f10649860b784e176f00a694e45edc35f337ef5a5f483f32"},
+    {"path": "docs/uiux-migration/evidence/g3/visual-target-catalog-390x844.png", "sha256": "2194205c1bddb9f30ef72ce9ef2e4d6637feea3ec92de1b07cda659c7ab9026d"},
+    {"path": "docs/uiux-migration/evidence/g3/visual-designer-detail-390x844.png", "sha256": "61d25b29a79622fa2d56bfd43c9ad864a1ca77eb6224022e86a614155e462b20"},
+    {"path": "docs/uiux-migration/evidence/g3/visual-target-detail-390x844.png", "sha256": "36320cc2286231376da37f55e8212e9ad9d7e21cfec84709474604e8bd2c9d65"}
+  ],
+  "checks": [
+    {
+      "id": "entry-lineage",
+      "expected": "G1/G2 are PASS and their referenced hashes match before G3 revalidation.",
+      "actual": "PASS: G1 and G2 remain PASS with next_prompt_allowed true; their SHA-256 values match this record.",
+      "status": "PASS",
+      "evidence_paths": ["docs/uiux-migration/gates/UIUX-G1.json", "docs/uiux-migration/gates/UIUX-G2.json"],
+      "command": "Get-Content gate records; Get-FileHash -Algorithm SHA256",
+      "exit_code": 0
+    },
+    {
+      "id": "revalidation-authority",
+      "expected": "Both authorization-dependent G3 blockers are resolved by explicit user confirmation.",
+      "actual": "PASS: D11 authorizes only local locked-Designer G3 comparison and D12 authorizes only the local in-memory negative-state/79-81 adapter; both forbid runtime fixture use and writes.",
+      "status": "PASS",
+      "evidence_paths": ["docs/uiux-migration/decisions.json", "docs/uiux-migration/evidence/reference/user-confirmation-g3-revalidation-2026-09-10.md"],
+      "command": null,
+      "exit_code": null
+    },
+    {
+      "id": "green-read-contract-and-headless-flows",
+      "expected": "Green read-only categories/list/search/detail/gallery preserve the one ZaUI scroll owner, cursor behavior and responsive virtual list.",
+      "actual": "PASS: 3 canonical tabs, 52 POWER_TOOLS category cards, 80 loaded/rendered Green records, virtual 2→4 columns, focused-row retention, filter Escape/lock, exact item-code search, gallery Escape and lazy GSAP were observed. window.scrollY remained 0 and .hn-page owned scrolling.",
+      "status": "PASS",
+      "evidence_paths": ["docs/uiux-migration/evidence/g3/interaction-results.json", "docs/uiux-migration/g3/interaction-results.json"],
+      "command": "$env:G3_CDP_ORIGIN='http://127.0.0.1:9330'; $env:G3_APP_ORIGIN='http://127.0.0.1:3201'; node scripts/run-g3-browser-check.mjs",
+      "exit_code": 0
+    },
+    {
+      "id": "controlled-negative-and-threshold-cases",
+      "expected": "A controlled source proves empty/loading/append-error/unavailable/maintenance/rate-limit/image-error plus exact interactive 79/80/81 without runtime fixture pollution or writes.",
+      "actual": "PASS: local in-memory QA adapter observed all eight named states. Append-error retained four cards and the repair stops observer-driven retry loops; 79 stayed ordinary DOM, while 80 and 81 mounted the virtual grid. QA request log contained zero non-GET/HEAD methods.",
+      "status": "PASS",
+      "evidence_paths": ["docs/uiux-migration/evidence/g3/qa-interaction-results.json", "docs/uiux-migration/g3/virtualization-results.json"],
+      "command": "node scripts/run-g3-qa-harness.mjs",
+      "exit_code": 0
+    },
+    {
+      "id": "locked-visual-baseline-comparison",
+      "expected": "Required G3 surfaces are compared against the locked Designer snapshot under an approved local-only protocol.",
+      "actual": "PASS_WITH_ALLOWED_RUNTIME_DATA_VARIANCE: local Designer catalog/search/detail/gallery and target Green catalog/search/detail/gallery were captured at 390x844/DPR1/reduced-motion after fonts loaded. Structural visual comparison passes; fixture versus Green product/media/copy differences intentionally preclude a zero-pixel assertion.",
+      "status": "PASS",
+      "evidence_paths": ["docs/uiux-migration/evidence/g3/visual-comparison-results.json", "docs/uiux-migration/g3/visual-results.json"],
+      "command": "node scripts/run-g3-visual-compare.mjs",
+      "exit_code": 0
+    },
+    {
+      "id": "local-quality-and-build",
+      "expected": "Affected typecheck, lint, unit tests and backend-preview build pass after the append-error correction and QA helpers.",
+      "actual": "PASS: TypeScript 0 errors, ESLint 0 warnings, Vitest 12 files/53 tests and backend-preview build passed.",
+      "status": "PASS",
+      "evidence_paths": ["docs/uiux-migration/g3/revalidation-2026-09-10.md"],
+      "command": "npm run typecheck; npm run lint; npm run test; npm run build:backend-preview",
+      "exit_code": 0
+    },
+    {
+      "id": "physical-device-boundary",
+      "expected": "G3 does not claim the G5-owned Android/iPhone Zalo, physical IME, safe-area or native-back matrix.",
+      "actual": "PASS_BOUNDARY: no physical-device claim is made; the required device evidence remains owned by G5 and does not block this G3 implementation gate.",
+      "status": "PASS",
+      "evidence_paths": ["docs/uiux-migration/g3/revalidation-2026-09-10.md", "docs/uiux-migration/decisions.json"],
+      "command": null,
+      "exit_code": null
+    }
+  ],
+  "unresolved_blockers": [],
+  "approved_decision_ids": ["D01", "D02", "D03", "D04", "D05", "D06", "D07", "D08", "D09", "D10", "D11", "D12"],
+  "changed_files": [
+    "src/components/catalogue/catalogue-feedback.tsx",
+    "scripts/run-g3-browser-check.mjs",
+    "scripts/run-g3-qa-harness.mjs",
+    "scripts/run-g3-visual-compare.mjs",
+    "docs/uiux-migration/decisions.json",
+    "docs/uiux-migration/evidence/reference/user-confirmation-g3-revalidation-2026-09-10.md",
+    "docs/uiux-migration/g3/revalidation-2026-09-10.md",
+    "docs/uiux-migration/g3/interaction-results.json",
+    "docs/uiux-migration/g3/virtualization-results.json",
+    "docs/uiux-migration/g3/visual-results.json",
+    "docs/uiux-migration/evidence/g3/",
+    "docs/uiux-migration/gates/UIUX-G3.json",
+    "docs/uiux-migration/gates/UIUX-G3.md"
+  ],
+  "api_impact": "None. The target retains the existing Green-only read adapter and quote boundary. The local QA adapter is script-only, in memory and has no quote endpoint.",
+  "data_impact": "No quote POST, sale/CRM write, Green write, fixture deployment, Customer/Production operation or UAT data occurred. The only operational read source was Green public data in the local visual/headless preview.",
+  "next_prompt_allowed": true
+}

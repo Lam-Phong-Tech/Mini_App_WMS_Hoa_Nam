@@ -1,0 +1,311 @@
+{
+  "error": "Timed out waiting for image fallback",
+  "scenario": "image-error",
+  "requests": [
+    {
+      "method": "GET",
+      "path": "/__g3qa/scenario",
+      "scenario": "normal"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/public/config",
+      "scenario": "loading"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/public/home",
+      "scenario": "loading"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/public/products",
+      "scenario": "loading"
+    },
+    {
+      "method": "GET",
+      "path": "/__g3qa/scenario",
+      "scenario": "loading"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/public/config",
+      "scenario": "empty"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/public/home",
+      "scenario": "empty"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/public/products",
+      "scenario": "empty"
+    },
+    {
+      "method": "GET",
+      "path": "/__g3qa/scenario",
+      "scenario": "empty"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/public/config",
+      "scenario": "append-error"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/public/home",
+      "scenario": "append-error"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/public/products",
+      "scenario": "append-error"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/public/products",
+      "scenario": "append-error"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/public/products",
+      "scenario": "append-error"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/public/products",
+      "scenario": "append-error"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/public/products",
+      "scenario": "append-error"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/public/products",
+      "scenario": "append-error"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/public/products",
+      "scenario": "append-error"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/public/products",
+      "scenario": "append-error"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/public/products",
+      "scenario": "append-error"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/public/products",
+      "scenario": "append-error"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/public/products",
+      "scenario": "append-error"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/public/products",
+      "scenario": "append-error"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/public/products",
+      "scenario": "append-error"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/public/products",
+      "scenario": "append-error"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/public/products",
+      "scenario": "append-error"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/public/products",
+      "scenario": "append-error"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/public/products",
+      "scenario": "append-error"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/public/products",
+      "scenario": "append-error"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/public/products",
+      "scenario": "append-error"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/public/products",
+      "scenario": "append-error"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/public/products",
+      "scenario": "append-error"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/public/products",
+      "scenario": "append-error"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/public/products",
+      "scenario": "append-error"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/public/products",
+      "scenario": "append-error"
+    },
+    {
+      "method": "GET",
+      "path": "/__g3qa/scenario",
+      "scenario": "append-error"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/public/products",
+      "scenario": "rate-limit"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/public/products",
+      "scenario": "rate-limit"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/public/products",
+      "scenario": "rate-limit"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/public/products",
+      "scenario": "rate-limit"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/public/products",
+      "scenario": "rate-limit"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/public/products",
+      "scenario": "rate-limit"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/public/products",
+      "scenario": "rate-limit"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/public/config",
+      "scenario": "rate-limit"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/public/home",
+      "scenario": "rate-limit"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/public/products",
+      "scenario": "rate-limit"
+    },
+    {
+      "method": "GET",
+      "path": "/__g3qa/scenario",
+      "scenario": "rate-limit"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/public/config",
+      "scenario": "maintenance"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/public/home",
+      "scenario": "maintenance"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/public/products",
+      "scenario": "maintenance"
+    },
+    {
+      "method": "GET",
+      "path": "/__g3qa/scenario",
+      "scenario": "maintenance"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/public/config",
+      "scenario": "normal"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/public/home",
+      "scenario": "normal"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/public/products/qa-unavailable",
+      "scenario": "normal"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/public/config",
+      "scenario": "normal"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/public/home",
+      "scenario": "normal"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/public/products/qa-unavailable",
+      "scenario": "normal"
+    },
+    {
+      "method": "GET",
+      "path": "/__g3qa/scenario",
+      "scenario": "normal"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/public/config",
+      "scenario": "image-error"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/public/home",
+      "scenario": "image-error"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/public/products",
+      "scenario": "image-error"
+    }
+  ]
+}

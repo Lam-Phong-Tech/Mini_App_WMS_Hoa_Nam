@@ -81,6 +81,15 @@ export const FilterSheet = ({ visible, api, query, onClose, onApply }: FilterShe
     return () => page.classList.remove("disable-scrolling");
   }, [visible]);
 
+  useEffect(() => {
+    if (!visible) return undefined;
+    const onKeyDown = (event: globalThis.KeyboardEvent) => {
+      if (event.key === "Escape") onClose();
+    };
+    document.addEventListener("keydown", onKeyDown);
+    return () => document.removeEventListener("keydown", onKeyDown);
+  }, [onClose, visible]);
+
   const activeCount = useMemo(() => countActiveFilters(draft), [draft]);
   const selectValue = (facet: FacetDto, value: string) => {
     if (facet.type === "CATEGORY") {

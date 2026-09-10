@@ -2,7 +2,6 @@ import { Button, useLocation, useNavigate, useParams } from "zmp-ui";
 
 import {
   createProductReturnPath,
-  getSafeReturnPath,
   isEligiblePublicProduct,
 } from "@/catalogue/catalogue-utils";
 import { CatalogueFailure, CatalogueSkeleton } from "@/components/catalogue/catalogue-feedback";
@@ -25,7 +24,6 @@ const ProductDetailPage = () => {
   const { api, config, phase, systemState, refresh } = useAppContext();
   const detail = useProductDetail(api, slug);
   const related = useRelatedProducts(api, detail.product?.slug);
-  const returnPath = getSafeReturnPath(location.search) ?? "/products";
 
   if (phase === "loading") {
     return <AppShell route={detailRoute} showNavigation={false}><SystemStatePanel state={createLoadingState()} /></AppShell>;
@@ -53,6 +51,19 @@ const ProductDetailPage = () => {
 
   const product = detail.product;
   const productReturnPath = createProductReturnPath(location.pathname, location.search);
+  const toGalleryPath = (variantId?: string) => {
+    // Gallery is one level below Detail. Preserve the complete Detail URL so
+    // Escape/Back returns to Detail first; its own `from` still restores the
+    // original filtered list and its query/scroll memory.
+    const parameters = new URLSearchParams({ from: productReturnPath });
+    if (variantId) parameters.set("variant_id", variantId);
+    return `/products/${encodeURIComponent(product.slug)}/gallery?${parameters.toString()}`;
+  };
+  const toQuotePath = (variantId?: string) => {
+    const parameters = new URLSearchParams({ from: productReturnPath });
+    if (variantId) parameters.set("variant_id", variantId);
+    return `/products/${encodeURIComponent(product.slug)}/quote?${parameters.toString()}`;
+  };
 
   return (
     <AppShell route={detailRoute} showNavigation={false}>
@@ -60,9 +71,9 @@ const ProductDetailPage = () => {
         product={product}
         config={config}
         relatedProducts={related.products}
-        onOpenGallery={() => navigate(`/products/${product.slug}/gallery?from=${encodeURIComponent(returnPath)}`, { animate: false })}
+        onOpenGallery={(variantId) => navigate(toGalleryPath(variantId), { animate: false })}
         onOpenProduct={(relatedSlug) => navigate(`/products/${relatedSlug}?from=${encodeURIComponent(productReturnPath)}`, { animate: false })}
-        onRequestConsultation={() => navigate(`/products/${product.slug}/quote?from=${encodeURIComponent(productReturnPath)}`, { animate: false })}
+        onRequestConsultation={(variantId) => navigate(toQuotePath(variantId), { animate: false })}
       />
       {related.failure ? <CatalogueFailure failure={related.failure} onRetry={() => void detail.reload()} /> : null}
     </AppShell>

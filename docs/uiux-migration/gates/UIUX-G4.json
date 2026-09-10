@@ -1,0 +1,99 @@
+{
+  "schema_version": "1.0",
+  "stage": "UIUX-G4",
+  "status": "BLOCKED",
+  "recorded_at": "2026-09-10T00:33:56.0941164+07:00",
+  "target_base_sha": "411ba4d3ae4e287ef40626aba8ca6794924be1ef",
+  "design_source_sha": "86079f965f2fcb43a7e3efbbc9467d119b47921f",
+  "implementation_head_sha": "411ba4d3ae4e287ef40626aba8ca6794924be1ef",
+  "dirty_diff": {
+    "preserved": "The dirty G1–G3 implementation, tests, evidence, public fonts and user-local .env*/.tmp files predate this preflight and were preserved.",
+    "g4_changes": [
+      "docs/uiux-migration/g4/preflight.md",
+      "docs/uiux-migration/g4/contract-implementation.md",
+      "docs/uiux-migration/evidence/g4/product-id-rehydration-check.json",
+      "docs/uiux-migration/gates/UIUX-G4.json",
+      "docs/uiux-migration/gates/UIUX-G4.md"
+    ],
+    "runtime_changes": []
+  },
+  "previous_gate_path": "docs/uiux-migration/gates/UIUX-G3.json",
+  "previous_gate_sha256": "2f61f9ea639a46f636f142961e22ec436e8863b1bd14a0802719b91f62fb2007",
+  "baseline_id": "UIUX-G1-2026-09-08-source-01",
+  "baseline_manifest": {
+    "path": "docs/uiux-migration/baseline.json",
+    "sha256": "2d07c8c7d4268cd46ba4a42307e4302a6ccbaa40b2f02248c089907fe82bf1d5"
+  },
+  "decisions": {
+    "path": "docs/uiux-migration/decisions.json",
+    "sha256": "1b5f9fa372dac7bd525c0d02eab6b8f725ab6fdd1045327af358caa7f4f399db"
+  },
+  "input_artifacts": [
+    {"path": "docs/uiux-migration/gates/UIUX-G1.json", "sha256": "a8f83f5f6118cb840888b5c23a7a9df825f778d97e0653d965cca0352e3257d9"},
+    {"path": "docs/uiux-migration/gates/UIUX-G2.json", "sha256": "7601b1cc6a689f7372698acfbadd154430b955f756767caa98b077efdc074ee4"},
+    {"path": "docs/uiux-migration/gates/UIUX-G3.json", "sha256": "2f61f9ea639a46f636f142961e22ec436e8863b1bd14a0802719b91f62fb2007"},
+    {"path": "docs/uiux-migration/baseline.json", "sha256": "2d07c8c7d4268cd46ba4a42307e4302a6ccbaa40b2f02248c089907fe82bf1d5"},
+    {"path": "docs/uiux-migration/decisions.json", "sha256": "1b5f9fa372dac7bd525c0d02eab6b8f725ab6fdd1045327af358caa7f4f399db"}
+  ],
+  "output_artifacts": [
+    {"path": "docs/uiux-migration/g4/preflight.md", "sha256": "4713dfd3773597595b7d9e720604a561ff226f19d761491d6059f2c6843d0da9"},
+    {"path": "docs/uiux-migration/g4/contract-implementation.md", "sha256": "66d8fe78b2d21154043a297157421afd11c1403abfec7a9f527cb5357fef02f5"},
+    {"path": "docs/uiux-migration/evidence/g4/product-id-rehydration-check.json", "sha256": "f0297ce28d112af7b903c7079684c09aab113fec28715fc9a139f00e8eadd8a4"}
+  ],
+  "checks": [
+    {
+      "id": "entry-lineage",
+      "expected": "G1, G2 and G3 are PASS, permit the next stage, and their records/hashes match this G4 preflight.",
+      "actual": "PASS: G1, G2 and revalidated G3 are PASS with next_prompt_allowed true; their SHA-256 records match this entry preflight.",
+      "status": "PASS",
+      "evidence_paths": ["docs/uiux-migration/g4/preflight.md", "docs/uiux-migration/gates/UIUX-G3.json"],
+      "command": "Get-Content G1/G2/G3 gate records; Get-FileHash docs/uiux-migration/gates/UIUX-G{1,2,3}.json -Algorithm SHA256",
+      "exit_code": 0
+    },
+    {
+      "id": "g3-revalidation-boundary",
+      "expected": "G3 has no unresolved blockers before G4 starts, and its local-only authority is not expanded into G4.",
+      "actual": "PASS: G3 has no unresolved blockers. Its D11/D12 local-only Designer and in-memory-fixture permissions are retained as G3-only, not as G4 runtime or testing authority.",
+      "status": "PASS",
+      "evidence_paths": ["docs/uiux-migration/gates/UIUX-G3.json", "docs/uiux-migration/decisions.json", "docs/uiux-migration/g4/preflight.md"],
+      "command": null,
+      "exit_code": null
+    },
+    {
+      "id": "g4-entry-scope-boundary",
+      "expected": "Opening G4 must not itself perform an implementation, API write, fixture publication or release action.",
+      "actual": "PASS: only the G4 entry artifacts were updated. No quote/contact call, API write, storage migration, fixture, mock receipt, push, merge or deployment was performed.",
+      "status": "PASS",
+      "evidence_paths": ["docs/uiux-migration/g4/preflight.md"],
+      "command": "git status --short; read-only artifact inspection",
+      "exit_code": 0
+    },
+    {
+      "id": "d04-id-only-product-rehydration",
+      "expected": "PV-13/PV-14 may persist only product IDs, and every persisted ID must be rehydrated from current public DTO data after reload without a cached catalogue snapshot or whole-catalogue scan.",
+      "actual": "BLOCKED: Green OpenAPI provides only list filters and a slug detail route. It provides neither a documented product-ID/batch-ID lookup nor a product-ID generic-search contract. A read-only q=<published UUID> probe returned zero matching records.",
+      "status": "BLOCKED",
+      "evidence_paths": ["docs/uiux-migration/g4/contract-implementation.md", "docs/uiux-migration/evidence/g4/product-id-rehydration-check.json"],
+      "command": "GET Green /docs?api-docs.json; GET /api/v1/public/products?domain=POWER_TOOLS&limit=1; GET /api/v1/public/products?q=<published-public-uuid>&limit=5",
+      "exit_code": 0
+    }
+  ],
+  "unresolved_blockers": [
+    {
+      "id": "G4-D04-PRODUCT-ID-REHYDRATION",
+      "required_confirmation": "Provide and authorize a public Green product-ID or batch-ID lookup returning current public DTOs, or explicitly revise D04 to permit a defined non-PII persisted lookup key and stale-data behavior.",
+      "reason": "PV-13/PV-14 must persist IDs only but must rehydrate their current public records after reload. The documented API exposes only list filters and slug lookup."
+    }
+  ],
+  "approved_decision_ids": ["D01", "D02", "D03", "D04", "D05", "D06", "D07", "D08", "D09", "D10", "D11", "D12"],
+  "changed_files": [
+    "docs/uiux-migration/g4/preflight.md",
+    "docs/uiux-migration/g4/contract-implementation.md",
+    "docs/uiux-migration/evidence/g4/product-id-rehydration-check.json",
+    "docs/uiux-migration/gates/UIUX-G4.json",
+    "docs/uiux-migration/gates/UIUX-G4.md"
+  ],
+  "api_impact": "None. The audit found a missing public read capability; it did not alter any API, quote, contact, config or backend behavior.",
+  "data_impact": "No local-storage migration, fixture publication, quote POST, Green write, Customer/Production operation or deployment occurred.",
+  "next_prompt_allowed": false
+}

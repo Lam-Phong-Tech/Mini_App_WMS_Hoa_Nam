@@ -1,0 +1,21 @@
+{
+  "recorded_at": "2026-09-10T00:10:17.843+07:00",
+  "status": "PASS_WITH_ALLOWED_RUNTIME_DATA_VARIANCE",
+  "authority": "D11; locked Designer snapshot is local-only G3 QA evidence and never target runtime data.",
+  "environment": {
+    "browser": "Chrome via DevTools Protocol",
+    "viewport": "390x844 CSS px",
+    "dpr": 1,
+    "motion": "reduced",
+    "designer": "local locked commit 86079f965f2fcb43a7e3efbbc9467d119b47921f",
+    "target": "local backend-preview reading Green/DEV-TEST public data"
+  },
+  "cases": [
+    {"id": "catalog", "designer": "visual-designer-catalog-390x844.png", "target": "visual-target-catalog-390x844.png", "status": "PASS_STRUCTURAL"},
+    {"id": "search", "designer": "visual-designer-search-390x844.png", "target": "visual-target-search-390x844.png", "status": "PASS_STRUCTURAL"},
+    {"id": "detail", "designer": "visual-designer-detail-390x844.png", "target": "visual-target-detail-390x844.png", "status": "PASS_STRUCTURAL"},
+    {"id": "gallery", "designer": "visual-designer-gallery-390x844.png", "target": "visual-target-gallery-390x844.png", "status": "PASS_STRUCTURAL"}
+  ],
+  "evidence": "docs/uiux-migration/evidence/g3/visual-comparison-results.json",
+  "claim_boundary": "Both applications loaded their fonts and the locked viewport/motion conditions. Public Green product names, media, categories and app copy necessarily differ from the Designer fixture; no strict RGB threshold, zero-pixel diff or absolute visual-match claim is made."
+}

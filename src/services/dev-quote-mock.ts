@@ -4,7 +4,9 @@ import {
   ApiMeta,
   QuoteAcceptedDto,
   QuoteRequestInput,
+  QuoteRequestItemInput,
 } from "@/types/public-api";
+import { getQuoteFingerprint, normalizeVietnamesePhone } from "@/services/quote-service";
 
 /**
  * DEV/TEST-only persistence contract. This is never wired to UAT/Production and
@@ -14,8 +16,7 @@ export interface DevQuoteRecord {
   id: string;
   request_id: string;
   idempotency_key: string;
-  product_id: string;
-  variant_id: string | null;
+  items: QuoteRequestItemInput[];
   full_name: string;
   phone_normalized: string;
   province_code: string | null;
@@ -54,20 +55,20 @@ export class DevQuotePersistenceMock {
     input: QuoteRequestInput,
     idempotencyKey: string,
   ): ApiEnvelope<QuoteAcceptedDto> {
-    if (!this.isEligible(input.product_id, input.variant_id ?? null)) {
+    if (!input.items.length || input.items.some((item) => !this.isEligible(item.product_id, item.variant_id ?? null))) {
       return createSafeFailure("PRODUCT_NOT_AVAILABLE");
     }
 
     const normalized = {
       ...input,
-      product_id: input.product_id.trim(),
-      variant_id: input.variant_id?.trim() || null,
+      items: input.items
+        .map((item) => ({ product_id: item.product_id.trim(), variant_id: item.variant_id?.trim() || null, quantity: item.quantity ?? null }))
+        .sort((left, right) => `${left.product_id}\u0000${left.variant_id ?? ""}`.localeCompare(`${right.product_id}\u0000${right.variant_id ?? ""}`)),
       full_name: input.full_name.trim(),
-      phone: input.phone.trim().startsWith("0") ? `+84${input.phone.trim().slice(1)}` : input.phone.trim(),
-      province_code: input.province_code?.trim().toUpperCase() || null,
+      phone: normalizeVietnamesePhone(input.phone),
       note: input.note?.trim() || null,
     };
-    const fingerprint = JSON.stringify(normalized);
+    const fingerprint = getQuoteFingerprint(normalized);
     const previousFingerprint = this.fingerprints.get(idempotencyKey);
     if (previousFingerprint && previousFingerprint !== fingerprint) return createSafeFailure("IDEMPOTENCY_CONFLICT");
     if (previousFingerprint) {
@@ -80,11 +81,10 @@ export class DevQuotePersistenceMock {
       id: this.nextId("dev-record"),
       request_id: this.nextId("dev-request"),
       idempotency_key: idempotencyKey,
-      product_id: normalized.product_id,
-      variant_id: normalized.variant_id,
+      items: normalized.items,
       full_name: normalized.full_name,
       phone_normalized: normalized.phone,
-      province_code: normalized.province_code,
+      province_code: null,
       note: normalized.note,
       consent_at: now,
       privacy_version: normalized.privacy_version,

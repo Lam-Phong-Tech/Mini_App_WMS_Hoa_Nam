@@ -1,0 +1,147 @@
+{
+  "recorded_at": "2026-09-09T17:10:17.843Z",
+  "decision_scope": "Designer snapshot is rendered locally for G3 QA only; target continues to read Green public runtime data.",
+  "environment": {
+    "designer_commit": "86079f965f2fcb43a7e3efbbc9467d119b47921f",
+    "designer_origin": "http://127.0.0.1:4174",
+    "target_origin": "http://127.0.0.1:3201",
+    "browser": "Chrome via DevTools Protocol",
+    "viewport": {
+      "width": 390,
+      "height": 844,
+      "dpr": 1
+    },
+    "motion": "reduced"
+  },
+  "cases": {
+    "catalog_designer": {
+      "url": "http://127.0.0.1:4174/preview#view=catalog",
+      "root": ".pv-app",
+      "root_present": true,
+      "scroll": 0,
+      "fonts": "loaded",
+      "reduced_motion": true,
+      "viewport": {
+        "width": 390,
+        "height": 844,
+        "dpr": 1
+      },
+      "input_count": 1,
+      "cards": 4,
+      "gallery": false
+    },
+    "catalog_target": {
+      "url": "http://127.0.0.1:3201/products?domain=POWER_TOOLS",
+      "root": ".hn-page",
+      "root_present": true,
+      "scroll": 0,
+      "fonts": "loaded",
+      "reduced_motion": true,
+      "viewport": {
+        "width": 390,
+        "height": 844,
+        "dpr": 1
+      },
+      "input_count": 0,
+      "cards": 8,
+      "gallery": false
+    },
+    "search_designer": {
+      "url": "http://127.0.0.1:4174/preview#view=search",
+      "root": ".pv-app",
+      "root_present": true,
+      "scroll": 0,
+      "fonts": "loaded",
+      "reduced_motion": true,
+      "viewport": {
+        "width": 390,
+        "height": 844,
+        "dpr": 1
+      },
+      "input_count": 1,
+      "cards": 0,
+      "gallery": false
+    },
+    "search_target": {
+      "url": "http://127.0.0.1:3201/search",
+      "root": ".hn-page",
+      "root_present": true,
+      "scroll": 0,
+      "fonts": "loaded",
+      "reduced_motion": true,
+      "viewport": {
+        "width": 390,
+        "height": 844,
+        "dpr": 1
+      },
+      "input_count": 1,
+      "cards": 0,
+      "gallery": false
+    },
+    "detail_designer": {
+      "url": "http://127.0.0.1:4174/preview#view=detail&product=dczc02-26",
+      "root": ".pv-app",
+      "root_present": true,
+      "scroll": 0,
+      "fonts": "loaded",
+      "reduced_motion": true,
+      "viewport": {
+        "width": 390,
+        "height": 844,
+        "dpr": 1
+      },
+      "input_count": 0,
+      "cards": 0,
+      "gallery": false
+    },
+    "gallery_designer": {
+      "url": "http://127.0.0.1:4174/preview#view=detail&product=dczc02-26",
+      "root": ".pv-app",
+      "root_present": true,
+      "scroll": 0,
+      "fonts": "loaded",
+      "reduced_motion": true,
+      "viewport": {
+        "width": 390,
+        "height": 844,
+        "dpr": 1
+      },
+      "input_count": 0,
+      "cards": 0,
+      "gallery": true
+    },
+    "detail_target": {
+      "url": "http://127.0.0.1:3201/products/bo-combo-khong-day-khong-choi-than-dckit10-bk-dckit10?from=%2Fproducts%3Fdomain%3DPOWER_TOOLS",
+      "root": ".hn-page",
+      "root_present": true,
+      "scroll": 0,
+      "fonts": "loaded",
+      "reduced_motion": true,
+      "viewport": {
+        "width": 390,
+        "height": 844,
+        "dpr": 1
+      },
+      "input_count": 0,
+      "cards": 0,
+      "gallery": false
+    },
+    "gallery_target": {
+      "url": "http://127.0.0.1:3201/products/bo-combo-khong-day-khong-choi-than-dckit10-bk-dckit10/gallery?from=%2Fproducts%2Fbo-combo-khong-day-khong-choi-than-dckit10-bk-dckit10%3Ffrom%3D%252Fproducts%253Fdomain%253DPOWER_TOOLS&variant_id=01a07c56-332d-7193-86e3-ef6d05390532",
+      "root": ".hn-page",
+      "root_present": true,
+      "scroll": 0,
+      "fonts": "loaded",
+      "reduced_motion": true,
+      "viewport": {
+        "width": 390,
+        "height": 844,
+        "dpr": 1
+      },
+      "input_count": 0,
+      "cards": 0,
+      "gallery": true
+    }
+  },
+  "claim_boundary": "Structural visual comparison only. Product data, media, names and copy differ by design; no zero-pixel or absolute visual-match claim is made."
+}

@@ -1,0 +1,82 @@
+{
+  "stage": "UIUX-G2",
+  "status": "PASS_WITH_ALLOWED_RUNTIME_DATA_VARIANCE",
+  "recorded_at": "2026-09-09T17:28:00+07:00",
+  "target_environment": {
+    "browser": "Chrome headless local backend-preview adapter",
+    "viewport_css": { "width": 390, "height": 844 },
+    "dpr": 1,
+    "data_scope": "Green/DEV-TEST adapter only"
+  },
+  "target_checks": [
+    {
+      "id": "home-default",
+      "status": "PASS",
+      "evidence": "docs/uiux-migration/evidence/g2/target-home-designer-compare-after-390x844.png"
+    },
+    {
+      "id": "home-focus",
+      "status": "PASS",
+      "evidence": "docs/uiux-migration/evidence/g2/home-focus-390x844.png"
+    },
+    {
+      "id": "home-deep-scroll",
+      "status": "PASS",
+      "evidence": "docs/uiux-migration/evidence/g2/target-home-scroll-420-390x844.png"
+    },
+    {
+      "id": "home-low-viewport",
+      "status": "PASS",
+      "evidence": "docs/uiux-migration/evidence/g2/home-low-390x480.png"
+    },
+    {
+      "id": "menu-focus-escape-native-back-scroll-restore",
+      "status": "PASS",
+      "evidence": [
+        "docs/uiux-migration/evidence/g2/menu-open-390x844.png",
+        "docs/uiux-migration/evidence/g2/geometry-font-menu.json"
+      ]
+    },
+    {
+      "id": "search-focus",
+      "status": "PASS",
+      "evidence": "docs/uiux-migration/evidence/g2/search-focus-390x844.png"
+    },
+    {
+      "id": "font-load",
+      "status": "PASS",
+      "evidence": "docs/uiux-migration/evidence/g2/geometry-font-menu.json"
+    }
+  ],
+  "not_run": [
+    {
+      "id": "pixel-perfect-claim",
+      "reason": "Not claimed. D10 permits the Designer fixture only for QA comparison while D03 requires Green runtime data; fixture and Green asset/copy variance makes a strict pixel threshold inapplicable. The measured diagnostic RGB delta results are recorded in g2/designer-visual-comparison.md."
+    },
+    {
+      "id": "keyboard-and-safe-area",
+      "reason": "Headless desktop evidence cannot prove Zalo IME, safe area or native back behavior. Owned by G5 on real Android and iPhone."
+    },
+    {
+      "id": "approved-green-media-render",
+      "reason": "The headless browser sandbox denied images.bigk.click. A direct public HEAD request is 200, but that does not prove the Zalo-browser rendering path."
+    },
+    {
+      "id": "virtual-list-80-loaded-items",
+      "reason": "No virtualizer is installed before the unresolved legacy-browser/focus/resize/device compatibility proof; the app does not bulk-fetch the catalogue to force the threshold."
+    }
+  ],
+  "comparison": {
+    "status": "PASS_WITH_ALLOWED_RUNTIME_DATA_VARIANCE",
+    "decision": "D10",
+    "designer_commit": "86079f965f2fcb43a7e3efbbc9467d119b47921f",
+    "environment": "local Designer build at 127.0.0.1:4174; target backend-preview at localhost:2999 using Green adapter; Chrome 152.0.7977.84; 390x844 CSS px; DPR 1; reduced motion",
+    "cases": [
+      { "id": "home-default", "designer_scroll": "window:0", "target_scroll": ".hn-page:0", "status": "PASS", "diagnostic_rgb_delta_gt_24_percent": 31.7618 },
+      { "id": "home-deep-scroll", "designer_scroll": "window:420", "target_scroll": ".hn-page:420", "status": "PASS", "diagnostic_rgb_delta_gt_24_percent": 22.2886 }
+    ],
+    "evidence": "docs/uiux-migration/g2/designer-visual-comparison.md"
+  },
+  "claim_boundary": "G2 visual structure/primitives are compared and passed at the stated desktop/headless viewport. This does not claim pixel-perfect equality, full-screen coverage, Green deployment, Customer/Production approval, or real-device Zalo acceptance.",
+  "next_prompt_allowed": true
+}
