@@ -27,6 +27,11 @@ import { useAppContext } from "@/state/app-context";
 import { createLoadingState } from "@/state/system-state";
 
 const productsRoute = getFoundationRoute("products");
+const DOMAIN_TITLES = {
+  POWER_TOOLS: "Máy và thiết bị động lực",
+  HAND_TOOLS: "Dụng cụ cầm tay",
+  ACCESSORIES: "Phụ tùng và phụ kiện",
+} as const;
 
 export const ProductListPage = ({ openFilter = false }: { openFilter?: boolean }) => {
   const location = useLocation();
@@ -58,7 +63,7 @@ export const ProductListPage = ({ openFilter = false }: { openFilter?: boolean }
   const title = query.category
     ? "Sản phẩm trong danh mục"
     : query.domain
-      ? "Sản phẩm theo nhóm"
+      ? DOMAIN_TITLES[query.domain]
       : "Tất cả sản phẩm";
 
   return (

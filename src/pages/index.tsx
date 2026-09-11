@@ -35,6 +35,11 @@ const DOMAIN_DESCRIPTIONS: Record<"POWER_TOOLS" | "HAND_TOOLS" | "ACCESSORIES", 
   HAND_TOOLS: "Kẹp, siết, đo, cắt",
   ACCESSORIES: "Pin, sạc, mũi và lưỡi",
 };
+const DOMAIN_LABELS: Record<"POWER_TOOLS" | "HAND_TOOLS" | "ACCESSORIES", string> = {
+  POWER_TOOLS: "Máy và dụng cụ điện",
+  HAND_TOOLS: "Dụng cụ cầm tay",
+  ACCESSORIES: "Phụ tùng và phụ kiện",
+};
 
 const CATEGORY_ICONS: UiIconName[] = ["hammer", "sliders", "ruler", "wrench"];
 const HOME_CATEGORY_PREVIEW_LIMIT = 4;
@@ -140,7 +145,7 @@ const HomePage = () => {
               onClick={() => navigate(`/categories?domain=${domain.code}`, { animate: false })}
             >
               <span className="domain-icon"><UiIcon name={DOMAIN_ICONS[domain.code]} size={27} /></span>
-              <strong>{visibleText(domain.display_name)}</strong>
+              <strong>{DOMAIN_LABELS[domain.code]}</strong>
               <span>{DOMAIN_DESCRIPTIONS[domain.code]}</span>
             </button>
           ))}

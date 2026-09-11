@@ -3604,3 +3604,545 @@ body,
   border: 0;
   background: transparent;
 }
+
+/* Contact follows the compact reference card system.  Keep these rules at
+   the end so older generic card declarations cannot reintroduce the gradient,
+   oversized radii, or intrinsic-width CTA buttons. */
+.contact-screen {
+  gap: 16px;
+  width: min(100%, 640px);
+  margin-top: 0;
+}
+
+.contact-screen__intro h1 {
+  font-size: 25px;
+}
+
+.contact-screen__intro p {
+  margin-top: 8px;
+  font-size: 14px;
+}
+
+.contact-screen__methods {
+  grid-template-columns: 1fr;
+  gap: 12px;
+}
+
+.contact-screen__card {
+  min-height: 0;
+  padding: 16px;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(22, 58, 78, 0.08);
+}
+
+.contact-screen__card--primary {
+  min-height: 187.6px;
+  border-color: var(--hn-border);
+  background: var(--hn-surface);
+}
+
+.contact-screen__card-heading {
+  gap: 8px;
+}
+
+.contact-screen__card-heading h2 {
+  font-size: 16px;
+}
+
+.contact-screen__icon {
+  width: 40px;
+  height: 40px;
+  flex-basis: 40px;
+  border-radius: 8px;
+}
+
+.contact-screen__card > p {
+  margin-top: 12px;
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.contact-screen__button {
+  width: 100%;
+  min-height: 44px;
+  margin-top: 12px;
+  padding: 8px 12px;
+  border-radius: 8px;
+}
+
+.contact-screen__button--primary {
+  color: var(--hn-surface);
+  border-color: var(--hn-primary);
+  background: var(--hn-gradient-primary);
+  box-shadow: none;
+}
+
+.contact-screen__phone-row {
+  display: flex;
+  width: 100%;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-top: 12px;
+}
+
+.contact-screen__phone {
+  min-width: 0;
+  margin-top: 0;
+  color: var(--hn-text-primary);
+  font-size: 23px;
+  font-weight: 800;
+  line-height: 1.25;
+  letter-spacing: -0.02em;
+  overflow-wrap: anywhere;
+}
+
+.contact-screen__phone-copy {
+  display: grid;
+  width: 44px;
+  height: 44px;
+  min-width: 44px;
+  place-items: center;
+  color: var(--hn-primary);
+  cursor: pointer;
+  border: 1px solid var(--hn-border);
+  border-radius: 8px;
+  background: var(--hn-surface);
+}
+
+.contact-screen__phone-copy:is(:hover, :active) {
+  border-color: var(--hn-primary);
+  background: var(--hn-primary-a06);
+}
+
+.contact-screen__card--primary + .contact-screen__card,
+.contact-screen__methods > .contact-screen__card:not(.contact-screen__card--primary) {
+  min-height: 187.6px;
+}
+
+.contact-screen__methods > .contact-screen__card:last-child {
+  min-height: 144.6px;
+}
+
+.contact-screen__methods > .contact-screen__card:last-child .contact-screen__icon {
+  width: 32px;
+  height: 32px;
+  flex-basis: 32px;
+}
+
+.contact-screen__methods > .contact-screen__card:last-child .contact-screen__unavailable,
+.contact-screen__methods > .contact-screen__card:last-child > p {
+  margin-top: 8px;
+}
+
+.contact-screen__unavailable {
+  margin-top: 12px;
+  padding: 4px 8px;
+  font-size: 12px;
+}
+
+.contact-screen__hours {
+  min-height: 113.6px;
+  padding: 16px;
+}
+
+.contact-screen__hours .contact-screen__card-heading h2 {
+  font-size: 15px;
+}
+
+.contact-screen__hours dl {
+  margin-top: 10px;
+}
+
+.contact-screen__hours dl > div {
+  gap: 12px;
+  padding: 8px 0;
+  font-size: 13px;
+}
+
+.contact-screen__browse {
+  margin-top: 0;
+  font-size: 14px;
+}
+
+.contact-screen__privacy {
+  display: none;
+}
+
+.hn-bottom-navigation {
+  min-height: calc(64px + var(--hn-safe-bottom));
+  padding: 4px 12px var(--hn-safe-bottom);
+}
+
+.hn-bottom-navigation__item {
+  min-height: 56px;
+  gap: 4px;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+/* Search owns no second input in page content.  The input remains in the
+   shared topbar so it keeps the same geometry as the Preview entry point. */
+.hn-topbar-search--input {
+  gap: 8px;
+  padding: 0 10px;
+}
+
+.hn-topbar-search--input > input {
+  min-width: 0;
+  min-height: 44px;
+  flex: 1 1 auto;
+  color: var(--hn-text-primary);
+  font: inherit;
+  font-size: 14px;
+  border: 0;
+  outline: 0;
+  background: transparent;
+}
+
+.hn-topbar-search--input > input::placeholder {
+  color: var(--hn-text-muted);
+}
+
+.hn-topbar-search__back,
+.hn-topbar-search__clear {
+  display: inline-grid;
+  width: 40px;
+  height: 40px;
+  flex: 0 0 40px;
+  place-items: center;
+  padding: 0;
+  color: var(--hn-primary);
+  font: inherit;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+}
+
+.hn-topbar-search__clear {
+  width: auto;
+  min-width: 40px;
+  padding: 0 6px;
+}
+
+.hn-page--search .hn-content {
+  padding-top: 16px;
+}
+
+.hn-page--search .search-screen__title {
+  display: none;
+}
+
+/* The Home header uses the same safe-area reservation as every route; only
+   the content spacing is compacted, never shifted beneath the status bar. */
+.hn-page--home .hn-content {
+  padding-top: 20px;
+}
+
+/* Home needs the system inset, but not the secondary 8px breathing gap used
+   by dense transactional screens; otherwise its hero starts visibly lower
+   than the locked Preview. */
+.hn-page--home .hn-header--safe-area-top {
+  min-height: calc(68px + var(--hn-safe-top));
+  padding-top: var(--hn-safe-top);
+}
+
+.hn-page--home .domain-grid {
+  gap: 8px !important;
+}
+
+.hn-page--home .domain-card {
+  min-height: 132px !important;
+  padding: 10px;
+  border-radius: 8px;
+}
+
+.hn-page--home .domain-icon {
+  width: 36px;
+  height: 36px;
+  margin-bottom: 2px;
+  border-radius: 8px;
+}
+
+.hn-page--home .domain-card strong {
+  min-height: 30px;
+  font-size: 11px;
+}
+
+.hn-page--home .domain-card span:not(.domain-icon) {
+  min-height: 0;
+  font-size: 9px;
+}
+
+/* Category domains are three independent large cards, not a segmented
+   control.  Data stays dynamic; only the presentation changes. */
+@media (max-width: 700px) {
+  .hn-page--categories .hn-content {
+    padding-top: 18px;
+  }
+
+  .category-browser__tabs {
+    gap: 8px;
+    padding: 0;
+    border: 0;
+    border-radius: 0;
+    background: transparent;
+  }
+
+  .category-browser__tabs > button,
+  .category-browser__tabs > button.is-active {
+    min-height: 120px;
+    justify-content: flex-start;
+    gap: 8px;
+    padding: 12px 7px;
+    color: var(--hn-text-primary);
+    font-size: 11px;
+    font-weight: 700;
+    text-align: center;
+    border: 1px solid var(--hn-border);
+    border-radius: 8px;
+    background: var(--hn-surface);
+    box-shadow: 0 2px 8px rgba(22, 58, 78, 0.08);
+  }
+
+  .category-browser__tabs > button.is-active {
+    border-color: var(--hn-primary);
+    box-shadow: inset 0 0 0 1px var(--hn-primary), 0 2px 8px rgba(22, 58, 78, 0.08);
+  }
+
+  .category-browser__tab-icon,
+  .category-browser__tabs > button.is-active .category-browser__tab-icon {
+    display: grid;
+    width: 38px;
+    height: 38px;
+    flex-basis: 38px;
+    color: var(--hn-primary);
+    border-radius: 8px;
+    background: var(--hn-primary-a06);
+  }
+
+  .category-browser__overview {
+    padding: 14px;
+    border: 1px solid var(--hn-border);
+    border-radius: 8px;
+    background: var(--hn-surface);
+    box-shadow: 0 2px 8px rgba(22, 58, 78, 0.08);
+  }
+
+  .category-browser__overview-icon {
+    width: 42px;
+    height: 42px;
+    flex-basis: 42px;
+    border-radius: 8px;
+    box-shadow: none;
+  }
+}
+
+/* Cards retain the data-driven content but use a fixed two-line title region,
+   so long product names and availability chips cannot stretch only one grid
+   column and desynchronise the row. */
+@media (max-width: 700px) {
+  .product-card {
+    border-radius: 10px;
+  }
+
+  .product-card__name {
+    display: -webkit-box;
+    min-height: 42px;
+    overflow: hidden;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+  }
+
+  .product-card__cta {
+    min-height: 42px;
+  }
+
+  .product-card__actions,
+  .product-card__actions > button {
+    min-height: 50px;
+  }
+}
+
+/* Product detail follows the approved reference reading order.  Information
+   and specifications remain visible in one scroll instead of being hidden
+   behind tabs, which is especially important in a compact Zalo WebView. */
+.product-detail-template {
+  gap: 20px;
+  padding-top: 12px;
+}
+
+.detail-template__identity-actions {
+  display: flex;
+  width: fit-content;
+  grid-template-columns: none;
+  gap: 8px;
+  margin-top: 14px;
+  overflow: visible;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+}
+
+.detail-template__save,
+.detail-template__save + .detail-template__save {
+  display: inline-flex;
+  width: 44px;
+  min-width: 44px;
+  min-height: 44px;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  color: var(--hn-text-secondary);
+  border: 1px solid var(--hn-border);
+  border-radius: 10px;
+  background: var(--hn-surface);
+}
+
+.detail-template__save + .detail-template__save {
+  border-left: 1px solid var(--hn-border);
+}
+
+.detail-template__save > span {
+  display: none;
+}
+
+.detail-template__save.is-saved {
+  color: var(--hn-primary);
+  border-color: var(--hn-primary);
+  background: var(--hn-primary-a06);
+}
+
+.detail-template__panel--reference,
+.detail-template__information {
+  min-height: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+}
+
+.detail-template__benefits {
+  padding-top: 0;
+}
+
+.detail-template__benefits h2,
+.detail-template__information h2 {
+  font-size: 18px;
+}
+
+.detail-template__benefits .detail-template__feature-chips {
+  gap: 12px;
+  margin-top: 14px;
+}
+
+.detail-template__benefits .detail-template__feature-chips li {
+  align-items: flex-start;
+  line-height: 1.5;
+}
+
+.detail-template__benefits .detail-template__feature-chips svg {
+  margin-top: 3px;
+}
+
+.detail-template__usage,
+.detail-template__consult-copy,
+.detail-template__spec-note {
+  margin: 16px 0 0;
+  color: var(--hn-text-secondary);
+  font-size: 14px;
+  line-height: 1.55;
+}
+
+.detail-template__consult-copy {
+  padding: 16px 0 0;
+  border-top: 1px solid var(--hn-border);
+}
+
+.detail-template__information {
+  padding-top: 20px;
+  border-top: 8px solid var(--hn-support-a08);
+}
+
+.detail-template__information h2 {
+  margin: 0;
+}
+
+.detail-template__classification {
+  margin: 12px 0 0;
+  padding: 0;
+}
+
+.detail-template__classification > div {
+  grid-template-columns: minmax(106px, 0.8fr) minmax(0, 1.2fr);
+  gap: 14px;
+  margin: 0;
+  padding: 13px 0;
+}
+
+.detail-template__classification > div:first-of-type {
+  margin-top: 0;
+}
+
+.detail-template__classification dt,
+.detail-template__classification dd {
+  min-width: 0;
+  margin: 0;
+  font-size: 14px;
+  line-height: 1.45;
+  overflow-wrap: anywhere;
+}
+
+.detail-template__classification dt {
+  color: var(--hn-text-muted);
+}
+
+.detail-template__classification dd {
+  color: var(--hn-text-primary);
+  font-weight: 700;
+  text-align: right;
+}
+
+.detail-template__classification dd.is-success {
+  color: var(--hn-success);
+}
+
+.detail-template__classification dd.is-preorder {
+  color: var(--hn-warning);
+}
+
+.detail-template__specifications .detail-template__spec-group > div:first-of-type {
+  margin-top: 10px;
+}
+
+.detail-template__specifications .detail-template__spec-group > div {
+  grid-template-columns: minmax(106px, 0.8fr) minmax(0, 1.2fr);
+}
+
+.detail-template__spec-help {
+  min-height: 42px;
+  margin-top: 14px;
+  padding: 8px 12px;
+  color: var(--hn-primary);
+  font: inherit;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+  border: 1px solid var(--hn-primary);
+  border-radius: 9px;
+  background: var(--hn-surface);
+}
+
+.detail-template__spec-help:is(:hover, :active) {
+  background: var(--hn-primary-a06);
+}
+
+@media (max-width: 360px) {
+  .detail-template__classification > div,
+  .detail-template__specifications .detail-template__spec-group > div {
+    grid-template-columns: minmax(96px, 0.8fr) minmax(0, 1.2fr);
+    gap: 10px;
+  }
+}

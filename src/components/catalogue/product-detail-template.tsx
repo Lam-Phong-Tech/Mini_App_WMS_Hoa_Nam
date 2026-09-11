@@ -11,12 +11,10 @@ import {
   PublicConfigDto,
 } from "@/types/public-api";
 
-type DetailTab = "information" | "specifications";
-
 const DOMAIN_LABELS = {
-  POWER_TOOLS: "Power Tools",
-  HAND_TOOLS: "Hand Tools",
-  ACCESSORIES: "Accessories",
+  POWER_TOOLS: "Máy công cụ",
+  HAND_TOOLS: "Dụng cụ cầm tay",
+  ACCESSORIES: "Phụ kiện",
 } as const;
 
 interface ProductDetailTemplateProps {
@@ -31,6 +29,12 @@ interface ProductDetailTemplateProps {
   onToggleSaved: () => void;
   isCompared: boolean;
   onToggleCompare: () => void;
+}
+
+interface ProductFact {
+  label: string;
+  value: string;
+  state?: "is-preorder" | "is-success";
 }
 
 /**
@@ -54,11 +58,10 @@ export const ProductDetailTemplate = ({
   isCompared,
   onToggleCompare,
 }: ProductDetailTemplateProps) => {
-  const [activeTab, setActiveTab] = useState<DetailTab>("information");
   const variants = useMemo(() => getVisibleVariants(product.variants), [product.variants]);
   const [selectedVariantId, setSelectedVariantId] = useState<string | null>(null);
   const selectedVariant = variants.find((variant) => variant.variant_id === selectedVariantId) ?? variants[0] ?? null;
-  const relatedLimitInitial = 2;
+  const relatedLimitInitial = 6;
   const [relatedLimit, setRelatedLimit] = useState(relatedLimitInitial);
   useEffect(() => {
     setSelectedVariantId((current) => variants.some((variant) => variant.variant_id === current) ? current : variants[0]?.variant_id ?? null);
@@ -76,15 +79,11 @@ export const ProductDetailTemplate = ({
         .filter((item): item is typeof item & { label: string; value: string } => Boolean(item.label && item.value)),
     }))
     .filter((group): group is typeof group & { label: string } => Boolean(group.label && group.items.length)) ?? [];
-  const model = visibleText(product.model);
-  const summary = visibleText(product.summary);
   const description = visibleText(product.description);
-  const familyName = visibleText(product.family_name);
   const usage = visibleText(product.usage);
   const packageContents = visibleText(product.package_contents);
   const category = visibleText(product.category.display_name);
   const primaryCode = visibleText(product.primary_code);
-  const identitySummary = summary && summary !== description ? summary : null;
   const displayAvailability = selectedVariant?.availability ?? product.availability;
   const isPreorder = isPreorderAvailability(displayAvailability);
   const availabilityLabel = getAvailabilityLabel(displayAvailability);
@@ -94,6 +93,22 @@ export const ProductDetailTemplate = ({
   const visibleCompatibility = product.compatibility?.filter((item) => visibleText(item.label)) ?? [];
   const visibleRelated = relatedProducts.slice(0, relatedLimit);
   const relatedAreSameCategory = relatedProducts.length > 0 && relatedProducts.every((item) => item.category.code === product.category.code);
+  const descriptionHighlights = description
+    ?.split(/\r?\n+/)
+    .map((line) => line.replace(/^\s*(?:[-•*]|\d+[.)])\s*/, "").trim())
+    .filter(Boolean) ?? [];
+  const benefitItems = descriptionHighlights.length > 1
+    ? descriptionHighlights
+    : features.map((feature) => feature.label);
+  const productFacts: ProductFact[] = [];
+  if (primaryCode) productFacts.push({ label: "Mã sản phẩm", value: primaryCode });
+  productFacts.push({ label: "Nhóm sản phẩm", value: DOMAIN_LABELS[product.domain] });
+  if (category) productFacts.push({ label: "Danh mục", value: category });
+  productFacts.push({
+    label: "Tình trạng",
+    value: availabilityLabel,
+    state: isPreorder ? "is-preorder" : "is-success",
+  });
 
   return (
     <article className="product-detail-template">
@@ -116,17 +131,16 @@ export const ProductDetailTemplate = ({
         </div>
         {primaryCode ? <p className="detail-template__code">{primaryCode}</p> : null}
         <h1>{visibleText(product.name)}</h1>
-        {model ? <p className="detail-template__model">Model: <strong>{model}</strong></p> : null}
+        {category ? <p className="detail-template__model">{category}</p> : null}
         <div className="detail-template__identity-actions">
-          <button type="button" className={`detail-template__save ${isSaved ? "is-saved" : ""}`} aria-pressed={isSaved} onClick={onToggleSaved}>
-            <UiIcon name="bookmark" size={17} />{isSaved ? "Đã lưu" : "Lưu"}
+          <button type="button" className={`detail-template__save ${isSaved ? "is-saved" : ""}`} aria-label={isSaved ? "Bỏ lưu sản phẩm" : "Lưu sản phẩm"} aria-pressed={isSaved} onClick={onToggleSaved}>
+            <UiIcon name="bookmark" size={19} /><span>{isSaved ? "Đã lưu" : "Lưu"}</span>
           </button>
-          <button type="button" className={`detail-template__save ${isCompared ? "is-saved" : ""}`} aria-pressed={isCompared} onClick={onToggleCompare}>
-            <UiIcon name="layers" size={17} />{isCompared ? "Đang so sánh" : "So sánh"}
+          <button type="button" className={`detail-template__save ${isCompared ? "is-saved" : ""}`} aria-label={isCompared ? "Bỏ khỏi so sánh" : "So sánh sản phẩm"} aria-pressed={isCompared} onClick={onToggleCompare}>
+            <UiIcon name="layers" size={19} /><span>{isCompared ? "Đang so sánh" : "So sánh"}</span>
           </button>
         </div>
-        {identitySummary ? <p className="detail-template__description">{identitySummary}</p> : null}
-        {variants.length ? (
+        {variants.length > 1 ? (
           <div className="detail-template__variants" aria-label="Chọn phiên bản">
             <span>Phiên bản</span>
             <div>
@@ -146,106 +160,67 @@ export const ProductDetailTemplate = ({
         ) : null}
       </section>
 
-      <div className="detail-template__tabs" role="tablist" aria-label="Thông tin sản phẩm">
-        <button
-          type="button"
-          role="tab"
-          aria-selected={activeTab === "information"}
-          className={activeTab === "information" ? "is-active" : ""}
-          onClick={() => setActiveTab("information")}
-        >
-          Thông tin
-        </button>
-        <button
-          type="button"
-          role="tab"
-          aria-selected={activeTab === "specifications"}
-          className={activeTab === "specifications" ? "is-active" : ""}
-          onClick={() => setActiveTab("specifications")}
-        >
-          Thông số
-        </button>
-      </div>
-
-      {activeTab === "information" ? (
-        <section className="detail-template__panel" role="tabpanel">
-          {description ? (
-            <div className="detail-template__block">
-              <h2>Mô tả sản phẩm</h2>
-              <p className="detail-template__body">{description}</p>
-            </div>
-          ) : null}
-          {usage ? (
-            <div className="detail-template__block detail-template__block--muted">
-              <h2>Công dụng</h2>
-              <p className="detail-template__body">{usage}</p>
-            </div>
-          ) : null}
-          {features.length ? (
-            <div className="detail-template__block">
-              <h2>Tính năng nổi bật</h2>
-              <ul className="detail-template__feature-chips">
-                {features.map((feature) => <li key={feature.code}><UiIcon name="check" size={16} strokeWidth={2.2} />{feature.label}</li>)}
-              </ul>
-            </div>
-          ) : null}
-          {packageContents ? (
-            <div className="detail-template__block detail-template__block--muted">
-              <h2>Phụ kiện và cấu hình</h2>
-              <p className="detail-template__body">{packageContents}</p>
-            </div>
-          ) : null}
-          {visibleBundleItems.length ? (
-            <div className="detail-template__block">
-              <h2>Bao gồm</h2>
-              <ul className="detail-template__linked-list">
-                {visibleBundleItems.map((item, index) => (
-                  <li key={`${item.product_slug ?? "label"}:${index}`}>
-                    {item.product_slug ? <button type="button" onClick={() => onOpenProduct(item.product_slug!)}>{visibleText(item.label)}</button> : visibleText(item.label)}
-                  </li>
-                ))}
-              </ul>
-            </div>
-          ) : null}
-          {visibleCompatibility.length ? (
-            <div className="detail-template__block">
-              <h2>Tương thích</h2>
-              <ul className="detail-template__linked-list">
-                {visibleCompatibility.map((item, index) => (
-                  <li key={`${item.product_slug ?? "label"}:${index}`}>
-                    {item.product_slug ? <button type="button" onClick={() => onOpenProduct(item.product_slug!)}>{visibleText(item.label)}</button> : visibleText(item.label)}
-                  </li>
-                ))}
-              </ul>
-            </div>
-          ) : null}
-          {category ? (
-            <div className="detail-template__block detail-template__classification">
-              <h2>Phân loại</h2>
-              <div><span>Thương hiệu</span><strong>{visibleText(product.brand.display_name)}</strong></div>
-              <div><span>Danh mục</span><strong>{category}</strong></div>
-              {familyName ? <div><span>Chủng loại</span><strong>{familyName}</strong></div> : null}
-              {model ? <div><span>Model</span><strong>{model}</strong></div> : null}
-              {primaryCode && primaryCode !== model ? <div><span>Mã sản phẩm</span><strong>{primaryCode}</strong></div> : null}
-              <div><span>Tình trạng</span><strong className={isPreorder ? "is-preorder" : "is-success"}>{availabilityLabel}</strong></div>
-            </div>
-          ) : null}
-        </section>
-      ) : (
-        <section className="detail-template__panel" role="tabpanel">
-          {specGroups.length ? (
-            <div className="detail-template__block detail-template__specifications">
-              <h2>Thông số kỹ thuật</h2>
-              {specGroups.map((group) => (
-                <div key={group.code} className="detail-template__spec-group">
-                  {specGroups.length > 1 ? <h3>{group.label}</h3> : null}
-                  {group.items.map((item) => <div key={item.code}><span>{item.label}</span><strong>{item.value}{item.unit ? ` ${item.unit}` : ""}</strong></div>)}
-                </div>
+      <section className="detail-template__panel detail-template__panel--reference">
+        {benefitItems.length ? (
+          <div className="detail-template__block detail-template__benefits">
+            <h2>Công dụng và đặc điểm</h2>
+            <ul className="detail-template__feature-chips">
+              {benefitItems.map((benefit, index) => <li key={`${benefit}:${index}`}><UiIcon name="check" size={16} strokeWidth={2.2} />{benefit}</li>)}
+            </ul>
+          </div>
+        ) : null}
+        {usage ? <p className="detail-template__body detail-template__usage">{usage}</p> : null}
+        {packageContents ? (
+          <div className="detail-template__block detail-template__block--muted">
+            <h2>Phụ kiện và cấu hình</h2>
+            <p className="detail-template__body">{packageContents}</p>
+          </div>
+        ) : null}
+        {visibleBundleItems.length ? (
+          <div className="detail-template__block detail-template__block--muted">
+            <h2>Bao gồm</h2>
+            <ul className="detail-template__linked-list">
+              {visibleBundleItems.map((item, index) => (
+                <li key={`${item.product_slug ?? "label"}:${index}`}>
+                  {item.product_slug ? <button type="button" onClick={() => onOpenProduct(item.product_slug!)}>{visibleText(item.label)}</button> : visibleText(item.label)}
+                </li>
               ))}
-            </div>
-          ) : <p className="detail-template__empty">Thông số sẽ hiển thị khi Catalogue công khai cung cấp dữ liệu.</p>}
-        </section>
-      )}
+            </ul>
+          </div>
+        ) : null}
+        {visibleCompatibility.length ? (
+          <div className="detail-template__block detail-template__block--muted">
+            <h2>Tương thích</h2>
+            <ul className="detail-template__linked-list">
+              {visibleCompatibility.map((item, index) => (
+                <li key={`${item.product_slug ?? "label"}:${index}`}>
+                  {item.product_slug ? <button type="button" onClick={() => onOpenProduct(item.product_slug!)}>{visibleText(item.label)}</button> : visibleText(item.label)}
+                </li>
+              ))}
+            </ul>
+          </div>
+        ) : null}
+        <p className="detail-template__consult-copy">Quan tâm đến sản phẩm này? Gửi yêu cầu để được tư vấn về sản phẩm và đặt hàng.</p>
+      </section>
+
+      <section className="detail-template__information" aria-label="Thông tin sản phẩm">
+        <h2>Thông tin sản phẩm</h2>
+        <dl className="detail-template__classification">
+          {productFacts.map((fact) => <div key={fact.label}><dt>{fact.label}</dt><dd className={fact.state}>{fact.value}</dd></div>)}
+        </dl>
+      </section>
+
+      <section className="detail-template__specifications detail-template__information" aria-label="Thông số kỹ thuật">
+        <h2>Thông số kỹ thuật</h2>
+        {specGroups.map((group) => (
+          <div key={group.code} className="detail-template__spec-group">
+            {specGroups.length > 1 ? <h3>{group.label}</h3> : null}
+            {group.items.map((item) => <div key={item.code}><span>{item.label}</span><strong>{item.value}{item.unit ? ` ${item.unit}` : ""}</strong></div>)}
+          </div>
+        ))}
+        <p className="detail-template__spec-note">Liên hệ để được tư vấn thông số phù hợp với công việc của bạn.</p>
+        <button type="button" className="detail-template__spec-help" onClick={() => onRequestConsultation(selectedVariant?.variant_id)}>Tư vấn thông số</button>
+      </section>
 
       {relatedProducts.length ? (
         <section className="detail-template__related" aria-label="Sản phẩm liên quan">
@@ -261,7 +236,7 @@ export const ProductDetailTemplate = ({
       ) : null}
 
       <section className="detail-template__conversion" aria-label="Yêu cầu sản phẩm">
-        <button type="button" className="detail-template__request" onClick={() => onRequestConsultation(selectedVariant?.variant_id)}>{requestLabel}</button>
+        <button type="button" className="detail-template__request" onClick={() => onRequestConsultation(selectedVariant?.variant_id)}>{requestLabel === "Đặt trước" ? "Gửi yêu cầu đặt trước" : "Gửi yêu cầu đặt hàng"}</button>
         <ContactActions config={config} compact showUnavailable className="detail-template__contact-actions" />
       </section>
     </article>

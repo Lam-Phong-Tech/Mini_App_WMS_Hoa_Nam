@@ -33,7 +33,7 @@ const DOMAIN_PRESENTATION = {
   },
   ACCESSORIES: {
     icon: "zap",
-    title: "Phụ kiện và vật tư",
+    title: "Phụ tùng và phụ kiện",
     description: "Phụ kiện tương thích cho công việc",
   },
 } as const;
@@ -82,7 +82,7 @@ const CategoryPage = () => {
     return <AppShell route={categoryRoute}><SystemStatePanel state={systemState} onRetry={() => void refresh()} /></AppShell>;
   }
 
-  const selectedDomainLabel = canonicalDomains.find((domain) => domain.code === selectedDomain)?.display_name ?? "Danh mục";
+  const selectedDomainLabel = selectedDomain ? DOMAIN_PRESENTATION[selectedDomain].title : "Danh mục";
   const selectedPresentation = selectedDomain ? DOMAIN_PRESENTATION[selectedDomain] : undefined;
 
   return (
@@ -108,7 +108,7 @@ const CategoryPage = () => {
                 onClick={() => navigate(`/categories?domain=${domain.code}`, { animate: false })}
               >
                 <span className="category-browser__tab-icon"><UiIcon name={presentation.icon} size={23} /></span>
-                <span>{visibleText(domain.display_name)}</span>
+                <span>{presentation.title}</span>
                 {active ? <UiIcon className="category-browser__tab-check" name="check" size={18} /> : null}
               </button>
             );

@@ -1,4 +1,4 @@
-import { ChangeEvent, KeyboardEvent, useEffect, useMemo, useState } from "react";
+import { KeyboardEvent, useEffect, useMemo, useState } from "react";
 import { useLocation, useNavigate } from "zmp-ui";
 
 import {
@@ -94,14 +94,7 @@ const SearchPage = () => {
     setSearchInput(initialQuery.q ?? "");
   }, [initialQuery]);
 
-  if (phase === "loading") {
-    return <AppShell route={searchRoute} scrollKey={scrollKey}><SystemStatePanel state={createLoadingState()} /></AppShell>;
-  }
-  if (systemState) {
-    return <AppShell route={searchRoute} scrollKey={scrollKey}><SystemStatePanel state={systemState} onRetry={() => void refresh()} /></AppShell>;
-  }
-
-  const handleSearchChange = (event: ChangeEvent<HTMLInputElement>) => setSearchInput(event.target.value);
+  const handleSearchChange = (value: string) => setSearchInput(value);
   const handleCompositionStart = () => setIsComposing(true);
   const handleCompositionEnd = () => setIsComposing(false);
   const handleSearchKeyDown = (event: KeyboardEvent<HTMLInputElement>) => {
@@ -110,6 +103,20 @@ const SearchPage = () => {
       flushSearch();
     }
   };
+  const searchBarProps = {
+    searchValue: searchInput,
+    onSearchChange: handleSearchChange,
+    onSearchCompositionStart: handleCompositionStart,
+    onSearchCompositionEnd: handleCompositionEnd,
+    onSearchKeyDown: handleSearchKeyDown,
+  };
+
+  if (phase === "loading") {
+    return <AppShell route={searchRoute} scrollKey={scrollKey} {...searchBarProps}><SystemStatePanel state={createLoadingState()} /></AppShell>;
+  }
+  if (systemState) {
+    return <AppShell route={searchRoute} scrollKey={scrollKey} {...searchBarProps}><SystemStatePanel state={systemState} onRetry={() => void refresh()} /></AppShell>;
+  }
   const hasProducts = results.products.length > 0;
   const visibleProducts = results.products.filter((product) =>
     availability === "ALL" || product.availability === availability,
@@ -117,26 +124,11 @@ const SearchPage = () => {
   const queryPending = !isComposing && searchInput !== debouncedSearch;
 
   return (
-    <AppShell route={searchRoute} scrollKey={scrollKey}>
+    <AppShell route={searchRoute} scrollKey={scrollKey} {...searchBarProps}>
       <section className="search-screen__title" aria-labelledby="search-screen-title">
         <span>TÌM SẢN PHẨM</span>
         <h1 id="search-screen-title">Tìm kiếm sản phẩm</h1>
         <p>Tìm theo tên, model hoặc công dụng sản phẩm.</p>
-      </section>
-      <section className="search-entry search-entry--page" aria-label="Tìm kiếm sản phẩm">
-        <UiIcon name="search" size={23} strokeWidth={2} />
-        <input
-          type="search"
-          value={searchInput}
-          onChange={handleSearchChange}
-          onCompositionStart={handleCompositionStart}
-          onCompositionEnd={handleCompositionEnd}
-          onKeyDown={handleSearchKeyDown}
-          placeholder="Tên sản phẩm, model, công dụng..."
-          autoComplete="off"
-          maxLength={160}
-        />
-        {searchInput ? <button type="button" onClick={() => setSearchInput("")}>Xóa</button> : null}
       </section>
       {queryPending || isComposing ? <p className="search-pending" role="status">Đang cập nhật kết quả tìm kiếm…</p> : null}
       <section className="search-screen__toolbar">

@@ -41,6 +41,11 @@ interface AppShellProps {
   scrollKey?: string;
   onContentTouchStart?: TouchEventHandler<HTMLElement>;
   onContentTouchEnd?: TouchEventHandler<HTMLElement>;
+  searchValue?: string;
+  onSearchChange?: (value: string) => void;
+  onSearchKeyDown?: (event: KeyboardEvent<HTMLInputElement>) => void;
+  onSearchCompositionStart?: () => void;
+  onSearchCompositionEnd?: () => void;
 }
 
 /**
@@ -54,6 +59,11 @@ export const AppShell = ({
   scrollKey,
   onContentTouchStart,
   onContentTouchEnd,
+  searchValue = "",
+  onSearchChange,
+  onSearchKeyDown,
+  onSearchCompositionStart,
+  onSearchCompositionEnd,
 }: AppShellProps) => {
   const location = useLocation();
   const navigate = useNavigate();
@@ -62,10 +72,9 @@ export const AppShell = ({
   const menuButtonRef = useRef<HTMLButtonElement | null>(null);
   const menuDialogRef = useRef<HTMLDivElement | null>(null);
   const shouldRestoreMenuFocus = useRef(false);
-  // The locked Preview keeps its discovery affordance available from Home,
-  // product groups and catalogue.  Search itself owns a real input below the
-  // header, so it deliberately does not receive a duplicate button here.
-  const showTopbarSearch = route.key === "home" || route.key === "categories" || route.key === "products";
+  // The locked Preview keeps its discovery affordance in the topbar. Search
+  // reuses that same surface and places its Back control inside the field.
+  const showTopbarSearch = route.key === "home" || route.key === "categories" || route.key === "products" || route.key === "search";
 
   const closeMenu = () => setMenuOpen(false);
 
@@ -164,10 +173,29 @@ export const AppShell = ({
               <UiIcon name="send" size={21} />
             </button>
           </header>
-          {showTopbarSearch ? (
+          {showTopbarSearch && route.key === "search" ? (
+            <div className="hn-topbar-search hn-topbar-search--input" aria-label="Tìm kiếm sản phẩm">
+              <button className="hn-topbar-search__back" type="button" aria-label="Quay lại" onClick={() => navigate("/home", { animate: false })}>
+                <UiIcon name="arrowLeft" size={20} />
+              </button>
+              <UiIcon name="search" size={20} />
+              <input
+                type="search"
+                value={searchValue}
+                onChange={(event) => onSearchChange?.(event.target.value)}
+                onCompositionStart={onSearchCompositionStart}
+                onCompositionEnd={onSearchCompositionEnd}
+                onKeyDown={onSearchKeyDown}
+                placeholder="Tìm sản phẩm"
+                autoComplete="off"
+                maxLength={160}
+              />
+              {searchValue ? <button className="hn-topbar-search__clear" type="button" aria-label="Xóa tìm kiếm" onClick={() => onSearchChange?.("")}>Xóa</button> : null}
+            </div>
+          ) : showTopbarSearch ? (
             <button className="hn-topbar-search" type="button" onClick={() => navigate("/search", { animate: false })}>
               <UiIcon name="search" size={20} />
-              <span>Tìm theo tên, model hoặc công dụng</span>
+              <span>Tìm sản phẩm</span>
               <UiIcon name="arrowRight" size={20} className="hn-topbar-search__arrow" />
             </button>
           ) : null}

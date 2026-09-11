@@ -7,7 +7,7 @@ import { FoundationRouteKey, getFoundationRoute } from "@/routes";
 import { useAppContext } from "@/state/app-context";
 import { createEmptyState, createLoadingState } from "@/state/system-state";
 import { UiIcon } from "@/components/ui-icon";
-import { getContactTargets, getPublicHotline, OA_UNAVAILABLE_MESSAGE } from "@/services/contact-config";
+import { formatSupportDays, getContactTargets, getPublicHotline } from "@/services/contact-config";
 import { openDeviceDialer } from "@/services/phone-dialer";
 
 interface FoundationScreenProps {
@@ -77,6 +77,27 @@ const screenCopy: Record<FoundationScreenProps["routeKey"], { heading: string; b
   },
 };
 
+const copyPhoneNumber = async (value: string): Promise<boolean> => {
+  try {
+    if (navigator.clipboard?.writeText) {
+      await navigator.clipboard.writeText(value);
+      return true;
+    }
+    const input = document.createElement("textarea");
+    input.value = value;
+    input.setAttribute("readonly", "true");
+    input.style.position = "fixed";
+    input.style.opacity = "0";
+    document.body.appendChild(input);
+    input.select();
+    const copied = document.execCommand("copy");
+    document.body.removeChild(input);
+    return copied;
+  } catch {
+    return false;
+  }
+};
+
 export const FoundationScreen = ({ routeKey }: FoundationScreenProps) => {
   const navigate = useNavigate();
   const { openSnackbar } = useSnackbar();
@@ -117,11 +138,11 @@ export const FoundationScreen = ({ routeKey }: FoundationScreenProps) => {
             <article className="contact-screen__card contact-screen__card--primary">
               <div className="contact-screen__card-heading">
                 <span className="contact-screen__icon"><UiIcon name="send" size={24} /></span>
-                <h2>Gửi yêu cầu tư vấn</h2>
+                <h2>Gửi yêu cầu đặt hàng</h2>
               </div>
-              <p>Chọn một hoặc nhiều sản phẩm và để lại thông tin để Hoa Nam tiếp nhận yêu cầu tư vấn.</p>
+              <p>Chọn sản phẩm và để lại thông tin, Hoa Nam sẽ liên hệ.</p>
               <button className="contact-screen__button contact-screen__button--primary" type="button" onClick={() => navigate("/selection", { animate: false })}>
-                Gửi yêu cầu <UiIcon name="arrowRight" size={19} />
+                Gửi yêu cầu đặt hàng <UiIcon name="arrowRight" size={19} />
               </button>
             </article>
 
@@ -132,17 +153,33 @@ export const FoundationScreen = ({ routeKey }: FoundationScreenProps) => {
               </div>
               {hotline && contactTargets.hotlineHref ? (
                 <>
-                  <a
-                    className="contact-screen__phone"
-                    href={contactTargets.hotlineHref}
-                    aria-label={`Gọi hotline ${hotline.display}`}
-                    onClick={(event) => {
-                      event.preventDefault();
-                      openDeviceDialer(hotline.tel, contactTargets.hotlineHref!);
-                    }}
-                  >
-                    {hotline.display}
-                  </a>
+                  <div className="contact-screen__phone-row">
+                    <a
+                      className="contact-screen__phone"
+                      href={contactTargets.hotlineHref}
+                      aria-label={`Gọi hotline ${hotline.display}`}
+                      onClick={(event) => {
+                        event.preventDefault();
+                        openDeviceDialer(hotline.tel, contactTargets.hotlineHref!);
+                      }}
+                    >
+                      {hotline.display}
+                    </a>
+                    <button
+                      className="contact-screen__phone-copy"
+                      type="button"
+                      aria-label="Sao chép số điện thoại"
+                      onClick={() => {
+                        void copyPhoneNumber(hotline.display).then((copied) => openSnackbar({
+                          text: copied ? "Đã sao chép số điện thoại." : "Không thể sao chép số điện thoại.",
+                          type: copied ? "success" : "warning",
+                          icon: true,
+                        }));
+                      }}
+                    >
+                      <UiIcon name="copy" size={20} />
+                    </button>
+                  </div>
                   <p>Trao đổi trực tiếp với nhân viên tư vấn.</p>
                   <a
                     className="contact-screen__button contact-screen__button--outline"
@@ -166,14 +203,8 @@ export const FoundationScreen = ({ routeKey }: FoundationScreenProps) => {
                 <span className="contact-screen__icon contact-screen__icon--neutral"><UiIcon name="message" size={24} /></span>
                 <h2>Nhắn Zalo OA</h2>
               </div>
-              {contactTargets.oaUrl ? <>
-                <p>Trao đổi với Hoa Nam về sản phẩm bạn quan tâm.</p>
-                <a className="contact-screen__button contact-screen__button--tonal" href={contactTargets.oaUrl}>Mở Zalo OA <UiIcon name="arrowRight" size={19} /></a>
-              </> : <>
-                <span className="contact-screen__unavailable">Tạm thời chưa khả dụng</span>
-                <p>Bạn vẫn có thể gửi yêu cầu hoặc gọi hotline.</p>
-                <button className="contact-screen__button contact-screen__button--outline" type="button" onClick={() => openSnackbar({ text: OA_UNAVAILABLE_MESSAGE, type: "warning", icon: true, duration: 3500 })}>Xem thông tin kênh</button>
-              </>}
+              <span className="contact-screen__unavailable">Tạm thời chưa khả dụng</span>
+              <p>Bạn vẫn có thể gửi yêu cầu hoặc gọi hotline.</p>
             </article>
           </div>
 
@@ -183,7 +214,7 @@ export const FoundationScreen = ({ routeKey }: FoundationScreenProps) => {
               <dl>
                 {supportHours.map((interval, index) => (
                   <div key={`${interval.days.join("-")}:${interval.opens_at}:${index}`}>
-                    <dt>{interval.days.join(", ")}</dt>
+                    <dt>{formatSupportDays(interval.days)}</dt>
                     <dd>{interval.opens_at} – {interval.closes_at}</dd>
                   </div>
                 ))}
@@ -192,7 +223,6 @@ export const FoundationScreen = ({ routeKey }: FoundationScreenProps) => {
           ) : null}
 
           <button className="contact-screen__browse" type="button" onClick={() => navigate("/products", { animate: false })}>Tiếp tục xem sản phẩm <UiIcon name="arrowRight" size={19} /></button>
-          {config?.privacy_policy_url ? <a className="contact-screen__privacy" href={config.privacy_policy_url}>Chính sách sử dụng thông tin</a> : null}
         </section>
       </AppShell>
     );

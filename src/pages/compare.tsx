@@ -4,6 +4,7 @@ import { useNavigate } from "zmp-ui";
 import { AppShell } from "@/components/app-shell";
 import { CatalogueSkeleton, EmptyCatalogue } from "@/components/catalogue/catalogue-feedback";
 import { PublicImage } from "@/components/catalogue/public-image";
+import { SystemStatePanel } from "@/components/system-state-panel";
 import { UiIcon } from "@/components/ui-icon";
 import { getFoundationRoute } from "@/routes";
 import { useAppContext } from "@/state/app-context";

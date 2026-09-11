@@ -57,8 +57,11 @@ export const isEligiblePublicProduct = (
 export const isPreorderAvailability = (availability: PublicAvailability): boolean =>
   availability === "PREORDER";
 
-export const getAvailabilityLabel = (availability: PublicAvailability): "Còn hàng" | "Hết hàng / Đặt trước" =>
-  isPreorderAvailability(availability) ? "Hết hàng / Đặt trước" : "Còn hàng";
+/** Public catalogue exposes availability as a customer-facing promise, never
+ * an internal stock-count state.  PREORDER must therefore not be described as
+ * "Hết hàng" (out of stock) in any card, detail page, or selected-product UI. */
+export const getAvailabilityLabel = (availability: PublicAvailability): "Sẵn hàng" | "Đặt trước" =>
+  isPreorderAvailability(availability) ? "Đặt trước" : "Sẵn hàng";
 
 export const getPublicProducts = (
   products: ProductCardDto[] | undefined,
