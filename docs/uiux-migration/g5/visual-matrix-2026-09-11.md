@@ -20,8 +20,18 @@ The source is updated to use that scroll model and compact Contact geometry.
 `npm run typecheck`, `npm run lint`, `npm test` (63 tests) and `npm run build`
 completed successfully.
 
+The current source revalidation additionally confirms the host-specific
+safe-area flag, pinned local `zmp-cli@4.0.3`, direct Vite root `/`, and both
+`npm run build:dev-preview` and `npm run build:backend-preview`.
+
 No visual PASS is recorded. The current desktop computer-use browser cannot
 write its kernel assets (`The system cannot find the path specified`), so it
 cannot truthfully produce the reference, actual and diff images. The physical
 iPhone-on-Zalo capture also remains absent. These are blocking evidence gaps,
 not a claim of a pixel comparison result.
+
+The 2026-09-12 Android route regression is recorded at
+[`android-xiaomi-2206122sc-routes-2026-09-12.md`](evidence/g5/android-xiaomi-2206122sc-routes-2026-09-12.md).
+It passes Detail, Gallery, Quote and Compare route entry plus native Back. The
+resume case remains partial and the physical Android captures still cannot be
+paired with the locked 375×812 reference set for a valid diff.

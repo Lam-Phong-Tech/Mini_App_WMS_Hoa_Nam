@@ -15,17 +15,17 @@
     "Samsung >= 5"
   ],
   "scripts": {
-    "login": "npx --yes zmp-cli login",
-    "start": "npx --yes zmp-cli start",
-    "deploy": "npx --yes zmp-cli deploy",
-    "start:backend-preview": "npx --yes zmp-cli start --mode backend-preview",
-    "build:dev-preview": "npx --yes zmp-cli build --mode dev-preview",
+    "login": "zmp-cli login",
+    "start": "zmp-cli start",
+    "deploy": "zmp-cli deploy",
+    "start:backend-preview": "zmp-cli start --mode backend-preview",
+    "build:dev-preview": "zmp-cli build --mode dev-preview",
     "predeploy:dev-preview": "npm run build:dev-preview",
-    "deploy:dev-preview": "npx --yes zmp-cli deploy --testing --passive --mode dev-preview --desc \"DEV preview - mock catalogue only\"",
-    "build:backend-preview": "npx --yes zmp-cli build --mode backend-preview",
+    "deploy:dev-preview": "zmp-cli deploy --testing --passive --mode dev-preview --desc \"DEV preview - mock catalogue only\"",
+    "build:backend-preview": "zmp-cli build --mode backend-preview",
     "predeploy:backend-preview": "npm run build:backend-preview",
-    "deploy:backend-preview": "npx --yes zmp-cli deploy --testing --passive --mode backend-preview --desc \"Backend preview - public catalogue adapter\"",
-    "build": "npx --yes zmp-cli build",
+    "deploy:backend-preview": "zmp-cli deploy --testing --passive --mode backend-preview --desc \"Backend preview - public catalogue adapter\"",
+    "build": "zmp-cli build",
     "typecheck": "tsc --noEmit -p tsconfig.json",
     "lint": "eslint src --max-warnings=0",
     "test": "vitest run"
@@ -56,6 +56,7 @@
     "typescript": "^5.7.3",
     "vite": "^5.2.13",
     "vitest": "^2.1.9",
+    "zmp-cli": "4.0.3",
     "zmp-vite-plugin": "latest"
   }
 }

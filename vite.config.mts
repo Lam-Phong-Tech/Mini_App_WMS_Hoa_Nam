@@ -12,7 +12,10 @@ export default ({ mode }: { mode: string }) => {
   const useDevMock = environment.VITE_USE_DEV_MOCK !== "false";
 
   return defineConfig({
-    root: "./src",
+    // Keep the HTML entry at the workspace root so direct Vite/CI builds and
+    // ZMP CLI builds resolve the same document. The ZMP CLI still injects its
+    // production assets into www/ through its own build options.
+    root: ".",
     envDir: workspaceRoot,
     base: "",
     plugins: [zaloMiniApp(), react()],

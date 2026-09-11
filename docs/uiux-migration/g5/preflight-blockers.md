@@ -5,8 +5,8 @@
 ## Read-only environment check
 
 - Current branch / `HEAD` / `origin/mini_product`:
-  `mini_product` / `7782cd9af5843d82a39cf6c2b61ee5a9ae931e35` /
-  `7782cd9af5843d82a39cf6c2b61ee5a9ae931e35`.
+  `mini_product` / `b471a799854b654631a2d76ece6a3a2a6acbb41e` /
+  `5c071dea883f0225bf44fb6c1d2071babc2f1dac`.
 - Locked Designer baseline remains
   `Duc-Nguyen98/WMS_UIUX_HoaNamv2@86079f965f2fcb43a7e3efbbc9467d119b47921f`.
   The live reference URL is currently reachable and rendered, but it exposes

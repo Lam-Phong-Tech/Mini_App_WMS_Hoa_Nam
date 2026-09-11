@@ -79,11 +79,10 @@
   --hn-canvas: var(--hn-near-white);
   --hn-radius: 8px;
   --hn-shadow: var(--hn-card-shadow);
-  /* ZaUI maps these tokens to the WebView's CSS safe-area environment.
-     Keep the native CSS fallback so this stylesheet also works before ZaUI's
-     global styles load and in ordinary browser previews. */
-  --hn-safe-top: var(--zaui-safe-area-inset-top, env(safe-area-inset-top, 0px));
-  --hn-safe-bottom: var(--zaui-safe-area-inset-bottom, env(safe-area-inset-bottom, 0px));
+  /* Browser Preview is the zero-inset baseline. Native Zalo compensation is
+     scoped to [data-host="zalo"] below instead of leaking into screenshots. */
+  --hn-safe-top: env(safe-area-inset-top, 0px);
+  --hn-safe-bottom: env(safe-area-inset-bottom, 0px);
   --hn-touch: 44px;
   --hn-control-height: 48px;
 }
@@ -165,8 +164,18 @@ body,
 /* The content header is padded by the inset exposed by the current Zalo
    WebView, plus a small breathing gap below the status bar. */
 .hn-header--safe-area-top {
+  min-height: calc(68px + var(--hn-safe-top));
+  padding: var(--hn-safe-top) 16px 8px;
+}
+
+[data-host="zalo"] {
+  --hn-safe-top: max(24px, env(safe-area-inset-top, 0px));
+  --hn-safe-bottom: max(8px, env(safe-area-inset-bottom, 0px));
+}
+
+[data-host="zalo"] .hn-header--safe-area-top {
   min-height: calc(68px + var(--hn-safe-top) + 8px);
-  padding: calc(var(--hn-safe-top) + 8px) 16px 8px;
+  padding-top: calc(var(--hn-safe-top) + 8px);
 }
 
 /* Zalo's native capsule is painted in the top-right corner above an embedded
@@ -174,9 +183,10 @@ body,
    action cannot be covered; the grid automatically keeps menu, logo and
    action on a single baseline inside the remaining inline space. */
 @media (max-width: 700px) {
-  .hn-header.hn-header--zalo-capsule-safe {
+  [data-host="zalo"] .hn-header.hn-header--zalo-capsule-safe {
     padding-right: 90px;
   }
+
 }
 
 /* A 320–380px layout cannot fit the full 48px controls, wordmark and capsule
@@ -3858,6 +3868,11 @@ body,
 .hn-page--home .hn-header--safe-area-top {
   min-height: calc(68px + var(--hn-safe-top));
   padding-top: var(--hn-safe-top);
+}
+
+[data-host="zalo"] .hn-page--home .hn-header--safe-area-top {
+  min-height: calc(68px + var(--hn-safe-top) + 8px);
+  padding-top: calc(var(--hn-safe-top) + 8px);
 }
 
 .hn-page--home .domain-grid {

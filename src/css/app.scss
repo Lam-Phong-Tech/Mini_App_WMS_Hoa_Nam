@@ -3072,11 +3072,15 @@ button.contact-channel-card {
 }
 
 /* Device safe areas ------------------------------------------------------------
-   `viewport-fit=cover` is declared in index.html. These fallback insets keep
-   the app clear of Android status/notch areas in embedded WebViews (where env
-   can be zero), while iPhones automatically use the larger Dynamic Island/
-   Face ID inset supplied by Safari/Zalo. */
+   `viewport-fit=cover` is declared in index.html. Browser Preview stays on
+   the native env() baseline; the Zalo fallback is scoped by data-host, which
+   is set synchronously from ZMP getSystemInfo() in app.ts. */
 :root {
+  --hn-safe-top: env(safe-area-inset-top, 0px);
+  --hn-safe-bottom: env(safe-area-inset-bottom, 0px);
+}
+
+[data-host="zalo"] {
   --hn-safe-top: max(24px, env(safe-area-inset-top, 0px));
   --hn-safe-bottom: max(8px, env(safe-area-inset-bottom, 0px));
 }

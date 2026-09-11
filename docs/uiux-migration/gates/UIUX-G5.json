@@ -2,10 +2,10 @@
   "schema_version": "1.0",
   "stage": "UIUX-G5",
   "status": "BLOCKED",
-  "recorded_at": "2026-09-11T22:48:57+07:00",
+  "recorded_at": "2026-09-12T01:20:52+07:00",
   "target_base_sha": "411ba4d3ae4e287ef40626aba8ca6794924be1ef",
   "design_source_sha": "86079f965f2fcb43a7e3efbbc9467d119b47921f",
-  "implementation_head_sha": "465c22fe4701a66a430d4291aac37e4e97fb378d",
+  "implementation_head_sha": "b471a799854b654631a2d76ece6a3a2a6acbb41e",
   "dirty_diff": {
     "preserved": "The existing uncommitted G1–G4 implementation, evidence and user-local .env*/.tmp files were preserved. The requested structural visual sync is recorded separately and does not revalidate the stale G1–G4 lineage.",
     "g5_changes": [
@@ -14,6 +14,7 @@
       "docs/uiux-migration/gates/UIUX-G5.md",
       "docs/uiux-migration/g5/live-designer-screen-audit-2026-09-10.md",
       "docs/uiux-migration/evidence/g5/android-xiaomi-2206122sc-2026-09-10.md",
+      "docs/uiux-migration/evidence/g5/android-xiaomi-2206122sc-routes-2026-09-12.md",
       "docs/uiux-migration/evidence/g5/android-xiaomi-2206122sc-home.png",
       "docs/uiux-migration/evidence/g5/android-xiaomi-2206122sc-catalogue-deep-scroll.png",
       "docs/uiux-migration/evidence/g5/android-xiaomi-2206122sc-eruda-console.png"
@@ -39,8 +40,10 @@
     {"path": "docs/uiux-migration/decisions.json", "sha256": "8abf3bbd2bb45a51ecabdfd2330f3099a2469306db096230d1a5657de64910e6"}
   ],
   "output_artifacts": [
-    {"path": "docs/uiux-migration/g5/preflight-blockers.md", "sha256": "fe596f7d114bf92c3d5685072915ceaf755d64ec7ef01df969d637be540107f6"},
-    {"path": "docs/uiux-migration/gates/UIUX-G5.md", "sha256": "fd55e0c96a452ff58c8c901bb0c5872008b1e366b9c112612bb7abe07cae6360"},
+    {"path": "docs/uiux-migration/g5/preflight-blockers.md", "sha256": "d4e223425c1994c05091549e9322b1c9ca63f622dc1247fc54a6502913f05659"},
+    {"path": "docs/uiux-migration/g5/visual-matrix-2026-09-11.md", "sha256": "dd66aa9b71ba978cbe5dec9807cb66a8a644b70bb8db5e601b874cf366826de8"},
+    {"path": "docs/uiux-migration/evidence/g5/android-xiaomi-2206122sc-routes-2026-09-12.md", "sha256": "d10a873064965fc73254264b93788baf744eeff33229d8620bd93f7c5f49f3fe"},
+    {"path": "docs/uiux-migration/gates/UIUX-G5.md", "sha256": "cf20e766d2d112c9c39d8763f6f0bbe8e240f8c25448e0c28a0237bb2bc4d7b3"},
     {"path": "docs/uiux-migration/g5/live-designer-screen-audit-2026-09-10.md", "sha256": "1e081e722bb93643ea0265d694a69d3307153196bc284a4c6046e3a77bd98413"},
     {"path": "docs/uiux-migration/evidence/g5/android-xiaomi-2206122sc-2026-09-10.md", "sha256": "b96840a889777ac9e5c6b1096791fa495ecf8ef721d0cb2ab573de3dbc2543ab"}
   ],
@@ -48,7 +51,7 @@
     {
       "id": "current-checkout-and-live-reference",
       "expected": "The target branch/head, locked Designer SHA and live reference state are captured before G5 execution.",
-      "actual": "PASS: the local implementation checkout resolves to 465c22fe4701a66a430d4291aac37e4e97fb378d; origin/mini_product resolves to 5c071dea883f0225bf44fb6c1d2071babc2f1dac. The live Designer URL does not expose a verifiable commit; the locked SHA remains the only baseline.",
+      "actual": "PASS: the local implementation checkout resolves to b471a799854b654631a2d76ece6a3a2a6acbb41e; origin/mini_product resolves to 5c071dea883f0225bf44fb6c1d2071babc2f1dac. The live Designer URL does not expose a verifiable commit; the locked SHA remains the only baseline. The working tree contains the current revalidation changes and remains dirty.",
       "status": "PASS",
       "evidence_paths": ["docs/uiux-migration/g5/preflight-blockers.md", "docs/uiux-migration/baseline.json"],
       "command": "git rev-parse HEAD; git rev-parse origin/mini_product; read-only Designer browser inspection",
@@ -66,19 +69,19 @@
     {
       "id": "physical-zalo-device-matrix",
       "expected": "At least one named Android and one named iPhone running Zalo provide IME, safe-area, native-back/resume and momentum evidence.",
-      "actual": "PARTIAL: Xiaomi 2206122SC (Android 13, Zalo 26.08.02, vi-VN Gboard) completed Home, catalogue append/deep-scroll, detail, native Back and visible console/network checks. G5-A01 blocks quote focus/IME validation and resume evidence because Zalo native close chrome covers the global quote-entry button. An iPhone leg is still missing.",
+      "actual": "PARTIAL: Xiaomi 2206122SC (Android 13, Zalo 26.08.02) now passes Detail, Gallery, Quote entry, two-product Compare, Quote→Compare native Back and the route screenshots recorded on 2026-09-12. Resume reaches the Zalo task, but Compare-state preservation was not confirmed; an iPhone leg and full IME/resume evidence are still missing.",
       "status": "BLOCKED",
-      "evidence_paths": ["docs/uiux-migration/g5/preflight-blockers.md", "docs/uiux-migration/evidence/g5/android-xiaomi-2206122sc-2026-09-10.md", "docs/uiux-migration/evidence/g5/android-xiaomi-2206122sc-home.png", "docs/uiux-migration/evidence/g5/android-xiaomi-2206122sc-catalogue-deep-scroll.png", "docs/uiux-migration/evidence/g5/android-xiaomi-2206122sc-eruda-console.png"],
+      "evidence_paths": ["docs/uiux-migration/g5/preflight-blockers.md", "docs/uiux-migration/evidence/g5/android-xiaomi-2206122sc-2026-09-10.md", "docs/uiux-migration/evidence/g5/android-xiaomi-2206122sc-routes-2026-09-12.md", "docs/uiux-migration/evidence/g5/android-xiaomi-2206122sc-home.png", "docs/uiux-migration/evidence/g5/android-xiaomi-2206122sc-catalogue-deep-scroll.png", "docs/uiux-migration/evidence/g5/android-xiaomi-2206122sc-eruda-console.png"],
       "command": "ADB physical-device inspection and interaction on fbb9e686; Eruda Console/Network; no quote POST",
       "exit_code": 0
     },
     {
       "id": "final-visual-motion-matrix",
       "expected": "Every mandatory PV/state/viewport/device case has reference, actual, diff and measurement evidence under an approved final visual/motion rule.",
-      "actual": "BLOCKED: a unified local acceptance target is now defined as 375 x 812 CSS px at DPR 3, with .hn-page as the only scroll owner and hidden capture scrollbar. The current desktop computer-use runtime cannot create browser assets (kernel path error), so no truthful current reference/actual/diff capture set can be recorded. Physical iPhone/Zalo evidence is also still missing.",
+      "actual": "BLOCKED: a unified local acceptance target is defined as 375 x 812 CSS px at DPR 3, with .hn-page as the only scroll owner and hidden capture scrollbar. The current desktop computer-use runtime cannot create browser assets (kernel path error), so no truthful current reference/actual/diff capture set can be recorded. Physical iPhone/Zalo evidence is also still missing.",
       "status": "BLOCKED",
       "evidence_paths": ["docs/uiux-migration/g5/preflight-blockers.md", "docs/uiux-migration/g5/visual-matrix-2026-09-11.md", "docs/uiux-migration/g2/designer-visual-comparison.md", "docs/uiux-migration/g3/revalidation-2026-09-10.md"],
-      "command": "computer-use browser capture attempt; deterministic npm typecheck; npm run lint; npm test; npm run build",
+      "command": "computer-use browser capture attempt; npm run typecheck; npm run lint; npm test; npm run build; npm run build:dev-preview; npm run build:backend-preview",
       "exit_code": 1
     }
   ],
@@ -88,7 +91,7 @@
     "G5-B03: Capture the defined 375 x 812 CSS px / DPR 3 reference, actual and diff matrix after browser automation is restored; add a named iPhone running Zalo before claiming final visual or motion acceptance."
   ],
   "approved_decision_ids": ["D01", "D02", "D03", "D04", "D05", "D06", "D07", "D08", "D09", "D10", "D11", "D12", "D13"],
-  "changed_files": ["docs/uiux-migration/g5/preflight-blockers.md", "docs/uiux-migration/g5/visual-matrix-2026-09-11.md", "docs/uiux-migration/gates/UIUX-G5.json", "docs/uiux-migration/gates/UIUX-G5.md", "docs/uiux-migration/g5/live-designer-screen-audit-2026-09-10.md", "docs/uiux-migration/evidence/g5/android-xiaomi-2206122sc-2026-09-10.md", "docs/uiux-migration/evidence/g5/android-xiaomi-2206122sc-home.png", "docs/uiux-migration/evidence/g5/android-xiaomi-2206122sc-catalogue-deep-scroll.png", "docs/uiux-migration/evidence/g5/android-xiaomi-2206122sc-eruda-console.png", "src/components/app-shell.tsx", "src/components/catalogue/product-detail-template.tsx", "src/pages/product-detail.tsx", "src/pages/foundation-screen.tsx", "src/css/app.scss", "src/css/hoa-nam-theme.scss"],
+  "changed_files": ["docs/uiux-migration/g5/preflight-blockers.md", "docs/uiux-migration/g5/visual-matrix-2026-09-11.md", "docs/uiux-migration/gates/UIUX-G5.json", "docs/uiux-migration/gates/UIUX-G5.md", "docs/uiux-migration/g5/live-designer-screen-audit-2026-09-10.md", "docs/uiux-migration/evidence/g5/android-xiaomi-2206122sc-2026-09-10.md", "docs/uiux-migration/evidence/g5/android-xiaomi-2206122sc-routes-2026-09-12.md", "docs/uiux-migration/evidence/g5/android-xiaomi-2206122sc-home.png", "docs/uiux-migration/evidence/g5/android-xiaomi-2206122sc-catalogue-deep-scroll.png", "docs/uiux-migration/evidence/g5/android-xiaomi-2206122sc-eruda-console.png", "src/app.ts", "src/components/app-shell.tsx", "src/components/catalogue/product-detail-template.tsx", "src/pages/product-detail.tsx", "src/pages/foundation-screen.tsx", "src/css/app.scss", "src/css/hoa-nam-theme.scss", "vite.config.mts", "package.json", "package-lock.json"],
   "api_impact": "The physical Android run observed successful Green config and product GET requests through the running Mini App. No contract change or quote POST was made.",
   "data_impact": "No PII, quote, fixture, Customer or Production data was written. Opening a product may have updated the Mini App's local recent-product state on the test device.",
   "next_prompt_allowed": false
