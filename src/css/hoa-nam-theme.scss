@@ -3610,7 +3610,7 @@ body,
    oversized radii, or intrinsic-width CTA buttons. */
 .contact-screen {
   gap: 16px;
-  width: min(100%, 640px);
+  width: min(100%, 1030px);
   margin-top: 0;
 }
 
@@ -3626,6 +3626,13 @@ body,
 .contact-screen__methods {
   grid-template-columns: 1fr;
   gap: 12px;
+}
+
+@media (min-width: 701px) {
+  .contact-screen__methods {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 16px;
+  }
 }
 
 .contact-screen__card {
@@ -3743,21 +3750,28 @@ body,
 
 .contact-screen__hours {
   min-height: 113.6px;
-  padding: 16px;
+  padding: 12px 16px;
 }
 
 .contact-screen__hours .contact-screen__card-heading h2 {
   font-size: 15px;
+  line-height: 1.2;
+}
+
+.contact-screen__hours .contact-screen__card-heading > svg {
+  width: 18px;
+  height: 18px;
 }
 
 .contact-screen__hours dl {
-  margin-top: 10px;
+  margin-top: 5px;
 }
 
 .contact-screen__hours dl > div {
   gap: 12px;
-  padding: 8px 0;
-  font-size: 13px;
+  padding: 3px 0;
+  font-size: 12px;
+  line-height: 1.35;
 }
 
 .contact-screen__browse {
@@ -3832,10 +3846,6 @@ body,
   padding-top: 16px;
 }
 
-.hn-page--search .search-screen__title {
-  display: none;
-}
-
 /* The Home header uses the same safe-area reservation as every route; only
    the content spacing is compacted, never shifted beneath the status bar. */
 .hn-page--home .hn-content {
@@ -3875,6 +3885,15 @@ body,
 .hn-page--home .domain-card span:not(.domain-icon) {
   min-height: 0;
   font-size: 9px;
+}
+
+/* Keep all discovery tiles in one Hoa Nam blue treatment; category meaning is
+   conveyed by its icon and label, not by mixed green/orange accent colours. */
+.hn-page--home .domain-icon,
+.hn-page--home .domain-card:nth-child(2) .domain-icon,
+.hn-page--home .domain-card:nth-child(3) .domain-icon {
+  color: var(--hn-primary) !important;
+  background: var(--hn-primary-a06) !important;
 }
 
 /* Category domains are three independent large cards, not a segmented

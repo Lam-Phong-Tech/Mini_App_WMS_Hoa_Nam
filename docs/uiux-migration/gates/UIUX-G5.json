@@ -2,10 +2,10 @@
   "schema_version": "1.0",
   "stage": "UIUX-G5",
   "status": "BLOCKED",
-  "recorded_at": "2026-09-10T18:14:25+07:00",
+  "recorded_at": "2026-09-11T22:48:57+07:00",
   "target_base_sha": "411ba4d3ae4e287ef40626aba8ca6794924be1ef",
   "design_source_sha": "86079f965f2fcb43a7e3efbbc9467d119b47921f",
-  "implementation_head_sha": "7782cd9af5843d82a39cf6c2b61ee5a9ae931e35",
+  "implementation_head_sha": "465c22fe4701a66a430d4291aac37e4e97fb378d",
   "dirty_diff": {
     "preserved": "The existing uncommitted G1–G4 implementation, evidence and user-local .env*/.tmp files were preserved. The requested structural visual sync is recorded separately and does not revalidate the stale G1–G4 lineage.",
     "g5_changes": [
@@ -48,7 +48,7 @@
     {
       "id": "current-checkout-and-live-reference",
       "expected": "The target branch/head, locked Designer SHA and live reference state are captured before G5 execution.",
-      "actual": "PASS: mini_product and origin/mini_product resolve to 7782cd9af5843d82a39cf6c2b61ee5a9ae931e35. The live Designer URL is reachable, but does not expose a verifiable commit; the locked SHA remains the only baseline.",
+      "actual": "PASS: the local implementation checkout resolves to 465c22fe4701a66a430d4291aac37e4e97fb378d; origin/mini_product resolves to 5c071dea883f0225bf44fb6c1d2071babc2f1dac. The live Designer URL does not expose a verifiable commit; the locked SHA remains the only baseline.",
       "status": "PASS",
       "evidence_paths": ["docs/uiux-migration/g5/preflight-blockers.md", "docs/uiux-migration/baseline.json"],
       "command": "git rev-parse HEAD; git rev-parse origin/mini_product; read-only Designer browser inspection",
@@ -75,20 +75,20 @@
     {
       "id": "final-visual-motion-matrix",
       "expected": "Every mandatory PV/state/viewport/device case has reference, actual, diff and measurement evidence under an approved final visual/motion rule.",
-      "actual": "NOT_RUN: earlier G2/G3 captures are structural comparisons with approved runtime-data variance. There is no current final viewport/DPR/device/capture/diff-exception matrix and no whole-app result.",
+      "actual": "BLOCKED: a unified local acceptance target is now defined as 375 x 812 CSS px at DPR 3, with .hn-page as the only scroll owner and hidden capture scrollbar. The current desktop computer-use runtime cannot create browser assets (kernel path error), so no truthful current reference/actual/diff capture set can be recorded. Physical iPhone/Zalo evidence is also still missing.",
       "status": "BLOCKED",
-      "evidence_paths": ["docs/uiux-migration/g5/preflight-blockers.md", "docs/uiux-migration/g2/designer-visual-comparison.md", "docs/uiux-migration/g3/revalidation-2026-09-10.md"],
-      "command": null,
-      "exit_code": null
+      "evidence_paths": ["docs/uiux-migration/g5/preflight-blockers.md", "docs/uiux-migration/g5/visual-matrix-2026-09-11.md", "docs/uiux-migration/g2/designer-visual-comparison.md", "docs/uiux-migration/g3/revalidation-2026-09-10.md"],
+      "command": "computer-use browser capture attempt; deterministic npm typecheck; npm run lint; npm test; npm run build",
+      "exit_code": 1
     }
   ],
   "unresolved_blockers": [
     "G5-B01: Revalidate and re-record stale G1–G4 lineage against the current working diff and decisions manifest.",
     "G5-B02 / G5-A01: Repair the global quote-entry control so it does not overlap Zalo native chrome; rerun the blocked Android form/IME/resume cases and supply a named iPhone running Zalo.",
-    "G5-B03: Supply or approve the final viewport/DPR/device/capture and visual/motion acceptance rule; zero-pixel equality is not currently measurable from the available evidence."
+    "G5-B03: Capture the defined 375 x 812 CSS px / DPR 3 reference, actual and diff matrix after browser automation is restored; add a named iPhone running Zalo before claiming final visual or motion acceptance."
   ],
   "approved_decision_ids": ["D01", "D02", "D03", "D04", "D05", "D06", "D07", "D08", "D09", "D10", "D11", "D12", "D13"],
-  "changed_files": ["docs/uiux-migration/g5/preflight-blockers.md", "docs/uiux-migration/gates/UIUX-G5.json", "docs/uiux-migration/gates/UIUX-G5.md", "docs/uiux-migration/g5/live-designer-screen-audit-2026-09-10.md", "docs/uiux-migration/evidence/g5/android-xiaomi-2206122sc-2026-09-10.md", "docs/uiux-migration/evidence/g5/android-xiaomi-2206122sc-home.png", "docs/uiux-migration/evidence/g5/android-xiaomi-2206122sc-catalogue-deep-scroll.png", "docs/uiux-migration/evidence/g5/android-xiaomi-2206122sc-eruda-console.png", "src/components/app-shell.tsx", "src/components/catalogue/product-detail-template.tsx", "src/pages/product-detail.tsx", "src/css/app.scss"],
+  "changed_files": ["docs/uiux-migration/g5/preflight-blockers.md", "docs/uiux-migration/g5/visual-matrix-2026-09-11.md", "docs/uiux-migration/gates/UIUX-G5.json", "docs/uiux-migration/gates/UIUX-G5.md", "docs/uiux-migration/g5/live-designer-screen-audit-2026-09-10.md", "docs/uiux-migration/evidence/g5/android-xiaomi-2206122sc-2026-09-10.md", "docs/uiux-migration/evidence/g5/android-xiaomi-2206122sc-home.png", "docs/uiux-migration/evidence/g5/android-xiaomi-2206122sc-catalogue-deep-scroll.png", "docs/uiux-migration/evidence/g5/android-xiaomi-2206122sc-eruda-console.png", "src/components/app-shell.tsx", "src/components/catalogue/product-detail-template.tsx", "src/pages/product-detail.tsx", "src/pages/foundation-screen.tsx", "src/css/app.scss", "src/css/hoa-nam-theme.scss"],
   "api_impact": "The physical Android run observed successful Green config and product GET requests through the running Mini App. No contract change or quote POST was made.",
   "data_impact": "No PII, quote, fixture, Customer or Production data was written. Opening a product may have updated the Mini App's local recent-product state on the test device.",
   "next_prompt_allowed": false

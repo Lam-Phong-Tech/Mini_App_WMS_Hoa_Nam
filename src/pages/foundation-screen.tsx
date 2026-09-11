@@ -140,9 +140,9 @@ export const FoundationScreen = ({ routeKey }: FoundationScreenProps) => {
                 <span className="contact-screen__icon"><UiIcon name="send" size={24} /></span>
                 <h2>Gửi yêu cầu đặt hàng</h2>
               </div>
-              <p>Chọn sản phẩm và để lại thông tin, Hoa Nam sẽ liên hệ.</p>
+              <p>Để lại sản phẩm và thông tin liên hệ để Hoa Nam tư vấn.</p>
               <button className="contact-screen__button contact-screen__button--primary" type="button" onClick={() => navigate("/selection", { animate: false })}>
-                Gửi yêu cầu đặt hàng <UiIcon name="arrowRight" size={19} />
+                Gửi yêu cầu <UiIcon name="arrowRight" size={19} />
               </button>
             </article>
 

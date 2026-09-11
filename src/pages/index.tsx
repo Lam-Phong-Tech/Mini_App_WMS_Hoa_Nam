@@ -202,7 +202,7 @@ const HomePage = () => {
         {!catalogue.failure && catalogue.kind === "success-empty" ? <p className="home-product-status">Chưa có sản phẩm công khai trong danh mục này.</p> : null}
         {displayedCatalogueProducts.length ? <>
           <ProductGrid products={displayedCatalogueProducts} returnPath="/home" label="Sản phẩm trong danh mục" loadedCount={displayedCatalogueProducts.length} />
-          <p className="home-product-progress">Đã hiển thị {displayedCatalogueProducts.length} / {catalogueProducts.length} sản phẩm</p>
+          <p className="home-product-progress">Xem trước {displayedCatalogueProducts.length} sản phẩm</p>
         </> : null}
         <button className="home-catalogue-link" type="button" onClick={() => navigate("/products", { animate: false })}>Xem toàn bộ danh mục <UiIcon name="chevronRight" size={20} /></button>
       </section>
