@@ -27,6 +27,12 @@ describe("foundation routing", () => {
       "/products/:slug/gallery",
       "/products/:slug/quote",
       "/contact",
+      "/recent",
+      "/saved",
+      "/selection",
+      "/compare",
+      "/requests",
+      "/help",
       "/system",
     ]);
     expect(getBottomNavigationKey("/products/example")).toBe("categories");

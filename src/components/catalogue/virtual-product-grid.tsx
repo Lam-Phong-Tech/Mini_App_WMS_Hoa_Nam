@@ -49,7 +49,10 @@ export const VirtualProductGrid = ({ products, returnPath, label, loadedCount }:
   const virtualizer = useVirtualizer({
     count: rows.length,
     getScrollElement: () => scrollRoot,
-    estimateSize: () => 318,
+    // Product cards include the bottom save/compare action bar. Keep the first
+    // range at least as tall as that complete mobile card to prevent transient
+    // row overlap before TanStack's measurements settle.
+    estimateSize: () => (columns === 2 ? 360 : 390),
     overscan: 3,
     getItemKey: (rowIndex) => rows[rowIndex]?.[0]?.product_id ?? rowIndex,
     rangeExtractor,

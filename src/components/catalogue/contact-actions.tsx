@@ -1,7 +1,7 @@
 import type { MouseEvent } from "react";
 import { useSnackbar } from "zmp-ui";
 
-import { getContactTargets, getPublicHotline, OA_MAINTENANCE_MESSAGE } from "@/services/contact-config";
+import { getContactTargets, getPublicHotline, OA_UNAVAILABLE_MESSAGE } from "@/services/contact-config";
 import { openDeviceDialer } from "@/services/phone-dialer";
 import { PublicConfigDto } from "@/types/public-api";
 import { UiIcon } from "@/components/ui-icon";
@@ -29,9 +29,9 @@ export const ContactActions = ({
   const targets = getContactTargets(config);
   if (!hotline && !showUnavailable) return null;
 
-  const notifyOaMaintenance = () => {
+  const notifyOaUnavailable = () => {
     openSnackbar({
-      text: OA_MAINTENANCE_MESSAGE,
+      text: OA_UNAVAILABLE_MESSAGE,
       type: "warning",
       icon: true,
       duration: 3500,
@@ -60,9 +60,7 @@ export const ContactActions = ({
           </span>
         </a>
       ) : showUnavailable ? <button className="contact-action-placeholder contact-action-placeholder--hotline" type="button" disabled><UiIcon name="phone" size={17} />Gọi hotline</button> : null}
-      <button className="contact-action-placeholder contact-action-placeholder--oa" type="button" onClick={notifyOaMaintenance}>
-        <UiIcon name="message" size={17} />Chat Zalo OA
-      </button>
+      {targets.oaUrl ? <a className="contact-link contact-link--oa" href={targets.oaUrl} aria-label="Mở Chat Zalo OA"><span className="contact-link__button"><UiIcon name="message" size={17} />Chat Zalo OA</span></a> : <button className="contact-action-placeholder contact-action-placeholder--oa" type="button" onClick={notifyOaUnavailable}><UiIcon name="message" size={17} />Chat Zalo OA</button>}
     </div>
   );
 };

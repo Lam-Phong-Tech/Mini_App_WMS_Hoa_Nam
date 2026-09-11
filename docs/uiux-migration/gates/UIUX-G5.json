@@ -1,0 +1,95 @@
+{
+  "schema_version": "1.0",
+  "stage": "UIUX-G5",
+  "status": "BLOCKED",
+  "recorded_at": "2026-09-10T18:14:25+07:00",
+  "target_base_sha": "411ba4d3ae4e287ef40626aba8ca6794924be1ef",
+  "design_source_sha": "86079f965f2fcb43a7e3efbbc9467d119b47921f",
+  "implementation_head_sha": "7782cd9af5843d82a39cf6c2b61ee5a9ae931e35",
+  "dirty_diff": {
+    "preserved": "The existing uncommitted G1–G4 implementation, evidence and user-local .env*/.tmp files were preserved. The requested structural visual sync is recorded separately and does not revalidate the stale G1–G4 lineage.",
+    "g5_changes": [
+      "docs/uiux-migration/g5/preflight-blockers.md",
+      "docs/uiux-migration/gates/UIUX-G5.json",
+      "docs/uiux-migration/gates/UIUX-G5.md",
+      "docs/uiux-migration/g5/live-designer-screen-audit-2026-09-10.md",
+      "docs/uiux-migration/evidence/g5/android-xiaomi-2206122sc-2026-09-10.md",
+      "docs/uiux-migration/evidence/g5/android-xiaomi-2206122sc-home.png",
+      "docs/uiux-migration/evidence/g5/android-xiaomi-2206122sc-catalogue-deep-scroll.png",
+      "docs/uiux-migration/evidence/g5/android-xiaomi-2206122sc-eruda-console.png"
+    ],
+    "runtime_changes": [
+      "src/components/app-shell.tsx",
+      "src/components/catalogue/product-detail-template.tsx",
+      "src/pages/product-detail.tsx",
+      "src/css/app.scss"
+    ]
+  },
+  "previous_gate_path": "docs/uiux-migration/gates/UIUX-G4.json",
+  "previous_gate_sha256": "d709e1e657b4eb3d6aef0819f9edaa80208b0527910954d6c1d2a57f01e47194",
+  "baseline_id": "UIUX-G1-2026-09-08-source-01",
+  "baseline_manifest": {"path": "docs/uiux-migration/baseline.json", "sha256": "2d07c8c7d4268cd46ba4a42307e4302a6ccbaa40b2f02248c089907fe82bf1d5"},
+  "decisions": {"path": "docs/uiux-migration/decisions.json", "sha256": "8abf3bbd2bb45a51ecabdfd2330f3099a2469306db096230d1a5657de64910e6"},
+  "input_artifacts": [
+    {"path": "docs/uiux-migration/gates/UIUX-G1.json", "sha256": "a8f83f5f6118cb840888b5c23a7a9df825f778d97e0653d965cca0352e3257d9"},
+    {"path": "docs/uiux-migration/gates/UIUX-G2.json", "sha256": "7601b1cc6a689f7372698acfbadd154430b955f756767caa98b077efdc074ee4"},
+    {"path": "docs/uiux-migration/gates/UIUX-G3.json", "sha256": "2f61f9ea639a46f636f142961e22ec436e8863b1bd14a0802719b91f62fb2007"},
+    {"path": "docs/uiux-migration/gates/UIUX-G4.json", "sha256": "d709e1e657b4eb3d6aef0819f9edaa80208b0527910954d6c1d2a57f01e47194"},
+    {"path": "docs/uiux-migration/baseline.json", "sha256": "2d07c8c7d4268cd46ba4a42307e4302a6ccbaa40b2f02248c089907fe82bf1d5"},
+    {"path": "docs/uiux-migration/decisions.json", "sha256": "8abf3bbd2bb45a51ecabdfd2330f3099a2469306db096230d1a5657de64910e6"}
+  ],
+  "output_artifacts": [
+    {"path": "docs/uiux-migration/g5/preflight-blockers.md", "sha256": "fe596f7d114bf92c3d5685072915ceaf755d64ec7ef01df969d637be540107f6"},
+    {"path": "docs/uiux-migration/gates/UIUX-G5.md", "sha256": "fd55e0c96a452ff58c8c901bb0c5872008b1e366b9c112612bb7abe07cae6360"},
+    {"path": "docs/uiux-migration/g5/live-designer-screen-audit-2026-09-10.md", "sha256": "1e081e722bb93643ea0265d694a69d3307153196bc284a4c6046e3a77bd98413"},
+    {"path": "docs/uiux-migration/evidence/g5/android-xiaomi-2206122sc-2026-09-10.md", "sha256": "b96840a889777ac9e5c6b1096791fa495ecf8ef721d0cb2ab573de3dbc2543ab"}
+  ],
+  "checks": [
+    {
+      "id": "current-checkout-and-live-reference",
+      "expected": "The target branch/head, locked Designer SHA and live reference state are captured before G5 execution.",
+      "actual": "PASS: mini_product and origin/mini_product resolve to 7782cd9af5843d82a39cf6c2b61ee5a9ae931e35. The live Designer URL is reachable, but does not expose a verifiable commit; the locked SHA remains the only baseline.",
+      "status": "PASS",
+      "evidence_paths": ["docs/uiux-migration/g5/preflight-blockers.md", "docs/uiux-migration/baseline.json"],
+      "command": "git rev-parse HEAD; git rev-parse origin/mini_product; read-only Designer browser inspection",
+      "exit_code": 0
+    },
+    {
+      "id": "prior-gate-hash-integrity",
+      "expected": "G1–G4 PASS records and every referenced artifact remain valid for the current checkout before G5 starts.",
+      "actual": "BLOCKED: G1 source-output hashes do not match current files, and G1/G2/G3 each reference a different older decisions.json hash. The prior PASS chain is therefore stale and must be revalidated before final acceptance.",
+      "status": "BLOCKED",
+      "evidence_paths": ["docs/uiux-migration/g5/preflight-blockers.md", "docs/uiux-migration/gates/UIUX-G1.json", "docs/uiux-migration/gates/UIUX-G2.json", "docs/uiux-migration/gates/UIUX-G3.json"],
+      "command": "PowerShell gate input/output SHA-256 integrity scan",
+      "exit_code": 0
+    },
+    {
+      "id": "physical-zalo-device-matrix",
+      "expected": "At least one named Android and one named iPhone running Zalo provide IME, safe-area, native-back/resume and momentum evidence.",
+      "actual": "PARTIAL: Xiaomi 2206122SC (Android 13, Zalo 26.08.02, vi-VN Gboard) completed Home, catalogue append/deep-scroll, detail, native Back and visible console/network checks. G5-A01 blocks quote focus/IME validation and resume evidence because Zalo native close chrome covers the global quote-entry button. An iPhone leg is still missing.",
+      "status": "BLOCKED",
+      "evidence_paths": ["docs/uiux-migration/g5/preflight-blockers.md", "docs/uiux-migration/evidence/g5/android-xiaomi-2206122sc-2026-09-10.md", "docs/uiux-migration/evidence/g5/android-xiaomi-2206122sc-home.png", "docs/uiux-migration/evidence/g5/android-xiaomi-2206122sc-catalogue-deep-scroll.png", "docs/uiux-migration/evidence/g5/android-xiaomi-2206122sc-eruda-console.png"],
+      "command": "ADB physical-device inspection and interaction on fbb9e686; Eruda Console/Network; no quote POST",
+      "exit_code": 0
+    },
+    {
+      "id": "final-visual-motion-matrix",
+      "expected": "Every mandatory PV/state/viewport/device case has reference, actual, diff and measurement evidence under an approved final visual/motion rule.",
+      "actual": "NOT_RUN: earlier G2/G3 captures are structural comparisons with approved runtime-data variance. There is no current final viewport/DPR/device/capture/diff-exception matrix and no whole-app result.",
+      "status": "BLOCKED",
+      "evidence_paths": ["docs/uiux-migration/g5/preflight-blockers.md", "docs/uiux-migration/g2/designer-visual-comparison.md", "docs/uiux-migration/g3/revalidation-2026-09-10.md"],
+      "command": null,
+      "exit_code": null
+    }
+  ],
+  "unresolved_blockers": [
+    "G5-B01: Revalidate and re-record stale G1–G4 lineage against the current working diff and decisions manifest.",
+    "G5-B02 / G5-A01: Repair the global quote-entry control so it does not overlap Zalo native chrome; rerun the blocked Android form/IME/resume cases and supply a named iPhone running Zalo.",
+    "G5-B03: Supply or approve the final viewport/DPR/device/capture and visual/motion acceptance rule; zero-pixel equality is not currently measurable from the available evidence."
+  ],
+  "approved_decision_ids": ["D01", "D02", "D03", "D04", "D05", "D06", "D07", "D08", "D09", "D10", "D11", "D12", "D13"],
+  "changed_files": ["docs/uiux-migration/g5/preflight-blockers.md", "docs/uiux-migration/gates/UIUX-G5.json", "docs/uiux-migration/gates/UIUX-G5.md", "docs/uiux-migration/g5/live-designer-screen-audit-2026-09-10.md", "docs/uiux-migration/evidence/g5/android-xiaomi-2206122sc-2026-09-10.md", "docs/uiux-migration/evidence/g5/android-xiaomi-2206122sc-home.png", "docs/uiux-migration/evidence/g5/android-xiaomi-2206122sc-catalogue-deep-scroll.png", "docs/uiux-migration/evidence/g5/android-xiaomi-2206122sc-eruda-console.png", "src/components/app-shell.tsx", "src/components/catalogue/product-detail-template.tsx", "src/pages/product-detail.tsx", "src/css/app.scss"],
+  "api_impact": "The physical Android run observed successful Green config and product GET requests through the running Mini App. No contract change or quote POST was made.",
+  "data_impact": "No PII, quote, fixture, Customer or Production data was written. Opening a product may have updated the Mini App's local recent-product state on the test device.",
+  "next_prompt_allowed": false
+}

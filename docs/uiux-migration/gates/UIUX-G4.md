@@ -1,17 +1,20 @@
-# UIUX-G4 — BLOCKED
+# UIUX-G4 — PASS
 
-**Recorded:** 2026-09-10T00:33:56.0941164+07:00
+**Recorded:** 2026-09-10T14:19:23.0864237+07:00
 
-UIUX-G3 has been revalidated to `PASS`, so the required predecessor lineage
-was valid and G4 opened. A read-only Green/OpenAPI audit then found a blocking
-contract gap: D04 permits persistence of product IDs only, but Green provides
-no documented product-ID or batch-ID lookup with which to rehydrate those
-records after reload.
+G4 delivers the approved request, library, receipt, FAQ and comparison
+surfaces under the D01–D04/D13 contracts. The Green public `ids[]` lookup
+rehydrates ID-only saved/recent lists; malformed/network/throttled results and
+`PREORDER` never erase them. The local UI check, typecheck, lint, 62-test suite
+and backend-preview build all pass.
 
-G4 cannot continue to PV-13/PV-14 until an authoritative current-public-data
-lookup contract is provided, or D04 is explicitly changed. It must not use a
-cached catalogue snapshot, a persisted slug, or a whole-catalogue scan to
-bypass the ID-only boundary.
+No quote POST, Green write, sale/CRM write, fixture publication, push, merge,
+deployment, Customer or Production action was performed. The known Green
+ordinary-list `domain: null` data defect is documented transparently with a
+safe public-Home fallback.
 
-See [the G4 contract audit](../g4/contract-implementation.md), [the G4
-preflight](../g4/preflight.md), and [the G3 gate](UIUX-G3.md).
+G5 may start. It must still supply the D06–D08 scroll/dependency/visual and
+real Zalo Android+iPhone evidence; this G4 PASS does not claim those results.
+
+See [G4 functional results](../g4/functional-results.md), [contract audit](../g4/contract-implementation.md), [D13 API evidence](../g4/api-tests.md), and
+[the completion record](UIUX-G4.json).

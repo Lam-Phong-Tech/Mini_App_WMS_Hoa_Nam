@@ -34,7 +34,7 @@ const validDraft = () => ({
 const apiWith = (createQuoteRequest: PublicApiAdapter["createQuoteRequest"]): PublicApiAdapter =>
   ({ createQuoteRequest } as unknown as PublicApiAdapter);
 
-describe("G3 quote validation and submission", () => {
+describe("G4 quote validation and submission", () => {
   it("validates required fields and normalizes a Vietnamese phone", () => {
     const result = validateQuoteDraft(validDraft());
     expect(result.valid).toBe(true);
@@ -42,13 +42,15 @@ describe("G3 quote validation and submission", () => {
     expect(normalizeVietnamesePhone(" (+84) 912.345-678 ")).toBe("+84912345678");
   });
 
-  it("validates only a 10-digit Vietnamese mobile number in the phone field", () => {
+  it("validates formatted local and +84 Vietnamese mobile input", () => {
     expect(getVietnamesePhoneValidationError("0912345678")).toBeNull();
-    expect(getVietnamesePhoneValidationError("+84912345678")).toBeTruthy();
-    expect(getVietnamesePhoneValidationError("0912 345 678")).toBeTruthy();
+    expect(getVietnamesePhoneValidationError("+84912345678")).toBeNull();
+    expect(getVietnamesePhoneValidationError("0912 345 678")).toBeNull();
+    expect(getVietnamesePhoneValidationError("(+84) 912.345-678")).toBeNull();
     expect(getVietnamesePhoneValidationError("0212345678")).toBeTruthy();
     expect(getVietnamesePhoneValidationError("091234567")).toBeTruthy();
     expect(getVietnamesePhoneValidationError("0912abc678")).toBeTruthy();
+    expect(getVietnamesePhoneValidationError("+840912345678")).toBeTruthy();
   });
 
   it("returns field-level errors for name, phone, note, consent and privacy", () => {
@@ -155,5 +157,16 @@ describe("G3 quote validation and submission", () => {
     });
     expect(duplicate.valid).toBe(false);
     expect(duplicate.errors.items).toBeDefined();
+  });
+
+  it("allows at most twenty unique products in one request", () => {
+    const twenty = Array.from({ length: 20 }, (_, index) => ({ product_id: `product-${index + 1}` }));
+    const twentyOne = [...twenty, { product_id: "product-21" }];
+
+    expect(validateQuoteDraft({ ...validDraft(), items: twenty }).valid).toBe(true);
+    expect(validateQuoteDraft({ ...validDraft(), items: twentyOne })).toMatchObject({
+      valid: false,
+      errors: { items: expect.any(Array) },
+    });
   });
 });

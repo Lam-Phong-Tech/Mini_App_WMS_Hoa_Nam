@@ -1,0 +1,233 @@
+import { createHotContext as __vite__createHotContext } from "/@vite/client";import.meta.hot = __vite__createHotContext("/src/components/layout.tsx");import __vite__cjsImport0_react_jsxDevRuntime from "/node_modules/.vite/deps/react_jsx-dev-runtime.js?v=d6527740"; const jsxDEV = __vite__cjsImport0_react_jsxDevRuntime["jsxDEV"];
+import * as RefreshRuntime from "/@react-refresh";
+const inWebWorker = typeof WorkerGlobalScope !== "undefined" && self instanceof WorkerGlobalScope;
+let prevRefreshReg;
+let prevRefreshSig;
+if (import.meta.hot && !inWebWorker) {
+  if (!window.$RefreshReg$) {
+    throw new Error(
+      "@vitejs/plugin-react can't detect preamble. Something is wrong."
+    );
+  }
+  prevRefreshReg = window.$RefreshReg$;
+  prevRefreshSig = window.$RefreshSig$;
+  window.$RefreshReg$ = RefreshRuntime.getRefreshReg("C:/laragon/www/zalo_mini_app/hoanamproduct/src/components/layout.tsx");
+  window.$RefreshSig$ = RefreshRuntime.createSignatureFunctionForTransform;
+}
+import __vite__cjsImport3_react from "/node_modules/.vite/deps/react.js?v=d6527740"; const Suspense = __vite__cjsImport3_react["Suspense"]; const lazy = __vite__cjsImport3_react["lazy"];
+import {
+  AnimationRoutes,
+  App,
+  Route,
+  SnackbarProvider,
+  ZMPRouter
+} from "/node_modules/.vite/deps/zmp-ui.js?v=d6527740";
+import { AppProvider } from "/src/state/app-context.tsx?t=1789014580844";
+const FoundationScreen = lazy(_c = () => import("/src/pages/foundation-screen.tsx").then((module) => ({ default: module.FoundationScreen })));
+_c2 = FoundationScreen;
+const CategoryPage = lazy(_c3 = () => import("/src/pages/category.tsx?t=1789014580844"));
+_c4 = CategoryPage;
+const GalleryPage = lazy(_c5 = () => import("/src/pages/gallery.tsx?t=1789014580844"));
+_c6 = GalleryPage;
+const HomePage = lazy(_c7 = () => import("/src/pages/index.tsx"));
+_c8 = HomePage;
+const LaunchPage = lazy(_c9 = () => import("/src/pages/launch.tsx").then((module) => ({ default: module.LaunchPage })));
+_c0 = LaunchPage;
+const ProductDetailPage = lazy(_c1 = () => import("/src/pages/product-detail.tsx?t=1789014580844"));
+_c10 = ProductDetailPage;
+const ProductListPage = lazy(_c11 = () => import("/src/pages/product-list.tsx?t=1789014580844"));
+_c12 = ProductListPage;
+const SearchPage = lazy(_c13 = () => import("/src/pages/search.tsx?t=1789014580844"));
+_c14 = SearchPage;
+const QuoteRequestPage = lazy(_c15 = () => import("/src/pages/quote-request.tsx"));
+_c16 = QuoteRequestPage;
+const RouteLoading = () => /* @__PURE__ */ jsxDEV("div", { className: "route-loading", role: "status", children: "Đang mở…" }, void 0, false, {
+  fileName: "C:/laragon/www/zalo_mini_app/hoanamproduct/src/components/layout.tsx",
+  lineNumber: 41,
+  columnNumber: 28
+}, this);
+_c17 = RouteLoading;
+const Layout = () => {
+  return (
+    // The approved Preview baseline is a light surface.  Do not inherit Zalo's
+    // dark theme here because it changes the locked colour contract; controls
+    // remain explicitly readable with the shared token theme.
+    /* @__PURE__ */ jsxDEV(App, { theme: "light", children: /* @__PURE__ */ jsxDEV(SnackbarProvider, { children: /* @__PURE__ */ jsxDEV(AppProvider, { children: /* @__PURE__ */ jsxDEV(ZMPRouter, { children: /* @__PURE__ */ jsxDEV(Suspense, { fallback: /* @__PURE__ */ jsxDEV(RouteLoading, {}, void 0, false, {
+      fileName: "C:/laragon/www/zalo_mini_app/hoanamproduct/src/components/layout.tsx",
+      lineNumber: 52,
+      columnNumber: 33
+    }, this), children: /* @__PURE__ */ jsxDEV(AnimationRoutes, { children: [
+      /* @__PURE__ */ jsxDEV(Route, { path: "/", element: /* @__PURE__ */ jsxDEV(LaunchPage, {}, void 0, false, {
+        fileName: "C:/laragon/www/zalo_mini_app/hoanamproduct/src/components/layout.tsx",
+        lineNumber: 54,
+        columnNumber: 42
+      }, this) }, void 0, false, {
+        fileName: "C:/laragon/www/zalo_mini_app/hoanamproduct/src/components/layout.tsx",
+        lineNumber: 54,
+        columnNumber: 17
+      }, this),
+      /* @__PURE__ */ jsxDEV(Route, { path: "/home", element: /* @__PURE__ */ jsxDEV(HomePage, {}, void 0, false, {
+        fileName: "C:/laragon/www/zalo_mini_app/hoanamproduct/src/components/layout.tsx",
+        lineNumber: 55,
+        columnNumber: 46
+      }, this) }, void 0, false, {
+        fileName: "C:/laragon/www/zalo_mini_app/hoanamproduct/src/components/layout.tsx",
+        lineNumber: 55,
+        columnNumber: 17
+      }, this),
+      /* @__PURE__ */ jsxDEV(Route, { path: "/categories", element: /* @__PURE__ */ jsxDEV(CategoryPage, {}, void 0, false, {
+        fileName: "C:/laragon/www/zalo_mini_app/hoanamproduct/src/components/layout.tsx",
+        lineNumber: 56,
+        columnNumber: 52
+      }, this) }, void 0, false, {
+        fileName: "C:/laragon/www/zalo_mini_app/hoanamproduct/src/components/layout.tsx",
+        lineNumber: 56,
+        columnNumber: 17
+      }, this),
+      /* @__PURE__ */ jsxDEV(Route, { path: "/products", element: /* @__PURE__ */ jsxDEV(ProductListPage, {}, void 0, false, {
+        fileName: "C:/laragon/www/zalo_mini_app/hoanamproduct/src/components/layout.tsx",
+        lineNumber: 57,
+        columnNumber: 50
+      }, this) }, void 0, false, {
+        fileName: "C:/laragon/www/zalo_mini_app/hoanamproduct/src/components/layout.tsx",
+        lineNumber: 57,
+        columnNumber: 17
+      }, this),
+      /* @__PURE__ */ jsxDEV(Route, { path: "/search", element: /* @__PURE__ */ jsxDEV(SearchPage, {}, void 0, false, {
+        fileName: "C:/laragon/www/zalo_mini_app/hoanamproduct/src/components/layout.tsx",
+        lineNumber: 58,
+        columnNumber: 48
+      }, this) }, void 0, false, {
+        fileName: "C:/laragon/www/zalo_mini_app/hoanamproduct/src/components/layout.tsx",
+        lineNumber: 58,
+        columnNumber: 17
+      }, this),
+      /* @__PURE__ */ jsxDEV(Route, { path: "/filters", element: /* @__PURE__ */ jsxDEV(ProductListPage, { openFilter: true }, void 0, false, {
+        fileName: "C:/laragon/www/zalo_mini_app/hoanamproduct/src/components/layout.tsx",
+        lineNumber: 59,
+        columnNumber: 49
+      }, this) }, void 0, false, {
+        fileName: "C:/laragon/www/zalo_mini_app/hoanamproduct/src/components/layout.tsx",
+        lineNumber: 59,
+        columnNumber: 17
+      }, this),
+      /* @__PURE__ */ jsxDEV(Route, { path: "/products/:slug/gallery", element: /* @__PURE__ */ jsxDEV(GalleryPage, {}, void 0, false, {
+        fileName: "C:/laragon/www/zalo_mini_app/hoanamproduct/src/components/layout.tsx",
+        lineNumber: 60,
+        columnNumber: 64
+      }, this) }, void 0, false, {
+        fileName: "C:/laragon/www/zalo_mini_app/hoanamproduct/src/components/layout.tsx",
+        lineNumber: 60,
+        columnNumber: 17
+      }, this),
+      /* @__PURE__ */ jsxDEV(Route, { path: "/products/:slug/quote", element: /* @__PURE__ */ jsxDEV(QuoteRequestPage, {}, void 0, false, {
+        fileName: "C:/laragon/www/zalo_mini_app/hoanamproduct/src/components/layout.tsx",
+        lineNumber: 61,
+        columnNumber: 62
+      }, this) }, void 0, false, {
+        fileName: "C:/laragon/www/zalo_mini_app/hoanamproduct/src/components/layout.tsx",
+        lineNumber: 61,
+        columnNumber: 17
+      }, this),
+      /* @__PURE__ */ jsxDEV(Route, { path: "/products/:slug", element: /* @__PURE__ */ jsxDEV(ProductDetailPage, {}, void 0, false, {
+        fileName: "C:/laragon/www/zalo_mini_app/hoanamproduct/src/components/layout.tsx",
+        lineNumber: 62,
+        columnNumber: 56
+      }, this) }, void 0, false, {
+        fileName: "C:/laragon/www/zalo_mini_app/hoanamproduct/src/components/layout.tsx",
+        lineNumber: 62,
+        columnNumber: 17
+      }, this),
+      /* @__PURE__ */ jsxDEV(Route, { path: "/contact", element: /* @__PURE__ */ jsxDEV(FoundationScreen, { routeKey: "contact" }, void 0, false, {
+        fileName: "C:/laragon/www/zalo_mini_app/hoanamproduct/src/components/layout.tsx",
+        lineNumber: 63,
+        columnNumber: 49
+      }, this) }, void 0, false, {
+        fileName: "C:/laragon/www/zalo_mini_app/hoanamproduct/src/components/layout.tsx",
+        lineNumber: 63,
+        columnNumber: 17
+      }, this),
+      /* @__PURE__ */ jsxDEV(Route, { path: "/system", element: /* @__PURE__ */ jsxDEV(FoundationScreen, { routeKey: "system-states" }, void 0, false, {
+        fileName: "C:/laragon/www/zalo_mini_app/hoanamproduct/src/components/layout.tsx",
+        lineNumber: 64,
+        columnNumber: 48
+      }, this) }, void 0, false, {
+        fileName: "C:/laragon/www/zalo_mini_app/hoanamproduct/src/components/layout.tsx",
+        lineNumber: 64,
+        columnNumber: 17
+      }, this),
+      /* @__PURE__ */ jsxDEV(Route, { path: "*", element: /* @__PURE__ */ jsxDEV(FoundationScreen, { routeKey: "system-states" }, void 0, false, {
+        fileName: "C:/laragon/www/zalo_mini_app/hoanamproduct/src/components/layout.tsx",
+        lineNumber: 65,
+        columnNumber: 42
+      }, this) }, void 0, false, {
+        fileName: "C:/laragon/www/zalo_mini_app/hoanamproduct/src/components/layout.tsx",
+        lineNumber: 65,
+        columnNumber: 17
+      }, this)
+    ] }, void 0, true, {
+      fileName: "C:/laragon/www/zalo_mini_app/hoanamproduct/src/components/layout.tsx",
+      lineNumber: 53,
+      columnNumber: 15
+    }, this) }, void 0, false, {
+      fileName: "C:/laragon/www/zalo_mini_app/hoanamproduct/src/components/layout.tsx",
+      lineNumber: 52,
+      columnNumber: 13
+    }, this) }, void 0, false, {
+      fileName: "C:/laragon/www/zalo_mini_app/hoanamproduct/src/components/layout.tsx",
+      lineNumber: 51,
+      columnNumber: 11
+    }, this) }, void 0, false, {
+      fileName: "C:/laragon/www/zalo_mini_app/hoanamproduct/src/components/layout.tsx",
+      lineNumber: 50,
+      columnNumber: 9
+    }, this) }, void 0, false, {
+      fileName: "C:/laragon/www/zalo_mini_app/hoanamproduct/src/components/layout.tsx",
+      lineNumber: 49,
+      columnNumber: 7
+    }, this) }, void 0, false, {
+      fileName: "C:/laragon/www/zalo_mini_app/hoanamproduct/src/components/layout.tsx",
+      lineNumber: 48,
+      columnNumber: 5
+    }, this)
+  );
+};
+_c18 = Layout;
+export default Layout;
+var _c, _c2, _c3, _c4, _c5, _c6, _c7, _c8, _c9, _c0, _c1, _c10, _c11, _c12, _c13, _c14, _c15, _c16, _c17, _c18;
+$RefreshReg$(_c, "FoundationScreen$lazy");
+$RefreshReg$(_c2, "FoundationScreen");
+$RefreshReg$(_c3, "CategoryPage$lazy");
+$RefreshReg$(_c4, "CategoryPage");
+$RefreshReg$(_c5, "GalleryPage$lazy");
+$RefreshReg$(_c6, "GalleryPage");
+$RefreshReg$(_c7, "HomePage$lazy");
+$RefreshReg$(_c8, "HomePage");
+$RefreshReg$(_c9, "LaunchPage$lazy");
+$RefreshReg$(_c0, "LaunchPage");
+$RefreshReg$(_c1, "ProductDetailPage$lazy");
+$RefreshReg$(_c10, "ProductDetailPage");
+$RefreshReg$(_c11, "ProductListPage$lazy");
+$RefreshReg$(_c12, "ProductListPage");
+$RefreshReg$(_c13, "SearchPage$lazy");
+$RefreshReg$(_c14, "SearchPage");
+$RefreshReg$(_c15, "QuoteRequestPage$lazy");
+$RefreshReg$(_c16, "QuoteRequestPage");
+$RefreshReg$(_c17, "RouteLoading");
+$RefreshReg$(_c18, "Layout");
+if (import.meta.hot && !inWebWorker) {
+  window.$RefreshReg$ = prevRefreshReg;
+  window.$RefreshSig$ = prevRefreshSig;
+}
+if (import.meta.hot && !inWebWorker) {
+  RefreshRuntime.__hmr_import(import.meta.url).then((currentExports) => {
+    RefreshRuntime.registerExportsForReactRefresh("C:/laragon/www/zalo_mini_app/hoanamproduct/src/components/layout.tsx", currentExports);
+    import.meta.hot.accept((nextExports) => {
+      if (!nextExports) return;
+      const invalidateMessage = RefreshRuntime.validateRefreshBoundaryAndEnqueueUpdate("C:/laragon/www/zalo_mini_app/hoanamproduct/src/components/layout.tsx", currentExports, nextExports);
+      if (invalidateMessage) import.meta.hot.invalidate(invalidateMessage);
+    });
+  });
+}
+
+//# sourceMappingURL=data:application/json;base64,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O0FBQU8sSUFBQS9CLElBQUFJLEtBQUFFLEtBQUFDLEtBQUFFLEtBQUFDLEtBQUFFLEtBQUFDLEtBQUFFLEtBQUFDLEtBQUFFLEtBQUFDLE1BQUFFLE1BQUFDLE1BQUFFLE1BQUFDLE1BQUFFLE1BQUFDLE1BQUFFLE1BQUFFO0FBQUEsYUFBQWhDLElBQUE7QUFBQSxhQUFBSSxLQUFBO0FBQUEsYUFBQUUsS0FBQTtBQUFBLGFBQUFDLEtBQUE7QUFBQSxhQUFBRSxLQUFBO0FBQUEsYUFBQUMsS0FBQTtBQUFBLGFBQUFFLEtBQUE7QUFBQSxhQUFBQyxLQUFBO0FBQUEsYUFBQUUsS0FBQTtBQUFBLGFBQUFDLEtBQUE7QUFBQSxhQUFBRSxLQUFBO0FBQUEsYUFBQUMsTUFBQTtBQUFBLGFBQUFFLE1BQUE7QUFBQSxhQUFBQyxNQUFBO0FBQUEsYUFBQUUsTUFBQTtBQUFBLGFBQUFDLE1BQUE7QUFBQSxhQUFBRSxNQUFBO0FBQUEsYUFBQUMsTUFBQTtBQUFBLGFBQUFFLE1BQUE7QUFBQSxhQUFBRSxNQUFBIiwibmFtZXMiOlsiU3VzcGVuc2UiLCJsYXp5IiwiQW5pbWF0aW9uUm91dGVzIiwiQXBwIiwiUm91dGUiLCJTbmFja2JhclByb3ZpZGVyIiwiWk1QUm91dGVyIiwiQXBwUHJvdmlkZXIiLCJGb3VuZGF0aW9uU2NyZWVuIiwiX2MiLCJ0aGVuIiwibW9kdWxlIiwiZGVmYXVsdCIsIl9jMiIsIkNhdGVnb3J5UGFnZSIsIl9jMyIsIl9jNCIsIkdhbGxlcnlQYWdlIiwiX2M1IiwiX2M2IiwiSG9tZVBhZ2UiLCJfYzciLCJfYzgiLCJMYXVuY2hQYWdlIiwiX2M5IiwiX2MwIiwiUHJvZHVjdERldGFpbFBhZ2UiLCJfYzEiLCJfYzEwIiwiUHJvZHVjdExpc3RQYWdlIiwiX2MxMSIsIl9jMTIiLCJTZWFyY2hQYWdlIiwiX2MxMyIsIl9jMTQiLCJRdW90ZVJlcXVlc3RQYWdlIiwiX2MxNSIsIl9jMTYiLCJSb3V0ZUxvYWRpbmciLCJfYzE3IiwiTGF5b3V0IiwiX2MxOCJdLCJpZ25vcmVMaXN0IjpbXSwic291cmNlcyI6WyJsYXlvdXQudHN4Il0sInNvdXJjZXNDb250ZW50IjpbImltcG9ydCB7IFN1c3BlbnNlLCBsYXp5IH0gZnJvbSBcInJlYWN0XCI7XG5pbXBvcnQge1xuICBBbmltYXRpb25Sb3V0ZXMsXG4gIEFwcCxcbiAgUm91dGUsXHJcbiAgU25hY2tiYXJQcm92aWRlcixcclxuICBaTVBSb3V0ZXIsXHJcbn0gZnJvbSBcInptcC11aVwiO1xuXG5pbXBvcnQgeyBBcHBQcm92aWRlciB9IGZyb20gXCJAL3N0YXRlL2FwcC1jb250ZXh0XCI7XG5cbmNvbnN0IEZvdW5kYXRpb25TY3JlZW4gPSBsYXp5KCgpID0+IGltcG9ydChcIkAvcGFnZXMvZm91bmRhdGlvbi1zY3JlZW5cIikudGhlbigobW9kdWxlKSA9PiAoeyBkZWZhdWx0OiBtb2R1bGUuRm91bmRhdGlvblNjcmVlbiB9KSkpO1xuY29uc3QgQ2F0ZWdvcnlQYWdlID0gbGF6eSgoKSA9PiBpbXBvcnQoXCJAL3BhZ2VzL2NhdGVnb3J5XCIpKTtcbmNvbnN0IEdhbGxlcnlQYWdlID0gbGF6eSgoKSA9PiBpbXBvcnQoXCJAL3BhZ2VzL2dhbGxlcnlcIikpO1xuY29uc3QgSG9tZVBhZ2UgPSBsYXp5KCgpID0+IGltcG9ydChcIkAvcGFnZXMvaW5kZXhcIikpO1xuY29uc3QgTGF1bmNoUGFnZSA9IGxhenkoKCkgPT4gaW1wb3J0KFwiQC9wYWdlcy9sYXVuY2hcIikudGhlbigobW9kdWxlKSA9PiAoeyBkZWZhdWx0OiBtb2R1bGUuTGF1bmNoUGFnZSB9KSkpO1xuY29uc3QgUHJvZHVjdERldGFpbFBhZ2UgPSBsYXp5KCgpID0+IGltcG9ydChcIkAvcGFnZXMvcHJvZHVjdC1kZXRhaWxcIikpO1xuY29uc3QgUHJvZHVjdExpc3RQYWdlID0gbGF6eSgoKSA9PiBpbXBvcnQoXCJAL3BhZ2VzL3Byb2R1Y3QtbGlzdFwiKSk7XG5jb25zdCBTZWFyY2hQYWdlID0gbGF6eSgoKSA9PiBpbXBvcnQoXCJAL3BhZ2VzL3NlYXJjaFwiKSk7XG5jb25zdCBRdW90ZVJlcXVlc3RQYWdlID0gbGF6eSgoKSA9PiBpbXBvcnQoXCJAL3BhZ2VzL3F1b3RlLXJlcXVlc3RcIikpO1xuXG5jb25zdCBSb3V0ZUxvYWRpbmcgPSAoKSA9PiA8ZGl2IGNsYXNzTmFtZT1cInJvdXRlLWxvYWRpbmdcIiByb2xlPVwic3RhdHVzXCI+xJBhbmcgbeG7n+KApjwvZGl2PjtcblxuY29uc3QgTGF5b3V0ID0gKCkgPT4ge1xuICByZXR1cm4gKFxuICAgIC8vIFRoZSBhcHByb3ZlZCBQcmV2aWV3IGJhc2VsaW5lIGlzIGEgbGlnaHQgc3VyZmFjZS4gIERvIG5vdCBpbmhlcml0IFphbG8nc1xuICAgIC8vIGRhcmsgdGhlbWUgaGVyZSBiZWNhdXNlIGl0IGNoYW5nZXMgdGhlIGxvY2tlZCBjb2xvdXIgY29udHJhY3Q7IGNvbnRyb2xzXG4gICAgLy8gcmVtYWluIGV4cGxpY2l0bHkgcmVhZGFibGUgd2l0aCB0aGUgc2hhcmVkIHRva2VuIHRoZW1lLlxuICAgIDxBcHAgdGhlbWU9XCJsaWdodFwiPlxuICAgICAgPFNuYWNrYmFyUHJvdmlkZXI+XG4gICAgICAgIDxBcHBQcm92aWRlcj5cbiAgICAgICAgICA8Wk1QUm91dGVyPlxuICAgICAgICAgICAgPFN1c3BlbnNlIGZhbGxiYWNrPXs8Um91dGVMb2FkaW5nIC8+fT5cbiAgICAgICAgICAgICAgPEFuaW1hdGlvblJvdXRlcz5cbiAgICAgICAgICAgICAgICA8Um91dGUgcGF0aD1cIi9cIiBlbGVtZW50PXs8TGF1bmNoUGFnZSAvPn0+PC9Sb3V0ZT5cbiAgICAgICAgICAgICAgICA8Um91dGUgcGF0aD1cIi9ob21lXCIgZWxlbWVudD17PEhvbWVQYWdlIC8+fT48L1JvdXRlPlxuICAgICAgICAgICAgICAgIDxSb3V0ZSBwYXRoPVwiL2NhdGVnb3JpZXNcIiBlbGVtZW50PXs8Q2F0ZWdvcnlQYWdlIC8+fT48L1JvdXRlPlxuICAgICAgICAgICAgICAgIDxSb3V0ZSBwYXRoPVwiL3Byb2R1Y3RzXCIgZWxlbWVudD17PFByb2R1Y3RMaXN0UGFnZSAvPn0+PC9Sb3V0ZT5cbiAgICAgICAgICAgICAgICA8Um91dGUgcGF0aD1cIi9zZWFyY2hcIiBlbGVtZW50PXs8U2VhcmNoUGFnZSAvPn0+PC9Sb3V0ZT5cbiAgICAgICAgICAgICAgICA8Um91dGUgcGF0aD1cIi9maWx0ZXJzXCIgZWxlbWVudD17PFByb2R1Y3RMaXN0UGFnZSBvcGVuRmlsdGVyIC8+fT48L1JvdXRlPlxuICAgICAgICAgICAgICAgIDxSb3V0ZSBwYXRoPVwiL3Byb2R1Y3RzLzpzbHVnL2dhbGxlcnlcIiBlbGVtZW50PXs8R2FsbGVyeVBhZ2UgLz59PjwvUm91dGU+XG4gICAgICAgICAgICAgICAgPFJvdXRlIHBhdGg9XCIvcHJvZHVjdHMvOnNsdWcvcXVvdGVcIiBlbGVtZW50PXs8UXVvdGVSZXF1ZXN0UGFnZSAvPn0+PC9Sb3V0ZT5cbiAgICAgICAgICAgICAgICA8Um91dGUgcGF0aD1cIi9wcm9kdWN0cy86c2x1Z1wiIGVsZW1lbnQ9ezxQcm9kdWN0RGV0YWlsUGFnZSAvPn0+PC9Sb3V0ZT5cbiAgICAgICAgICAgICAgICA8Um91dGUgcGF0aD1cIi9jb250YWN0XCIgZWxlbWVudD17PEZvdW5kYXRpb25TY3JlZW4gcm91dGVLZXk9XCJjb250YWN0XCIgLz59PjwvUm91dGU+XG4gICAgICAgICAgICAgICAgPFJvdXRlIHBhdGg9XCIvc3lzdGVtXCIgZWxlbWVudD17PEZvdW5kYXRpb25TY3JlZW4gcm91dGVLZXk9XCJzeXN0ZW0tc3RhdGVzXCIgLz59PjwvUm91dGU+XG4gICAgICAgICAgICAgICAgPFJvdXRlIHBhdGg9XCIqXCIgZWxlbWVudD17PEZvdW5kYXRpb25TY3JlZW4gcm91dGVLZXk9XCJzeXN0ZW0tc3RhdGVzXCIgLz59PjwvUm91dGU+XG4gICAgICAgICAgICAgIDwvQW5pbWF0aW9uUm91dGVzPlxuICAgICAgICAgICAgPC9TdXNwZW5zZT5cbiAgICAgICAgICA8L1pNUFJvdXRlcj5cbiAgICAgICAgPC9BcHBQcm92aWRlcj5cbiAgICAgIDwvU25hY2tiYXJQcm92aWRlcj5cbiAgICA8L0FwcD5cbiAgKTtcbn07XHJcbmV4cG9ydCBkZWZhdWx0IExheW91dDtcclxuIl0sImZpbGUiOiJDOi9sYXJhZ29uL3d3dy96YWxvX21pbmlfYXBwL2hvYW5hbXByb2R1Y3Qvc3JjL2NvbXBvbmVudHMvbGF5b3V0LnRzeCJ9

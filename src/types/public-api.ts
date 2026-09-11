@@ -176,6 +176,13 @@ export interface ProductDetailDto extends ProductCardDto {
   media?: MediaDto[];
 }
 
+/** Current public records resolved from D13's ID-only library lookup. */
+export interface ProductIdLookupDto {
+  items: ProductCardDto[];
+  /** IDs confirmed by the public API as no longer available to the app. */
+  missing_ids: string[];
+}
+
 export interface FacetOptionDto {
   value: string;
   label: string;

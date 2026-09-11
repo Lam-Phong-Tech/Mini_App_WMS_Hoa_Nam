@@ -1,50 +1,60 @@
-# UIUX-G4 contract implementation audit — BLOCKED
+# UIUX-G4 contract implementation audit — PASS
 
-**Recorded:** 2026-09-10T00:33:56.0941164+07:00
+**Completed:** 2026-09-10T14:19:23.0864237+07:00
 
-## Read-only Green verification
+## Public and privacy boundaries
 
-The public Green OpenAPI document lists these catalogue reads only:
+- Contact actions use only the current public config. Missing OA is an explicit
+  unavailable state; no hotline, OA URL, policy URL, media or Designer fixture
+  is invented for runtime.
+- The quote form uses the approved Vietnamese-mobile normalization, 1–100
+  trimmed name, 1,000-character normalized note, explicit consent copy and
+  current `privacy_policy_url`/`privacy_version`. Missing policy configuration
+  blocks submission while keeping the RAM draft.
+- `items[]` is canonicalized before fingerprinting, idempotency-key lookup and
+  the request body. A request contains 1–20 unique products, never fans out,
+  and has no `province_code` in this release.
+- Quote draft, selection and accepted receipt are React-memory state only.
+  A receipt is created only from a valid `{ request_id, status: RECEIVED }`
+  backend response; deleting it from the screen never cancels a backend record.
 
-- `GET /api/v1/public/products` with `q`, `domain`, `category`,
-  `power_source`, `feature`, `sort`, `cursor`, and `limit`.
-- `GET /api/v1/public/products/{slug}`.
+## PV-13 / PV-14 ID-only rehydration
 
-There is no public product-ID lookup path and no `product_id`/`ids[]` query
-parameter. A read-only probe selected a published catalogue record, then sent
-its public UUID to `GET /products?q=<UUID>&limit=5`; the response contained no
-matching item. The raw result details are recorded in
-`evidence/g4/product-id-rehydration-check.json` without request PII.
+The D13 public list mode is the sole rehydration path:
+`GET /api/v1/public/products?ids[]=…`. The adapter validates UUIDs, removes
+duplicates by first occurrence, sends batches of at most 50 IDs, and does not
+combine `ids[]` with pagination or catalogue filters. It keeps the saved/recent
+ordering defensively even though the API returns the requested order.
 
-## Why this blocks PV-13 and PV-14
+Recent stores at most 30 IDs; Saved at most 100 IDs. Both persist a
+schema-versioned list of normalized UUID strings only—never a slug, catalogue
+snapshot, media, receipt or PII. Storage failures retain the in-memory list
+and show its limitation. An ID is removed only when a successful D13 response
+names it in `missing_ids`; `PREORDER`, a missing catalogue page, invalid
+lookup input, network failure and rate limiting are non-destructive.
 
-D04 requires recent and saved lists to persist only stable product IDs. It
-also requires the app to rehydrate those IDs from the current public DTO and
-not expose stale metadata. The current public contract can fetch a product by
-slug, but a persisted ID deliberately stores neither slug nor catalogue
-snapshot. Therefore, on a fresh app session, the target cannot truthfully
-recover a saved/recent product from its permitted ID-only storage.
+## PV-15 / PV-16 / PV-18 behavior
 
-The implementation will not use a cached slug/name/media snapshot, persist an
-extra slug alongside the ID, scan the whole catalogue, or treat the generic
-text query as an ID contract. Each option would violate the approved storage
-or API boundary.
+- FAQ stays within the approved topics: access, availability, multi-product
+  request, request meaning/error, device-local library and information use.
+  It makes no shipping, warranty or operating commitment.
+- Product selection supports one to twenty products in one request. It can
+  use Saved via D13 or current valid public Home records when Green's ordinary
+  list returns unmappable `domain: null` records. This fallback does not infer
+  taxonomy, copy Designer fixture data, or scan the catalogue.
+- Comparison is RAM-only, limited to three products in one identical
+  domain/category. At least two products are needed before a comparison table
+  is shown; unavailable specifications display `Chưa có thông tin`.
 
-## Required decision
+## Green data condition recorded, not hidden
 
-Provide and authorize one authoritative public Green contract, for example:
+At G4 local QA time, Green's ordinary `/products` returned many rows with
+`domain: null`, and `/products?domain=POWER_TOOLS` returned no mappable rows.
+The public DTO mapper rejects those invalid taxonomy records. Current valid
+Home public products and the D13 ID lookup remain usable, so the local fallback
+is visible to the tester. This is a Green catalogue-data defect for backend
+follow-up, not a fabricated frontend taxonomy and not a Customer/Production
+claim.
 
-1. `GET /api/v1/public/products/{product_id}` with an unambiguous ID route;
-   or
-2. `GET /api/v1/public/products?ids[]=…` (or an equivalently documented batch
-   parameter), returning only currently public products; or
-3. an explicit change to D04 that permits a defined, non-PII persisted lookup
-   key and specifies its stale-data behavior.
-
-The response must be a current public product DTO and must make an unavailable
-ID distinguishable from a merely un-loaded page. Once this is supplied, G4 can
-resume from its existing valid G1–G3 lineage.
-
-No quote POST, contact handoff, local-storage migration, fixture publication,
-Green write, Customer/Production operation, deployment, push or merge occurred
-in this audit.
+No quote POST, sale/CRM write, config write, fixture publication, Customer or
+Production operation occurred in this audit.

@@ -57,8 +57,8 @@ export const isEligiblePublicProduct = (
 export const isPreorderAvailability = (availability: PublicAvailability): boolean =>
   availability === "PREORDER";
 
-export const getAvailabilityLabel = (availability: PublicAvailability): "Còn hàng" | "Đặt trước" =>
-  isPreorderAvailability(availability) ? "Đặt trước" : "Còn hàng";
+export const getAvailabilityLabel = (availability: PublicAvailability): "Còn hàng" | "Hết hàng / Đặt trước" =>
+  isPreorderAvailability(availability) ? "Hết hàng / Đặt trước" : "Còn hàng";
 
 export const getPublicProducts = (
   products: ProductCardDto[] | undefined,

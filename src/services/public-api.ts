@@ -10,6 +10,7 @@ import {
   HomeDto,
   ProductCardDto,
   ProductDetailDto,
+  ProductIdLookupDto,
   ProductQuery,
   PublicConfigDto,
   QuoteAcceptedDto,
@@ -24,6 +25,7 @@ import {
   mapBackendHealth,
   mapBackendHome,
   mapBackendProductDetail,
+  mapBackendProductsByIds,
   mapBackendProductPage,
   mapBackendQuoteAccepted,
 } from "./backend-public-mappers";
@@ -187,6 +189,7 @@ export interface PublicApiAdapter {
   getHome(): Promise<ApiEnvelope<HomeDto>>;
   getCategories(domain?: DomainCode): Promise<ApiEnvelope<CategoryDto[]>>;
   getProducts(query?: ProductQuery): Promise<ApiEnvelope<ProductCardDto[]>>;
+  getProductsByIds(productIds: string[]): Promise<ApiEnvelope<ProductIdLookupDto>>;
   getProduct(slug: string): Promise<ApiEnvelope<ProductDetailDto>>;
   getRelatedProducts(
     slug: string,
@@ -242,6 +245,29 @@ const appendQuery = (query?: ProductQuery): string => {
 
   const serialized = searchParams.toString();
   return serialized ? `?${serialized}` : "";
+};
+
+const PUBLIC_UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+/** D13 accepts stable UUID IDs only and the server limits a batch to 50. */
+export const normalizeProductIdsLookup = (productIds: string[]): string[] | null => {
+  const normalized: string[] = [];
+  const seen = new Set<string>();
+  for (const value of productIds) {
+    const id = value.trim().toLowerCase();
+    if (!PUBLIC_UUID.test(id)) return null;
+    if (!seen.has(id)) {
+      seen.add(id);
+      normalized.push(id);
+    }
+  }
+  return normalized.length && normalized.length <= 50 ? normalized : null;
+};
+
+const appendIdsLookupQuery = (productIds: string[]): string => {
+  const parameters = new URLSearchParams();
+  productIds.forEach((productId) => parameters.append("ids[]", productId));
+  return `?${parameters.toString()}`;
 };
 
 const createApiBaseUrl = (origin: string): string =>
@@ -304,6 +330,12 @@ export class HttpPublicApiAdapter implements PublicApiAdapter {
         ...(page.limit ? { limit: page.limit } : {}),
       },
     };
+  }
+
+  async getProductsByIds(productIds: string[]): Promise<ApiEnvelope<ProductIdLookupDto>> {
+    const ids = normalizeProductIdsLookup(productIds);
+    if (!ids) return createSafeFailure("INVALID_QUERY");
+    return this.mapResponse(this.get(`/products${appendIdsLookupQuery(ids)}`), mapBackendProductsByIds);
   }
 
   async getProduct(slug: string): Promise<ApiEnvelope<ProductDetailDto>> {
@@ -468,6 +500,20 @@ export class DevMockPublicApiAdapter implements PublicApiAdapter {
 
   getProducts(query?: ProductQuery): Promise<ApiEnvelope<ProductCardDto[]>> {
     return Promise.resolve(getDevProductPage(filterDevProducts(query), query?.cursor, query?.limit));
+  }
+
+  getProductsByIds(productIds: string[]): Promise<ApiEnvelope<ProductIdLookupDto>> {
+    const uniqueIds = Array.from(new Set(productIds));
+    const productsById = new Map(devPreviewFixture.products.map((product) => [product.product_id, product]));
+    const items = uniqueIds.reduce<ProductCardDto[]>((products, id) => {
+      const product = productsById.get(id);
+      if (product) products.push(product);
+      return products;
+    }, []);
+    return Promise.resolve(asSuccess({
+      items,
+      missing_ids: uniqueIds.filter((id) => !productsById.has(id)),
+    }));
   }
 
   getProduct(slug: string): Promise<ApiEnvelope<ProductDetailDto>> {

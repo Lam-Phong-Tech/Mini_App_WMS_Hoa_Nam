@@ -8,6 +8,9 @@ import {
 } from "zmp-ui";
 
 import { AppProvider } from "@/state/app-context";
+import { ProductLibraryProvider } from "@/state/product-library-context";
+import { QuoteWorkflowProvider } from "@/state/quote-workflow-context";
+import { CompareProvider } from "@/state/compare-context";
 
 const FoundationScreen = lazy(() => import("@/pages/foundation-screen").then((module) => ({ default: module.FoundationScreen })));
 const CategoryPage = lazy(() => import("@/pages/category"));
@@ -16,6 +19,11 @@ const HomePage = lazy(() => import("@/pages/index"));
 const LaunchPage = lazy(() => import("@/pages/launch").then((module) => ({ default: module.LaunchPage })));
 const ProductDetailPage = lazy(() => import("@/pages/product-detail"));
 const ProductListPage = lazy(() => import("@/pages/product-list"));
+const ProductLibraryPage = lazy(() => import("@/pages/product-library"));
+const ProductSelectionPage = lazy(() => import("@/pages/product-selection"));
+const ComparePage = lazy(() => import("@/pages/compare"));
+const HelpPage = lazy(() => import("@/pages/help"));
+const RequestReceiptsPage = lazy(() => import("@/pages/request-receipts"));
 const SearchPage = lazy(() => import("@/pages/search"));
 const QuoteRequestPage = lazy(() => import("@/pages/quote-request"));
 
@@ -29,6 +37,9 @@ const Layout = () => {
     <App theme="light">
       <SnackbarProvider>
         <AppProvider>
+          <ProductLibraryProvider>
+          <QuoteWorkflowProvider>
+          <CompareProvider>
           <ZMPRouter>
             <Suspense fallback={<RouteLoading />}>
               <AnimationRoutes>
@@ -41,12 +52,22 @@ const Layout = () => {
                 <Route path="/products/:slug/gallery" element={<GalleryPage />}></Route>
                 <Route path="/products/:slug/quote" element={<QuoteRequestPage />}></Route>
                 <Route path="/products/:slug" element={<ProductDetailPage />}></Route>
+                <Route path="/quote" element={<QuoteRequestPage />}></Route>
+                <Route path="/selection" element={<ProductSelectionPage />}></Route>
+                <Route path="/compare" element={<ComparePage />}></Route>
+                <Route path="/help" element={<HelpPage />}></Route>
+                <Route path="/requests" element={<RequestReceiptsPage />}></Route>
+                <Route path="/recent" element={<ProductLibraryPage kind="recent" />}></Route>
+                <Route path="/saved" element={<ProductLibraryPage kind="saved" />}></Route>
                 <Route path="/contact" element={<FoundationScreen routeKey="contact" />}></Route>
                 <Route path="/system" element={<FoundationScreen routeKey="system-states" />}></Route>
                 <Route path="*" element={<FoundationScreen routeKey="system-states" />}></Route>
               </AnimationRoutes>
             </Suspense>
           </ZMPRouter>
+          </CompareProvider>
+          </QuoteWorkflowProvider>
+          </ProductLibraryProvider>
         </AppProvider>
       </SnackbarProvider>
     </App>

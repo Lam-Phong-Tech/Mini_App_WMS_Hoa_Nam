@@ -1,0 +1,605 @@
+import { createHotContext as __vite__createHotContext } from "/@vite/client";import.meta.hot = __vite__createHotContext("/src/components/catalogue/product-detail-template.tsx");import __vite__cjsImport0_react_jsxDevRuntime from "/node_modules/.vite/deps/react_jsx-dev-runtime.js?v=d6527740"; const jsxDEV = __vite__cjsImport0_react_jsxDevRuntime["jsxDEV"];
+import * as RefreshRuntime from "/@react-refresh";
+const inWebWorker = typeof WorkerGlobalScope !== "undefined" && self instanceof WorkerGlobalScope;
+let prevRefreshReg;
+let prevRefreshSig;
+if (import.meta.hot && !inWebWorker) {
+  if (!window.$RefreshReg$) {
+    throw new Error(
+      "@vitejs/plugin-react can't detect preamble. Something is wrong."
+    );
+  }
+  prevRefreshReg = window.$RefreshReg$;
+  prevRefreshSig = window.$RefreshSig$;
+  window.$RefreshReg$ = RefreshRuntime.getRefreshReg("C:/laragon/www/zalo_mini_app/hoanamproduct/src/components/catalogue/product-detail-template.tsx");
+  window.$RefreshSig$ = RefreshRuntime.createSignatureFunctionForTransform;
+}
+var _s = $RefreshSig$();
+import __vite__cjsImport3_react from "/node_modules/.vite/deps/react.js?v=d6527740"; const useEffect = __vite__cjsImport3_react["useEffect"]; const useMemo = __vite__cjsImport3_react["useMemo"]; const useState = __vite__cjsImport3_react["useState"];
+import { getAvailabilityLabel, getProductMedia, getVisibleVariants, isPreorderAvailability, visibleText } from "/src/catalogue/catalogue-utils.ts";
+import { ContactActions } from "/src/components/catalogue/contact-actions.tsx";
+import { ProductGallery } from "/src/components/catalogue/product-gallery.tsx";
+import { PublicImage } from "/src/components/catalogue/public-image.tsx";
+import { UiIcon } from "/src/components/ui-icon.tsx";
+const DOMAIN_LABELS = {
+  POWER_TOOLS: "Power Tools",
+  HAND_TOOLS: "Hand Tools",
+  ACCESSORIES: "Accessories"
+};
+export const ProductDetailTemplate = ({
+  product,
+  config,
+  relatedProducts,
+  onOpenGallery,
+  onOpenProduct,
+  onRequestConsultation
+}) => {
+  _s();
+  const [activeTab, setActiveTab] = useState("information");
+  const variants = useMemo(() => getVisibleVariants(product.variants), [product.variants]);
+  const [selectedVariantId, setSelectedVariantId] = useState(null);
+  const selectedVariant = variants.find((variant) => variant.variant_id === selectedVariantId) ?? variants[0] ?? null;
+  const relatedLimitInitial = 2;
+  const [relatedLimit, setRelatedLimit] = useState(relatedLimitInitial);
+  useEffect(() => {
+    setSelectedVariantId((current) => variants.some((variant) => variant.variant_id === current) ? current : variants[0]?.variant_id ?? null);
+    setRelatedLimit(relatedLimitInitial);
+  }, [product.product_id, variants]);
+  const features = product.features?.map((feature) => ({ code: feature.code, label: visibleText(feature.label) })).filter((feature) => Boolean(feature.label)) ?? [];
+  const specGroups = product.spec_groups?.map((group) => ({
+    ...group,
+    label: visibleText(group.label),
+    items: group.items.map((item) => ({ ...item, label: visibleText(item.label), value: visibleText(item.value), unit: visibleText(item.unit) })).filter((item) => Boolean(item.label && item.value))
+  })).filter((group) => Boolean(group.label && group.items.length)) ?? [];
+  const model = visibleText(product.model);
+  const summary = visibleText(product.summary);
+  const description = visibleText(product.description);
+  const familyName = visibleText(product.family_name);
+  const usage = visibleText(product.usage);
+  const packageContents = visibleText(product.package_contents);
+  const category = visibleText(product.category.display_name);
+  const primaryCode = visibleText(product.primary_code);
+  const identitySummary = summary && summary !== description ? summary : null;
+  const displayAvailability = selectedVariant?.availability ?? product.availability;
+  const isPreorder = isPreorderAvailability(displayAvailability);
+  const availabilityLabel = getAvailabilityLabel(displayAvailability);
+  const requestLabel = isPreorder ? "Đặt trước" : "Yêu cầu tư vấn";
+  const hasGalleryMedia = getProductMedia(product, selectedVariant).length > 0;
+  const visibleBundleItems = product.bundle_items?.filter((item) => visibleText(item.label)) ?? [];
+  const visibleCompatibility = product.compatibility?.filter((item) => visibleText(item.label)) ?? [];
+  const visibleRelated = relatedProducts.slice(0, relatedLimit);
+  const relatedAreSameCategory = relatedProducts.length > 0 && relatedProducts.every((item) => item.category.code === product.category.code);
+  return /* @__PURE__ */ jsxDEV("article", { className: "product-detail-template", children: [
+    /* @__PURE__ */ jsxDEV("section", { className: "detail-template__gallery", "aria-label": "Hình ảnh sản phẩm", children: [
+      /* @__PURE__ */ jsxDEV(ProductGallery, { product, variant: selectedVariant }, void 0, false, {
+        fileName: "C:/laragon/www/zalo_mini_app/hoanamproduct/src/components/catalogue/product-detail-template.tsx",
+        lineNumber: 110,
+        columnNumber: 9
+      }, this),
+      hasGalleryMedia ? /* @__PURE__ */ jsxDEV("button", { className: "detail-template__zoom", type: "button", onClick: () => onOpenGallery(selectedVariant?.variant_id), children: [
+        /* @__PURE__ */ jsxDEV(UiIcon, { name: "search", size: 17, strokeWidth: 2.2 }, void 0, false, {
+          fileName: "C:/laragon/www/zalo_mini_app/hoanamproduct/src/components/catalogue/product-detail-template.tsx",
+          lineNumber: 112,
+          columnNumber: 11
+        }, this),
+        "Xem ảnh"
+      ] }, void 0, true, {
+        fileName: "C:/laragon/www/zalo_mini_app/hoanamproduct/src/components/catalogue/product-detail-template.tsx",
+        lineNumber: 111,
+        columnNumber: 28
+      }, this) : null
+    ] }, void 0, true, {
+      fileName: "C:/laragon/www/zalo_mini_app/hoanamproduct/src/components/catalogue/product-detail-template.tsx",
+      lineNumber: 109,
+      columnNumber: 7
+    }, this),
+    /* @__PURE__ */ jsxDEV("section", { className: "detail-template__identity", children: [
+      /* @__PURE__ */ jsxDEV("div", { className: "detail-template__badges", children: [
+        /* @__PURE__ */ jsxDEV("span", { className: `availability-chip ${isPreorder ? "availability-chip--preorder" : ""}`, children: availabilityLabel }, void 0, false, {
+          fileName: "C:/laragon/www/zalo_mini_app/hoanamproduct/src/components/catalogue/product-detail-template.tsx",
+          lineNumber: 119,
+          columnNumber: 11
+        }, this),
+        /* @__PURE__ */ jsxDEV("span", { className: "detail-template__domain", children: DOMAIN_LABELS[product.domain] }, void 0, false, {
+          fileName: "C:/laragon/www/zalo_mini_app/hoanamproduct/src/components/catalogue/product-detail-template.tsx",
+          lineNumber: 120,
+          columnNumber: 11
+        }, this)
+      ] }, void 0, true, {
+        fileName: "C:/laragon/www/zalo_mini_app/hoanamproduct/src/components/catalogue/product-detail-template.tsx",
+        lineNumber: 118,
+        columnNumber: 9
+      }, this),
+      /* @__PURE__ */ jsxDEV("h1", { children: visibleText(product.name) }, void 0, false, {
+        fileName: "C:/laragon/www/zalo_mini_app/hoanamproduct/src/components/catalogue/product-detail-template.tsx",
+        lineNumber: 122,
+        columnNumber: 9
+      }, this),
+      model ? /* @__PURE__ */ jsxDEV("p", { className: "detail-template__model", children: [
+        "Model: ",
+        /* @__PURE__ */ jsxDEV("strong", { children: model }, void 0, false, {
+          fileName: "C:/laragon/www/zalo_mini_app/hoanamproduct/src/components/catalogue/product-detail-template.tsx",
+          lineNumber: 123,
+          columnNumber: 63
+        }, this)
+      ] }, void 0, true, {
+        fileName: "C:/laragon/www/zalo_mini_app/hoanamproduct/src/components/catalogue/product-detail-template.tsx",
+        lineNumber: 123,
+        columnNumber: 18
+      }, this) : null,
+      primaryCode && primaryCode !== model ? /* @__PURE__ */ jsxDEV("p", { className: "detail-template__model", children: [
+        "Mã sản phẩm: ",
+        /* @__PURE__ */ jsxDEV("strong", { children: primaryCode }, void 0, false, {
+          fileName: "C:/laragon/www/zalo_mini_app/hoanamproduct/src/components/catalogue/product-detail-template.tsx",
+          lineNumber: 124,
+          columnNumber: 100
+        }, this)
+      ] }, void 0, true, {
+        fileName: "C:/laragon/www/zalo_mini_app/hoanamproduct/src/components/catalogue/product-detail-template.tsx",
+        lineNumber: 124,
+        columnNumber: 49
+      }, this) : null,
+      identitySummary ? /* @__PURE__ */ jsxDEV("p", { className: "detail-template__description", children: identitySummary }, void 0, false, {
+        fileName: "C:/laragon/www/zalo_mini_app/hoanamproduct/src/components/catalogue/product-detail-template.tsx",
+        lineNumber: 125,
+        columnNumber: 28
+      }, this) : null,
+      variants.length ? /* @__PURE__ */ jsxDEV("div", { className: "detail-template__variants", "aria-label": "Chọn phiên bản", children: [
+        /* @__PURE__ */ jsxDEV("span", { children: "Phiên bản" }, void 0, false, {
+          fileName: "C:/laragon/www/zalo_mini_app/hoanamproduct/src/components/catalogue/product-detail-template.tsx",
+          lineNumber: 128,
+          columnNumber: 13
+        }, this),
+        /* @__PURE__ */ jsxDEV("div", { children: variants.map(
+          (variant) => /* @__PURE__ */ jsxDEV(
+            "button",
+            {
+              type: "button",
+              className: selectedVariant?.variant_id === variant.variant_id ? "is-selected" : "",
+              "aria-pressed": selectedVariant?.variant_id === variant.variant_id,
+              onClick: () => setSelectedVariantId(variant.variant_id),
+              children: visibleText(variant.variant_name)
+            },
+            variant.variant_id,
+            false,
+            {
+              fileName: "C:/laragon/www/zalo_mini_app/hoanamproduct/src/components/catalogue/product-detail-template.tsx",
+              lineNumber: 131,
+              columnNumber: 13
+            },
+            this
+          )
+        ) }, void 0, false, {
+          fileName: "C:/laragon/www/zalo_mini_app/hoanamproduct/src/components/catalogue/product-detail-template.tsx",
+          lineNumber: 129,
+          columnNumber: 13
+        }, this)
+      ] }, void 0, true, {
+        fileName: "C:/laragon/www/zalo_mini_app/hoanamproduct/src/components/catalogue/product-detail-template.tsx",
+        lineNumber: 127,
+        columnNumber: 9
+      }, this) : null
+    ] }, void 0, true, {
+      fileName: "C:/laragon/www/zalo_mini_app/hoanamproduct/src/components/catalogue/product-detail-template.tsx",
+      lineNumber: 117,
+      columnNumber: 7
+    }, this),
+    /* @__PURE__ */ jsxDEV("div", { className: "detail-template__tabs", role: "tablist", "aria-label": "Thông tin sản phẩm", children: [
+      /* @__PURE__ */ jsxDEV(
+        "button",
+        {
+          type: "button",
+          role: "tab",
+          "aria-selected": activeTab === "information",
+          className: activeTab === "information" ? "is-active" : "",
+          onClick: () => setActiveTab("information"),
+          children: "Thông tin"
+        },
+        void 0,
+        false,
+        {
+          fileName: "C:/laragon/www/zalo_mini_app/hoanamproduct/src/components/catalogue/product-detail-template.tsx",
+          lineNumber: 147,
+          columnNumber: 9
+        },
+        this
+      ),
+      /* @__PURE__ */ jsxDEV(
+        "button",
+        {
+          type: "button",
+          role: "tab",
+          "aria-selected": activeTab === "specifications",
+          className: activeTab === "specifications" ? "is-active" : "",
+          onClick: () => setActiveTab("specifications"),
+          children: "Thông số"
+        },
+        void 0,
+        false,
+        {
+          fileName: "C:/laragon/www/zalo_mini_app/hoanamproduct/src/components/catalogue/product-detail-template.tsx",
+          lineNumber: 156,
+          columnNumber: 9
+        },
+        this
+      )
+    ] }, void 0, true, {
+      fileName: "C:/laragon/www/zalo_mini_app/hoanamproduct/src/components/catalogue/product-detail-template.tsx",
+      lineNumber: 146,
+      columnNumber: 7
+    }, this),
+    activeTab === "information" ? /* @__PURE__ */ jsxDEV("section", { className: "detail-template__panel", role: "tabpanel", children: [
+      description ? /* @__PURE__ */ jsxDEV("div", { className: "detail-template__block", children: [
+        /* @__PURE__ */ jsxDEV("h2", { children: "Mô tả sản phẩm" }, void 0, false, {
+          fileName: "C:/laragon/www/zalo_mini_app/hoanamproduct/src/components/catalogue/product-detail-template.tsx",
+          lineNumber: 171,
+          columnNumber: 15
+        }, this),
+        /* @__PURE__ */ jsxDEV("p", { className: "detail-template__body", children: description }, void 0, false, {
+          fileName: "C:/laragon/www/zalo_mini_app/hoanamproduct/src/components/catalogue/product-detail-template.tsx",
+          lineNumber: 172,
+          columnNumber: 15
+        }, this)
+      ] }, void 0, true, {
+        fileName: "C:/laragon/www/zalo_mini_app/hoanamproduct/src/components/catalogue/product-detail-template.tsx",
+        lineNumber: 170,
+        columnNumber: 9
+      }, this) : null,
+      usage ? /* @__PURE__ */ jsxDEV("div", { className: "detail-template__block detail-template__block--muted", children: [
+        /* @__PURE__ */ jsxDEV("h2", { children: "Công dụng" }, void 0, false, {
+          fileName: "C:/laragon/www/zalo_mini_app/hoanamproduct/src/components/catalogue/product-detail-template.tsx",
+          lineNumber: 177,
+          columnNumber: 15
+        }, this),
+        /* @__PURE__ */ jsxDEV("p", { className: "detail-template__body", children: usage }, void 0, false, {
+          fileName: "C:/laragon/www/zalo_mini_app/hoanamproduct/src/components/catalogue/product-detail-template.tsx",
+          lineNumber: 178,
+          columnNumber: 15
+        }, this)
+      ] }, void 0, true, {
+        fileName: "C:/laragon/www/zalo_mini_app/hoanamproduct/src/components/catalogue/product-detail-template.tsx",
+        lineNumber: 176,
+        columnNumber: 9
+      }, this) : null,
+      features.length ? /* @__PURE__ */ jsxDEV("div", { className: "detail-template__block", children: [
+        /* @__PURE__ */ jsxDEV("h2", { children: "Tính năng nổi bật" }, void 0, false, {
+          fileName: "C:/laragon/www/zalo_mini_app/hoanamproduct/src/components/catalogue/product-detail-template.tsx",
+          lineNumber: 183,
+          columnNumber: 15
+        }, this),
+        /* @__PURE__ */ jsxDEV("ul", { className: "detail-template__feature-chips", children: features.map((feature) => /* @__PURE__ */ jsxDEV("li", { children: [
+          /* @__PURE__ */ jsxDEV(UiIcon, { name: "check", size: 16, strokeWidth: 2.2 }, void 0, false, {
+            fileName: "C:/laragon/www/zalo_mini_app/hoanamproduct/src/components/catalogue/product-detail-template.tsx",
+            lineNumber: 185,
+            columnNumber: 67
+          }, this),
+          feature.label
+        ] }, feature.code, true, {
+          fileName: "C:/laragon/www/zalo_mini_app/hoanamproduct/src/components/catalogue/product-detail-template.tsx",
+          lineNumber: 185,
+          columnNumber: 44
+        }, this)) }, void 0, false, {
+          fileName: "C:/laragon/www/zalo_mini_app/hoanamproduct/src/components/catalogue/product-detail-template.tsx",
+          lineNumber: 184,
+          columnNumber: 15
+        }, this)
+      ] }, void 0, true, {
+        fileName: "C:/laragon/www/zalo_mini_app/hoanamproduct/src/components/catalogue/product-detail-template.tsx",
+        lineNumber: 182,
+        columnNumber: 9
+      }, this) : null,
+      packageContents ? /* @__PURE__ */ jsxDEV("div", { className: "detail-template__block detail-template__block--muted", children: [
+        /* @__PURE__ */ jsxDEV("h2", { children: "Phụ kiện và cấu hình" }, void 0, false, {
+          fileName: "C:/laragon/www/zalo_mini_app/hoanamproduct/src/components/catalogue/product-detail-template.tsx",
+          lineNumber: 191,
+          columnNumber: 15
+        }, this),
+        /* @__PURE__ */ jsxDEV("p", { className: "detail-template__body", children: packageContents }, void 0, false, {
+          fileName: "C:/laragon/www/zalo_mini_app/hoanamproduct/src/components/catalogue/product-detail-template.tsx",
+          lineNumber: 192,
+          columnNumber: 15
+        }, this)
+      ] }, void 0, true, {
+        fileName: "C:/laragon/www/zalo_mini_app/hoanamproduct/src/components/catalogue/product-detail-template.tsx",
+        lineNumber: 190,
+        columnNumber: 9
+      }, this) : null,
+      visibleBundleItems.length ? /* @__PURE__ */ jsxDEV("div", { className: "detail-template__block", children: [
+        /* @__PURE__ */ jsxDEV("h2", { children: "Bao gồm" }, void 0, false, {
+          fileName: "C:/laragon/www/zalo_mini_app/hoanamproduct/src/components/catalogue/product-detail-template.tsx",
+          lineNumber: 197,
+          columnNumber: 15
+        }, this),
+        /* @__PURE__ */ jsxDEV("ul", { className: "detail-template__linked-list", children: visibleBundleItems.map(
+          (item, index) => /* @__PURE__ */ jsxDEV("li", { children: item.product_slug ? /* @__PURE__ */ jsxDEV("button", { type: "button", onClick: () => onOpenProduct(item.product_slug), children: visibleText(item.label) }, void 0, false, {
+            fileName: "C:/laragon/www/zalo_mini_app/hoanamproduct/src/components/catalogue/product-detail-template.tsx",
+            lineNumber: 201,
+            columnNumber: 42
+          }, this) : visibleText(item.label) }, `${item.product_slug ?? "label"}:${index}`, false, {
+            fileName: "C:/laragon/www/zalo_mini_app/hoanamproduct/src/components/catalogue/product-detail-template.tsx",
+            lineNumber: 200,
+            columnNumber: 13
+          }, this)
+        ) }, void 0, false, {
+          fileName: "C:/laragon/www/zalo_mini_app/hoanamproduct/src/components/catalogue/product-detail-template.tsx",
+          lineNumber: 198,
+          columnNumber: 15
+        }, this)
+      ] }, void 0, true, {
+        fileName: "C:/laragon/www/zalo_mini_app/hoanamproduct/src/components/catalogue/product-detail-template.tsx",
+        lineNumber: 196,
+        columnNumber: 9
+      }, this) : null,
+      visibleCompatibility.length ? /* @__PURE__ */ jsxDEV("div", { className: "detail-template__block", children: [
+        /* @__PURE__ */ jsxDEV("h2", { children: "Tương thích" }, void 0, false, {
+          fileName: "C:/laragon/www/zalo_mini_app/hoanamproduct/src/components/catalogue/product-detail-template.tsx",
+          lineNumber: 209,
+          columnNumber: 15
+        }, this),
+        /* @__PURE__ */ jsxDEV("ul", { className: "detail-template__linked-list", children: visibleCompatibility.map(
+          (item, index) => /* @__PURE__ */ jsxDEV("li", { children: item.product_slug ? /* @__PURE__ */ jsxDEV("button", { type: "button", onClick: () => onOpenProduct(item.product_slug), children: visibleText(item.label) }, void 0, false, {
+            fileName: "C:/laragon/www/zalo_mini_app/hoanamproduct/src/components/catalogue/product-detail-template.tsx",
+            lineNumber: 213,
+            columnNumber: 42
+          }, this) : visibleText(item.label) }, `${item.product_slug ?? "label"}:${index}`, false, {
+            fileName: "C:/laragon/www/zalo_mini_app/hoanamproduct/src/components/catalogue/product-detail-template.tsx",
+            lineNumber: 212,
+            columnNumber: 13
+          }, this)
+        ) }, void 0, false, {
+          fileName: "C:/laragon/www/zalo_mini_app/hoanamproduct/src/components/catalogue/product-detail-template.tsx",
+          lineNumber: 210,
+          columnNumber: 15
+        }, this)
+      ] }, void 0, true, {
+        fileName: "C:/laragon/www/zalo_mini_app/hoanamproduct/src/components/catalogue/product-detail-template.tsx",
+        lineNumber: 208,
+        columnNumber: 9
+      }, this) : null,
+      category ? /* @__PURE__ */ jsxDEV("div", { className: "detail-template__block detail-template__classification", children: [
+        /* @__PURE__ */ jsxDEV("h2", { children: "Phân loại" }, void 0, false, {
+          fileName: "C:/laragon/www/zalo_mini_app/hoanamproduct/src/components/catalogue/product-detail-template.tsx",
+          lineNumber: 221,
+          columnNumber: 15
+        }, this),
+        /* @__PURE__ */ jsxDEV("div", { children: [
+          /* @__PURE__ */ jsxDEV("span", { children: "Thương hiệu" }, void 0, false, {
+            fileName: "C:/laragon/www/zalo_mini_app/hoanamproduct/src/components/catalogue/product-detail-template.tsx",
+            lineNumber: 222,
+            columnNumber: 20
+          }, this),
+          /* @__PURE__ */ jsxDEV("strong", { children: visibleText(product.brand.display_name) }, void 0, false, {
+            fileName: "C:/laragon/www/zalo_mini_app/hoanamproduct/src/components/catalogue/product-detail-template.tsx",
+            lineNumber: 222,
+            columnNumber: 44
+          }, this)
+        ] }, void 0, true, {
+          fileName: "C:/laragon/www/zalo_mini_app/hoanamproduct/src/components/catalogue/product-detail-template.tsx",
+          lineNumber: 222,
+          columnNumber: 15
+        }, this),
+        /* @__PURE__ */ jsxDEV("div", { children: [
+          /* @__PURE__ */ jsxDEV("span", { children: "Danh mục" }, void 0, false, {
+            fileName: "C:/laragon/www/zalo_mini_app/hoanamproduct/src/components/catalogue/product-detail-template.tsx",
+            lineNumber: 223,
+            columnNumber: 20
+          }, this),
+          /* @__PURE__ */ jsxDEV("strong", { children: category }, void 0, false, {
+            fileName: "C:/laragon/www/zalo_mini_app/hoanamproduct/src/components/catalogue/product-detail-template.tsx",
+            lineNumber: 223,
+            columnNumber: 41
+          }, this)
+        ] }, void 0, true, {
+          fileName: "C:/laragon/www/zalo_mini_app/hoanamproduct/src/components/catalogue/product-detail-template.tsx",
+          lineNumber: 223,
+          columnNumber: 15
+        }, this),
+        familyName ? /* @__PURE__ */ jsxDEV("div", { children: [
+          /* @__PURE__ */ jsxDEV("span", { children: "Chủng loại" }, void 0, false, {
+            fileName: "C:/laragon/www/zalo_mini_app/hoanamproduct/src/components/catalogue/product-detail-template.tsx",
+            lineNumber: 224,
+            columnNumber: 34
+          }, this),
+          /* @__PURE__ */ jsxDEV("strong", { children: familyName }, void 0, false, {
+            fileName: "C:/laragon/www/zalo_mini_app/hoanamproduct/src/components/catalogue/product-detail-template.tsx",
+            lineNumber: 224,
+            columnNumber: 57
+          }, this)
+        ] }, void 0, true, {
+          fileName: "C:/laragon/www/zalo_mini_app/hoanamproduct/src/components/catalogue/product-detail-template.tsx",
+          lineNumber: 224,
+          columnNumber: 29
+        }, this) : null,
+        model ? /* @__PURE__ */ jsxDEV("div", { children: [
+          /* @__PURE__ */ jsxDEV("span", { children: "Model" }, void 0, false, {
+            fileName: "C:/laragon/www/zalo_mini_app/hoanamproduct/src/components/catalogue/product-detail-template.tsx",
+            lineNumber: 225,
+            columnNumber: 29
+          }, this),
+          /* @__PURE__ */ jsxDEV("strong", { children: model }, void 0, false, {
+            fileName: "C:/laragon/www/zalo_mini_app/hoanamproduct/src/components/catalogue/product-detail-template.tsx",
+            lineNumber: 225,
+            columnNumber: 47
+          }, this)
+        ] }, void 0, true, {
+          fileName: "C:/laragon/www/zalo_mini_app/hoanamproduct/src/components/catalogue/product-detail-template.tsx",
+          lineNumber: 225,
+          columnNumber: 24
+        }, this) : null,
+        primaryCode && primaryCode !== model ? /* @__PURE__ */ jsxDEV("div", { children: [
+          /* @__PURE__ */ jsxDEV("span", { children: "Mã sản phẩm" }, void 0, false, {
+            fileName: "C:/laragon/www/zalo_mini_app/hoanamproduct/src/components/catalogue/product-detail-template.tsx",
+            lineNumber: 226,
+            columnNumber: 60
+          }, this),
+          /* @__PURE__ */ jsxDEV("strong", { children: primaryCode }, void 0, false, {
+            fileName: "C:/laragon/www/zalo_mini_app/hoanamproduct/src/components/catalogue/product-detail-template.tsx",
+            lineNumber: 226,
+            columnNumber: 84
+          }, this)
+        ] }, void 0, true, {
+          fileName: "C:/laragon/www/zalo_mini_app/hoanamproduct/src/components/catalogue/product-detail-template.tsx",
+          lineNumber: 226,
+          columnNumber: 55
+        }, this) : null,
+        /* @__PURE__ */ jsxDEV("div", { children: [
+          /* @__PURE__ */ jsxDEV("span", { children: "Tình trạng" }, void 0, false, {
+            fileName: "C:/laragon/www/zalo_mini_app/hoanamproduct/src/components/catalogue/product-detail-template.tsx",
+            lineNumber: 227,
+            columnNumber: 20
+          }, this),
+          /* @__PURE__ */ jsxDEV("strong", { className: isPreorder ? "is-preorder" : "is-success", children: availabilityLabel }, void 0, false, {
+            fileName: "C:/laragon/www/zalo_mini_app/hoanamproduct/src/components/catalogue/product-detail-template.tsx",
+            lineNumber: 227,
+            columnNumber: 43
+          }, this)
+        ] }, void 0, true, {
+          fileName: "C:/laragon/www/zalo_mini_app/hoanamproduct/src/components/catalogue/product-detail-template.tsx",
+          lineNumber: 227,
+          columnNumber: 15
+        }, this)
+      ] }, void 0, true, {
+        fileName: "C:/laragon/www/zalo_mini_app/hoanamproduct/src/components/catalogue/product-detail-template.tsx",
+        lineNumber: 220,
+        columnNumber: 9
+      }, this) : null
+    ] }, void 0, true, {
+      fileName: "C:/laragon/www/zalo_mini_app/hoanamproduct/src/components/catalogue/product-detail-template.tsx",
+      lineNumber: 168,
+      columnNumber: 7
+    }, this) : /* @__PURE__ */ jsxDEV("section", { className: "detail-template__panel", role: "tabpanel", children: specGroups.length ? /* @__PURE__ */ jsxDEV("div", { className: "detail-template__block detail-template__specifications", children: [
+      /* @__PURE__ */ jsxDEV("h2", { children: "Thông số kỹ thuật" }, void 0, false, {
+        fileName: "C:/laragon/www/zalo_mini_app/hoanamproduct/src/components/catalogue/product-detail-template.tsx",
+        lineNumber: 235,
+        columnNumber: 15
+      }, this),
+      specGroups.map(
+        (group) => /* @__PURE__ */ jsxDEV("div", { className: "detail-template__spec-group", children: [
+          specGroups.length > 1 ? /* @__PURE__ */ jsxDEV("h3", { children: group.label }, void 0, false, {
+            fileName: "C:/laragon/www/zalo_mini_app/hoanamproduct/src/components/catalogue/product-detail-template.tsx",
+            lineNumber: 238,
+            columnNumber: 44
+          }, this) : null,
+          group.items.map((item) => /* @__PURE__ */ jsxDEV("div", { children: [
+            /* @__PURE__ */ jsxDEV("span", { children: item.label }, void 0, false, {
+              fileName: "C:/laragon/www/zalo_mini_app/hoanamproduct/src/components/catalogue/product-detail-template.tsx",
+              lineNumber: 239,
+              columnNumber: 67
+            }, this),
+            /* @__PURE__ */ jsxDEV("strong", { children: [
+              item.value,
+              item.unit ? ` ${item.unit}` : ""
+            ] }, void 0, true, {
+              fileName: "C:/laragon/www/zalo_mini_app/hoanamproduct/src/components/catalogue/product-detail-template.tsx",
+              lineNumber: 239,
+              columnNumber: 92
+            }, this)
+          ] }, item.code, true, {
+            fileName: "C:/laragon/www/zalo_mini_app/hoanamproduct/src/components/catalogue/product-detail-template.tsx",
+            lineNumber: 239,
+            columnNumber: 46
+          }, this))
+        ] }, group.code, true, {
+          fileName: "C:/laragon/www/zalo_mini_app/hoanamproduct/src/components/catalogue/product-detail-template.tsx",
+          lineNumber: 237,
+          columnNumber: 11
+        }, this)
+      )
+    ] }, void 0, true, {
+      fileName: "C:/laragon/www/zalo_mini_app/hoanamproduct/src/components/catalogue/product-detail-template.tsx",
+      lineNumber: 234,
+      columnNumber: 9
+    }, this) : /* @__PURE__ */ jsxDEV("p", { className: "detail-template__empty", children: "Thông số sẽ hiển thị khi Catalogue công khai cung cấp dữ liệu." }, void 0, false, {
+      fileName: "C:/laragon/www/zalo_mini_app/hoanamproduct/src/components/catalogue/product-detail-template.tsx",
+      lineNumber: 243,
+      columnNumber: 9
+    }, this) }, void 0, false, {
+      fileName: "C:/laragon/www/zalo_mini_app/hoanamproduct/src/components/catalogue/product-detail-template.tsx",
+      lineNumber: 232,
+      columnNumber: 7
+    }, this),
+    relatedProducts.length ? /* @__PURE__ */ jsxDEV("section", { className: "detail-template__related", "aria-label": "Sản phẩm liên quan", children: [
+      /* @__PURE__ */ jsxDEV("h2", { children: "Sản phẩm liên quan" }, void 0, false, {
+        fileName: "C:/laragon/www/zalo_mini_app/hoanamproduct/src/components/catalogue/product-detail-template.tsx",
+        lineNumber: 249,
+        columnNumber: 11
+      }, this),
+      /* @__PURE__ */ jsxDEV("p", { children: relatedAreSameCategory ? "Khám phá thêm sản phẩm cùng danh mục." : "Khám phá thêm sản phẩm cùng nhóm." }, void 0, false, {
+        fileName: "C:/laragon/www/zalo_mini_app/hoanamproduct/src/components/catalogue/product-detail-template.tsx",
+        lineNumber: 250,
+        columnNumber: 11
+      }, this),
+      /* @__PURE__ */ jsxDEV("div", { children: visibleRelated.map(
+        (related) => /* @__PURE__ */ jsxDEV("button", { type: "button", onClick: () => onOpenProduct(related.slug), "aria-label": `Xem ${visibleText(related.name) ?? "sản phẩm liên quan"}`, children: [
+          /* @__PURE__ */ jsxDEV(PublicImage, { media: related.cover_media, alt: related.name }, void 0, false, {
+            fileName: "C:/laragon/www/zalo_mini_app/hoanamproduct/src/components/catalogue/product-detail-template.tsx",
+            lineNumber: 254,
+            columnNumber: 17
+          }, this),
+          /* @__PURE__ */ jsxDEV("strong", { children: visibleText(related.model) ?? visibleText(related.name) }, void 0, false, {
+            fileName: "C:/laragon/www/zalo_mini_app/hoanamproduct/src/components/catalogue/product-detail-template.tsx",
+            lineNumber: 255,
+            columnNumber: 17
+          }, this)
+        ] }, related.product_id, true, {
+          fileName: "C:/laragon/www/zalo_mini_app/hoanamproduct/src/components/catalogue/product-detail-template.tsx",
+          lineNumber: 253,
+          columnNumber: 11
+        }, this)
+      ) }, void 0, false, {
+        fileName: "C:/laragon/www/zalo_mini_app/hoanamproduct/src/components/catalogue/product-detail-template.tsx",
+        lineNumber: 251,
+        columnNumber: 11
+      }, this),
+      relatedLimit < relatedProducts.length ? /* @__PURE__ */ jsxDEV("button", { className: "detail-template__more-related", type: "button", onClick: () => setRelatedLimit((current) => Math.min(relatedProducts.length, current + 2)), children: "Xem thêm sản phẩm liên quan" }, void 0, false, {
+        fileName: "C:/laragon/www/zalo_mini_app/hoanamproduct/src/components/catalogue/product-detail-template.tsx",
+        lineNumber: 259,
+        columnNumber: 52
+      }, this) : null
+    ] }, void 0, true, {
+      fileName: "C:/laragon/www/zalo_mini_app/hoanamproduct/src/components/catalogue/product-detail-template.tsx",
+      lineNumber: 248,
+      columnNumber: 7
+    }, this) : null,
+    /* @__PURE__ */ jsxDEV("section", { className: "detail-template__conversion", "aria-label": "Yêu cầu sản phẩm", children: [
+      /* @__PURE__ */ jsxDEV("button", { type: "button", className: "detail-template__request", onClick: () => onRequestConsultation(selectedVariant?.variant_id), children: requestLabel }, void 0, false, {
+        fileName: "C:/laragon/www/zalo_mini_app/hoanamproduct/src/components/catalogue/product-detail-template.tsx",
+        lineNumber: 264,
+        columnNumber: 9
+      }, this),
+      /* @__PURE__ */ jsxDEV(ContactActions, { config, showUnavailable: true, className: "detail-template__contact-actions" }, void 0, false, {
+        fileName: "C:/laragon/www/zalo_mini_app/hoanamproduct/src/components/catalogue/product-detail-template.tsx",
+        lineNumber: 265,
+        columnNumber: 9
+      }, this)
+    ] }, void 0, true, {
+      fileName: "C:/laragon/www/zalo_mini_app/hoanamproduct/src/components/catalogue/product-detail-template.tsx",
+      lineNumber: 263,
+      columnNumber: 7
+    }, this)
+  ] }, void 0, true, {
+    fileName: "C:/laragon/www/zalo_mini_app/hoanamproduct/src/components/catalogue/product-detail-template.tsx",
+    lineNumber: 108,
+    columnNumber: 5
+  }, this);
+};
+_s(ProductDetailTemplate, "/mcleYSO/N/N2jiFq+7DJtRUBM0=");
+_c = ProductDetailTemplate;
+var _c;
+$RefreshReg$(_c, "ProductDetailTemplate");
+if (import.meta.hot && !inWebWorker) {
+  window.$RefreshReg$ = prevRefreshReg;
+  window.$RefreshSig$ = prevRefreshSig;
+}
+if (import.meta.hot && !inWebWorker) {
+  RefreshRuntime.__hmr_import(import.meta.url).then((currentExports) => {
+    RefreshRuntime.registerExportsForReactRefresh("C:/laragon/www/zalo_mini_app/hoanamproduct/src/components/catalogue/product-detail-template.tsx", currentExports);
+    import.meta.hot.accept((nextExports) => {
+      if (!nextExports) return;
+      const invalidateMessage = RefreshRuntime.validateRefreshBoundaryAndEnqueueUpdate("C:/laragon/www/zalo_mini_app/hoanamproduct/src/components/catalogue/product-detail-template.tsx", currentExports, nextExports);
+      if (invalidateMessage) import.meta.hot.invalidate(invalidateMessage);
+    });
+  });
+}
+
+//# sourceMappingURL=data:application/json;base64,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QUFyQjtBQUFBO0FBQUE7QUFBQTtBQUFBLGVBR0E7QUFBQSxNQUNELEtBTkg7QUFBQTtBQUFBO0FBQUE7QUFBQSxhQU9BO0FBQUEsTUFDQ0osZUFBZWYsZ0JBQWdCa0MsU0FBUyx1QkFBQyxZQUFPLFdBQVUsaUNBQWdDLE1BQUssVUFBUyxTQUFTLE1BQU1sQixnQkFBZ0IsQ0FBQ0MsWUFBWXNELEtBQUtDLElBQUl4RSxnQkFBZ0JrQyxRQUFRakIsVUFBVSxDQUFDLENBQUMsR0FBRywyQ0FBNUo7QUFBQTtBQUFBO0FBQUE7QUFBQSxhQUF1TCxJQUFZO0FBQUEsU0FYOU87QUFBQTtBQUFBO0FBQUE7QUFBQSxXQVlBLElBQ0U7QUFBQSxJQUVKLHVCQUFDLGFBQVEsV0FBVSwrQkFBOEIsY0FBVyxvQkFDMUQ7QUFBQSw2QkFBQyxZQUFPLE1BQUssVUFBUyxXQUFVLDRCQUEyQixTQUFTLE1BQU1kLHNCQUFzQk8saUJBQWlCRyxVQUFVLEdBQUl1QywwQkFBL0g7QUFBQTtBQUFBO0FBQUE7QUFBQSxhQUE0STtBQUFBLE1BQzVJLHVCQUFDLGtCQUFlLFFBQWdCLGlCQUFlLE1BQUMsV0FBVSxzQ0FBMUQ7QUFBQTtBQUFBO0FBQUE7QUFBQSxhQUE0RjtBQUFBLFNBRjlGO0FBQUE7QUFBQTtBQUFBO0FBQUEsV0FHQTtBQUFBLE9BOUpGO0FBQUE7QUFBQTtBQUFBO0FBQUEsU0ErSkE7QUFFSjtBQUFFaEQsR0FuTldQLHVCQUFxQjtBQUFBLEtBQXJCQTtBQUFxQixJQUFBNEU7QUFBQSxhQUFBQSxJQUFBIiwibmFtZXMiOlsidXNlRWZmZWN0IiwidXNlTWVtbyIsInVzZVN0YXRlIiwiZ2V0QXZhaWxhYmlsaXR5TGFiZWwiLCJnZXRQcm9kdWN0TWVkaWEiLCJnZXRWaXNpYmxlVmFyaWFudHMiLCJpc1ByZW9yZGVyQXZhaWxhYmlsaXR5IiwidmlzaWJsZVRleHQiLCJDb250YWN0QWN0aW9ucyIsIlByb2R1Y3RHYWxsZXJ5IiwiUHVibGljSW1hZ2UiLCJVaUljb24iLCJET01BSU5fTEFCRUxTIiwiUE9XRVJfVE9PTFMiLCJIQU5EX1RPT0xTIiwiQUNDRVNTT1JJRVMiLCJQcm9kdWN0RGV0YWlsVGVtcGxhdGUiLCJwcm9kdWN0IiwiY29uZmlnIiwicmVsYXRlZFByb2R1Y3RzIiwib25PcGVuR2FsbGVyeSIsIm9uT3BlblByb2R1Y3QiLCJvblJlcXVlc3RDb25zdWx0YXRpb24iLCJfcyIsImFjdGl2ZVRhYiIsInNldEFjdGl2ZVRhYiIsInZhcmlhbnRzIiwic2VsZWN0ZWRWYXJpYW50SWQiLCJzZXRTZWxlY3RlZFZhcmlhbnRJZCIsInNlbGVjdGVkVmFyaWFudCIsImZpbmQiLCJ2YXJpYW50IiwidmFyaWFudF9pZCIsInJlbGF0ZWRMaW1pdEluaXRpYWwiLCJyZWxhdGVkTGltaXQiLCJzZXRSZWxhdGVkTGltaXQiLCJjdXJyZW50Iiwic29tZSIsInByb2R1Y3RfaWQiLCJmZWF0dXJlcyIsIm1hcCIsImZlYXR1cmUiLCJjb2RlIiwibGFiZWwiLCJmaWx0ZXIiLCJCb29sZWFuIiwic3BlY0dyb3VwcyIsInNwZWNfZ3JvdXBzIiwiZ3JvdXAiLCJpdGVtcyIsIml0ZW0iLCJ2YWx1ZSIsInVuaXQiLCJsZW5ndGgiLCJtb2RlbCIsInN1bW1hcnkiLCJkZXNjcmlwdGlvbiIsImZhbWlseU5hbWUiLCJmYW1pbHlfbmFtZSIsInVzYWdlIiwicGFja2FnZUNvbnRlbnRzIiwicGFja2FnZV9jb250ZW50cyIsImNhdGVnb3J5IiwiZGlzcGxheV9uYW1lIiwicHJpbWFyeUNvZGUiLCJwcmltYXJ5X2NvZGUiLCJpZGVudGl0eVN1bW1hcnkiLCJkaXNwbGF5QXZhaWxhYmlsaXR5IiwiYXZhaWxhYmlsaXR5IiwiaXNQcmVvcmRlciIsImF2YWlsYWJpbGl0eUxhYmVsIiwicmVxdWVzdExhYmVsIiwiaGFzR2FsbGVyeU1lZGlhIiwidmlzaWJsZUJ1bmRsZUl0ZW1zIiwiYnVuZGxlX2l0ZW1zIiwidmlzaWJsZUNvbXBhdGliaWxpdHkiLCJjb21wYXRpYmlsaXR5IiwidmlzaWJsZVJlbGF0ZWQiLCJzbGljZSIsInJlbGF0ZWRBcmVTYW1lQ2F0ZWdvcnkiLCJldmVyeSIsImRvbWFpbiIsIm5hbWUiLCJ2YXJpYW50X25hbWUiLCJpbmRleCIsInByb2R1Y3Rfc2x1ZyIsImJyYW5kIiwicmVsYXRlZCIsInNsdWciLCJjb3Zlcl9tZWRpYSIsIk1hdGgiLCJtaW4iLCJfYyJdLCJpZ25vcmVMaXN0IjpbXSwic291cmNlcyI6WyJwcm9kdWN0LWRldGFpbC10ZW1wbGF0ZS50c3giXSwic291cmNlc0NvbnRlbnQiOlsiaW1wb3J0IHsgdXNlRWZmZWN0LCB1c2VNZW1vLCB1c2VTdGF0ZSB9IGZyb20gXCJyZWFjdFwiO1xuXG5pbXBvcnQgeyBnZXRBdmFpbGFiaWxpdHlMYWJlbCwgZ2V0UHJvZHVjdE1lZGlhLCBnZXRWaXNpYmxlVmFyaWFudHMsIGlzUHJlb3JkZXJBdmFpbGFiaWxpdHksIHZpc2libGVUZXh0IH0gZnJvbSBcIkAvY2F0YWxvZ3VlL2NhdGFsb2d1ZS11dGlsc1wiO1xuaW1wb3J0IHsgQ29udGFjdEFjdGlvbnMgfSBmcm9tIFwiQC9jb21wb25lbnRzL2NhdGFsb2d1ZS9jb250YWN0LWFjdGlvbnNcIjtcbmltcG9ydCB7IFByb2R1Y3RHYWxsZXJ5IH0gZnJvbSBcIkAvY29tcG9uZW50cy9jYXRhbG9ndWUvcHJvZHVjdC1nYWxsZXJ5XCI7XG5pbXBvcnQgeyBQdWJsaWNJbWFnZSB9IGZyb20gXCJAL2NvbXBvbmVudHMvY2F0YWxvZ3VlL3B1YmxpYy1pbWFnZVwiO1xuaW1wb3J0IHsgVWlJY29uIH0gZnJvbSBcIkAvY29tcG9uZW50cy91aS1pY29uXCI7XG5pbXBvcnQge1xuICBQcm9kdWN0Q2FyZER0byxcbiAgUHJvZHVjdERldGFpbER0byxcbiAgUHVibGljQ29uZmlnRHRvLFxufSBmcm9tIFwiQC90eXBlcy9wdWJsaWMtYXBpXCI7XG5cbnR5cGUgRGV0YWlsVGFiID0gXCJpbmZvcm1hdGlvblwiIHwgXCJzcGVjaWZpY2F0aW9uc1wiO1xuXG5jb25zdCBET01BSU5fTEFCRUxTID0ge1xuICBQT1dFUl9UT09MUzogXCJQb3dlciBUb29sc1wiLFxuICBIQU5EX1RPT0xTOiBcIkhhbmQgVG9vbHNcIixcbiAgQUNDRVNTT1JJRVM6IFwiQWNjZXNzb3JpZXNcIixcbn0gYXMgY29uc3Q7XG5cbmludGVyZmFjZSBQcm9kdWN0RGV0YWlsVGVtcGxhdGVQcm9wcyB7XG4gIHByb2R1Y3Q6IFByb2R1Y3REZXRhaWxEdG87XG4gIGNvbmZpZzogUHVibGljQ29uZmlnRHRvIHwgbnVsbDtcbiAgcmVsYXRlZFByb2R1Y3RzOiBQcm9kdWN0Q2FyZER0b1tdO1xuICBvbk9wZW5HYWxsZXJ5OiAodmFyaWFudElkPzogc3RyaW5nKSA9PiB2b2lkO1xuICBvbk9wZW5Qcm9kdWN0OiAoc2x1Zzogc3RyaW5nKSA9PiB2b2lkO1xuICBvblJlcXVlc3RDb25zdWx0YXRpb246ICh2YXJpYW50SWQ/OiBzdHJpbmcpID0+IHZvaWQ7XG59XG5cbi8qKlxuICogVGhlIGNhbm9uaWNhbCBwdWJsaWMgUHJvZHVjdCBEZXRhaWwgbGF5b3V0LlxuICpcbiAqIEV2ZXJ5IHByb2R1Y3QgaXMgcHJvamVjdGVkIGZyb20gdGhlIHB1YmxpYyBEVE8gaW50byB0aGlzIHNhbWUgdGVtcGxhdGU6XG4gKiBnYWxsZXJ5IOKGkiBpZGVudGl0eSDihpIgaW5mb3JtYXRpb24vc3BlY2lmaWNhdGlvbiB0YWJzIOKGkiByZWxhdGVkIOKGkiBjb250YWN0cy5cbiAqIEl0IGRlbGliZXJhdGVseSBoYXMgbm8gcHJvZHVjdC1zcGVjaWZpYyBwcmVzZW50YXRpb24gcnVsZXMsIHByaWNlLCBxdWFudGl0eVxuICogb3IgaW50ZXJuYWwvc291cmNlIG1ldGFkYXRhLlxuICovXG5leHBvcnQgY29uc3QgUHJvZHVjdERldGFpbFRlbXBsYXRlID0gKHtcbiAgcHJvZHVjdCxcbiAgY29uZmlnLFxuICByZWxhdGVkUHJvZHVjdHMsXG4gIG9uT3BlbkdhbGxlcnksXG4gIG9uT3BlblByb2R1Y3QsXG4gIG9uUmVxdWVzdENvbnN1bHRhdGlvbixcbn06IFByb2R1Y3REZXRhaWxUZW1wbGF0ZVByb3BzKSA9PiB7XG4gIGNvbnN0IFthY3RpdmVUYWIsIHNldEFjdGl2ZVRhYl0gPSB1c2VTdGF0ZTxEZXRhaWxUYWI+KFwiaW5mb3JtYXRpb25cIik7XG4gIGNvbnN0IHZhcmlhbnRzID0gdXNlTWVtbygoKSA9PiBnZXRWaXNpYmxlVmFyaWFudHMocHJvZHVjdC52YXJpYW50cyksIFtwcm9kdWN0LnZhcmlhbnRzXSk7XG4gIGNvbnN0IFtzZWxlY3RlZFZhcmlhbnRJZCwgc2V0U2VsZWN0ZWRWYXJpYW50SWRdID0gdXNlU3RhdGU8c3RyaW5nIHwgbnVsbD4obnVsbCk7XG4gIGNvbnN0IHNlbGVjdGVkVmFyaWFudCA9IHZhcmlhbnRzLmZpbmQoKHZhcmlhbnQpID0+IHZhcmlhbnQudmFyaWFudF9pZCA9PT0gc2VsZWN0ZWRWYXJpYW50SWQpID8/IHZhcmlhbnRzWzBdID8/IG51bGw7XG4gIGNvbnN0IHJlbGF0ZWRMaW1pdEluaXRpYWwgPSAyO1xuICBjb25zdCBbcmVsYXRlZExpbWl0LCBzZXRSZWxhdGVkTGltaXRdID0gdXNlU3RhdGUocmVsYXRlZExpbWl0SW5pdGlhbCk7XG4gIHVzZUVmZmVjdCgoKSA9PiB7XG4gICAgc2V0U2VsZWN0ZWRWYXJpYW50SWQoKGN1cnJlbnQpID0+IHZhcmlhbnRzLnNvbWUoKHZhcmlhbnQpID0+IHZhcmlhbnQudmFyaWFudF9pZCA9PT0gY3VycmVudCkgPyBjdXJyZW50IDogdmFyaWFudHNbMF0/LnZhcmlhbnRfaWQgPz8gbnVsbCk7XG4gICAgc2V0UmVsYXRlZExpbWl0KHJlbGF0ZWRMaW1pdEluaXRpYWwpO1xuICB9LCBbcHJvZHVjdC5wcm9kdWN0X2lkLCB2YXJpYW50c10pO1xuICBjb25zdCBmZWF0dXJlcyA9IHByb2R1Y3QuZmVhdHVyZXNcbiAgICA/Lm1hcCgoZmVhdHVyZSkgPT4gKHsgY29kZTogZmVhdHVyZS5jb2RlLCBsYWJlbDogdmlzaWJsZVRleHQoZmVhdHVyZS5sYWJlbCkgfSkpXG4gICAgLmZpbHRlcigoZmVhdHVyZSk6IGZlYXR1cmUgaXMgeyBjb2RlOiBzdHJpbmc7IGxhYmVsOiBzdHJpbmcgfSA9PiBCb29sZWFuKGZlYXR1cmUubGFiZWwpKSA/PyBbXTtcbiAgY29uc3Qgc3BlY0dyb3VwcyA9IHByb2R1Y3Quc3BlY19ncm91cHNcbiAgICA/Lm1hcCgoZ3JvdXApID0+ICh7XG4gICAgICAuLi5ncm91cCxcbiAgICAgIGxhYmVsOiB2aXNpYmxlVGV4dChncm91cC5sYWJlbCksXG4gICAgICBpdGVtczogZ3JvdXAuaXRlbXNcbiAgICAgICAgLm1hcCgoaXRlbSkgPT4gKHsgLi4uaXRlbSwgbGFiZWw6IHZpc2libGVUZXh0KGl0ZW0ubGFiZWwpLCB2YWx1ZTogdmlzaWJsZVRleHQoaXRlbS52YWx1ZSksIHVuaXQ6IHZpc2libGVUZXh0KGl0ZW0udW5pdCkgfSkpXG4gICAgICAgIC5maWx0ZXIoKGl0ZW0pOiBpdGVtIGlzIHR5cGVvZiBpdGVtICYgeyBsYWJlbDogc3RyaW5nOyB2YWx1ZTogc3RyaW5nIH0gPT4gQm9vbGVhbihpdGVtLmxhYmVsICYmIGl0ZW0udmFsdWUpKSxcbiAgICB9KSlcbiAgICAuZmlsdGVyKChncm91cCk6IGdyb3VwIGlzIHR5cGVvZiBncm91cCAmIHsgbGFiZWw6IHN0cmluZyB9ID0+IEJvb2xlYW4oZ3JvdXAubGFiZWwgJiYgZ3JvdXAuaXRlbXMubGVuZ3RoKSkgPz8gW107XG4gIGNvbnN0IG1vZGVsID0gdmlzaWJsZVRleHQocHJvZHVjdC5tb2RlbCk7XG4gIGNvbnN0IHN1bW1hcnkgPSB2aXNpYmxlVGV4dChwcm9kdWN0LnN1bW1hcnkpO1xuICBjb25zdCBkZXNjcmlwdGlvbiA9IHZpc2libGVUZXh0KHByb2R1Y3QuZGVzY3JpcHRpb24pO1xuICBjb25zdCBmYW1pbHlOYW1lID0gdmlzaWJsZVRleHQocHJvZHVjdC5mYW1pbHlfbmFtZSk7XG4gIGNvbnN0IHVzYWdlID0gdmlzaWJsZVRleHQocHJvZHVjdC51c2FnZSk7XG4gIGNvbnN0IHBhY2thZ2VDb250ZW50cyA9IHZpc2libGVUZXh0KHByb2R1Y3QucGFja2FnZV9jb250ZW50cyk7XG4gIGNvbnN0IGNhdGVnb3J5ID0gdmlzaWJsZVRleHQocHJvZHVjdC5jYXRlZ29yeS5kaXNwbGF5X25hbWUpO1xuICBjb25zdCBwcmltYXJ5Q29kZSA9IHZpc2libGVUZXh0KHByb2R1Y3QucHJpbWFyeV9jb2RlKTtcbiAgY29uc3QgaWRlbnRpdHlTdW1tYXJ5ID0gc3VtbWFyeSAmJiBzdW1tYXJ5ICE9PSBkZXNjcmlwdGlvbiA/IHN1bW1hcnkgOiBudWxsO1xuICBjb25zdCBkaXNwbGF5QXZhaWxhYmlsaXR5ID0gc2VsZWN0ZWRWYXJpYW50Py5hdmFpbGFiaWxpdHkgPz8gcHJvZHVjdC5hdmFpbGFiaWxpdHk7XG4gIGNvbnN0IGlzUHJlb3JkZXIgPSBpc1ByZW9yZGVyQXZhaWxhYmlsaXR5KGRpc3BsYXlBdmFpbGFiaWxpdHkpO1xuICBjb25zdCBhdmFpbGFiaWxpdHlMYWJlbCA9IGdldEF2YWlsYWJpbGl0eUxhYmVsKGRpc3BsYXlBdmFpbGFiaWxpdHkpO1xuICBjb25zdCByZXF1ZXN0TGFiZWwgPSBpc1ByZW9yZGVyID8gXCLEkOG6t3QgdHLGsOG7m2NcIiA6IFwiWcOqdSBj4bqndSB0xrAgduG6pW5cIjtcbiAgY29uc3QgaGFzR2FsbGVyeU1lZGlhID0gZ2V0UHJvZHVjdE1lZGlhKHByb2R1Y3QsIHNlbGVjdGVkVmFyaWFudCkubGVuZ3RoID4gMDtcbiAgY29uc3QgdmlzaWJsZUJ1bmRsZUl0ZW1zID0gcHJvZHVjdC5idW5kbGVfaXRlbXM/LmZpbHRlcigoaXRlbSkgPT4gdmlzaWJsZVRleHQoaXRlbS5sYWJlbCkpID8/IFtdO1xuICBjb25zdCB2aXNpYmxlQ29tcGF0aWJpbGl0eSA9IHByb2R1Y3QuY29tcGF0aWJpbGl0eT8uZmlsdGVyKChpdGVtKSA9PiB2aXNpYmxlVGV4dChpdGVtLmxhYmVsKSkgPz8gW107XG4gIGNvbnN0IHZpc2libGVSZWxhdGVkID0gcmVsYXRlZFByb2R1Y3RzLnNsaWNlKDAsIHJlbGF0ZWRMaW1pdCk7XG4gIGNvbnN0IHJlbGF0ZWRBcmVTYW1lQ2F0ZWdvcnkgPSByZWxhdGVkUHJvZHVjdHMubGVuZ3RoID4gMCAmJiByZWxhdGVkUHJvZHVjdHMuZXZlcnkoKGl0ZW0pID0+IGl0ZW0uY2F0ZWdvcnkuY29kZSA9PT0gcHJvZHVjdC5jYXRlZ29yeS5jb2RlKTtcblxuICByZXR1cm4gKFxuICAgIDxhcnRpY2xlIGNsYXNzTmFtZT1cInByb2R1Y3QtZGV0YWlsLXRlbXBsYXRlXCI+XG4gICAgICA8c2VjdGlvbiBjbGFzc05hbWU9XCJkZXRhaWwtdGVtcGxhdGVfX2dhbGxlcnlcIiBhcmlhLWxhYmVsPVwiSMOsbmgg4bqjbmggc+G6o24gcGjhuqltXCI+XG4gICAgICAgIDxQcm9kdWN0R2FsbGVyeSBwcm9kdWN0PXtwcm9kdWN0fSB2YXJpYW50PXtzZWxlY3RlZFZhcmlhbnR9IC8+XG4gICAgICAgIHtoYXNHYWxsZXJ5TWVkaWEgPyA8YnV0dG9uIGNsYXNzTmFtZT1cImRldGFpbC10ZW1wbGF0ZV9fem9vbVwiIHR5cGU9XCJidXR0b25cIiBvbkNsaWNrPXsoKSA9PiBvbk9wZW5HYWxsZXJ5KHNlbGVjdGVkVmFyaWFudD8udmFyaWFudF9pZCl9PlxuICAgICAgICAgIDxVaUljb24gbmFtZT1cInNlYXJjaFwiIHNpemU9ezE3fSBzdHJva2VXaWR0aD17Mi4yfSAvPlxuICAgICAgICAgIFhlbSDhuqNuaFxuICAgICAgICA8L2J1dHRvbj4gOiBudWxsfVxuICAgICAgPC9zZWN0aW9uPlxuXG4gICAgICA8c2VjdGlvbiBjbGFzc05hbWU9XCJkZXRhaWwtdGVtcGxhdGVfX2lkZW50aXR5XCI+XG4gICAgICAgIDxkaXYgY2xhc3NOYW1lPVwiZGV0YWlsLXRlbXBsYXRlX19iYWRnZXNcIj5cbiAgICAgICAgICA8c3BhbiBjbGFzc05hbWU9e2BhdmFpbGFiaWxpdHktY2hpcCAke2lzUHJlb3JkZXIgPyBcImF2YWlsYWJpbGl0eS1jaGlwLS1wcmVvcmRlclwiIDogXCJcIn1gfT57YXZhaWxhYmlsaXR5TGFiZWx9PC9zcGFuPlxuICAgICAgICAgIDxzcGFuIGNsYXNzTmFtZT1cImRldGFpbC10ZW1wbGF0ZV9fZG9tYWluXCI+e0RPTUFJTl9MQUJFTFNbcHJvZHVjdC5kb21haW5dfTwvc3Bhbj5cbiAgICAgICAgPC9kaXY+XG4gICAgICAgIDxoMT57dmlzaWJsZVRleHQocHJvZHVjdC5uYW1lKX08L2gxPlxuICAgICAgICB7bW9kZWwgPyA8cCBjbGFzc05hbWU9XCJkZXRhaWwtdGVtcGxhdGVfX21vZGVsXCI+TW9kZWw6IDxzdHJvbmc+e21vZGVsfTwvc3Ryb25nPjwvcD4gOiBudWxsfVxuICAgICAgICB7cHJpbWFyeUNvZGUgJiYgcHJpbWFyeUNvZGUgIT09IG1vZGVsID8gPHAgY2xhc3NOYW1lPVwiZGV0YWlsLXRlbXBsYXRlX19tb2RlbFwiPk3DoyBz4bqjbiBwaOG6qW06IDxzdHJvbmc+e3ByaW1hcnlDb2RlfTwvc3Ryb25nPjwvcD4gOiBudWxsfVxuICAgICAgICB7aWRlbnRpdHlTdW1tYXJ5ID8gPHAgY2xhc3NOYW1lPVwiZGV0YWlsLXRlbXBsYXRlX19kZXNjcmlwdGlvblwiPntpZGVudGl0eVN1bW1hcnl9PC9wPiA6IG51bGx9XG4gICAgICAgIHt2YXJpYW50cy5sZW5ndGggPyAoXG4gICAgICAgICAgPGRpdiBjbGFzc05hbWU9XCJkZXRhaWwtdGVtcGxhdGVfX3ZhcmlhbnRzXCIgYXJpYS1sYWJlbD1cIkNo4buNbiBwaGnDqm4gYuG6o25cIj5cbiAgICAgICAgICAgIDxzcGFuPlBoacOqbiBi4bqjbjwvc3Bhbj5cbiAgICAgICAgICAgIDxkaXY+XG4gICAgICAgICAgICAgIHt2YXJpYW50cy5tYXAoKHZhcmlhbnQpID0+IChcbiAgICAgICAgICAgICAgICA8YnV0dG9uXG4gICAgICAgICAgICAgICAgICBrZXk9e3ZhcmlhbnQudmFyaWFudF9pZH1cbiAgICAgICAgICAgICAgICAgIHR5cGU9XCJidXR0b25cIlxuICAgICAgICAgICAgICAgICAgY2xhc3NOYW1lPXtzZWxlY3RlZFZhcmlhbnQ/LnZhcmlhbnRfaWQgPT09IHZhcmlhbnQudmFyaWFudF9pZCA/IFwiaXMtc2VsZWN0ZWRcIiA6IFwiXCJ9XG4gICAgICAgICAgICAgICAgICBhcmlhLXByZXNzZWQ9e3NlbGVjdGVkVmFyaWFudD8udmFyaWFudF9pZCA9PT0gdmFyaWFudC52YXJpYW50X2lkfVxuICAgICAgICAgICAgICAgICAgb25DbGljaz17KCkgPT4gc2V0U2VsZWN0ZWRWYXJpYW50SWQodmFyaWFudC52YXJpYW50X2lkKX1cbiAgICAgICAgICAgICAgICA+XG4gICAgICAgICAgICAgICAgICB7dmlzaWJsZVRleHQodmFyaWFudC52YXJpYW50X25hbWUpfVxuICAgICAgICAgICAgICAgIDwvYnV0dG9uPlxuICAgICAgICAgICAgICApKX1cbiAgICAgICAgICAgIDwvZGl2PlxuICAgICAgICAgIDwvZGl2PlxuICAgICAgICApIDogbnVsbH1cbiAgICAgIDwvc2VjdGlvbj5cblxuICAgICAgPGRpdiBjbGFzc05hbWU9XCJkZXRhaWwtdGVtcGxhdGVfX3RhYnNcIiByb2xlPVwidGFibGlzdFwiIGFyaWEtbGFiZWw9XCJUaMO0bmcgdGluIHPhuqNuIHBo4bqpbVwiPlxuICAgICAgICA8YnV0dG9uXG4gICAgICAgICAgdHlwZT1cImJ1dHRvblwiXG4gICAgICAgICAgcm9sZT1cInRhYlwiXG4gICAgICAgICAgYXJpYS1zZWxlY3RlZD17YWN0aXZlVGFiID09PSBcImluZm9ybWF0aW9uXCJ9XG4gICAgICAgICAgY2xhc3NOYW1lPXthY3RpdmVUYWIgPT09IFwiaW5mb3JtYXRpb25cIiA/IFwiaXMtYWN0aXZlXCIgOiBcIlwifVxuICAgICAgICAgIG9uQ2xpY2s9eygpID0+IHNldEFjdGl2ZVRhYihcImluZm9ybWF0aW9uXCIpfVxuICAgICAgICA+XG4gICAgICAgICAgVGjDtG5nIHRpblxuICAgICAgICA8L2J1dHRvbj5cbiAgICAgICAgPGJ1dHRvblxuICAgICAgICAgIHR5cGU9XCJidXR0b25cIlxuICAgICAgICAgIHJvbGU9XCJ0YWJcIlxuICAgICAgICAgIGFyaWEtc2VsZWN0ZWQ9e2FjdGl2ZVRhYiA9PT0gXCJzcGVjaWZpY2F0aW9uc1wifVxuICAgICAgICAgIGNsYXNzTmFtZT17YWN0aXZlVGFiID09PSBcInNwZWNpZmljYXRpb25zXCIgPyBcImlzLWFjdGl2ZVwiIDogXCJcIn1cbiAgICAgICAgICBvbkNsaWNrPXsoKSA9PiBzZXRBY3RpdmVUYWIoXCJzcGVjaWZpY2F0aW9uc1wiKX1cbiAgICAgICAgPlxuICAgICAgICAgIFRow7RuZyBz4buRXG4gICAgICAgIDwvYnV0dG9uPlxuICAgICAgPC9kaXY+XG5cbiAgICAgIHthY3RpdmVUYWIgPT09IFwiaW5mb3JtYXRpb25cIiA/IChcbiAgICAgICAgPHNlY3Rpb24gY2xhc3NOYW1lPVwiZGV0YWlsLXRlbXBsYXRlX19wYW5lbFwiIHJvbGU9XCJ0YWJwYW5lbFwiPlxuICAgICAgICAgIHtkZXNjcmlwdGlvbiA/IChcbiAgICAgICAgICAgIDxkaXYgY2xhc3NOYW1lPVwiZGV0YWlsLXRlbXBsYXRlX19ibG9ja1wiPlxuICAgICAgICAgICAgICA8aDI+TcO0IHThuqMgc+G6o24gcGjhuqltPC9oMj5cbiAgICAgICAgICAgICAgPHAgY2xhc3NOYW1lPVwiZGV0YWlsLXRlbXBsYXRlX19ib2R5XCI+e2Rlc2NyaXB0aW9ufTwvcD5cbiAgICAgICAgICAgIDwvZGl2PlxuICAgICAgICAgICkgOiBudWxsfVxuICAgICAgICAgIHt1c2FnZSA/IChcbiAgICAgICAgICAgIDxkaXYgY2xhc3NOYW1lPVwiZGV0YWlsLXRlbXBsYXRlX19ibG9jayBkZXRhaWwtdGVtcGxhdGVfX2Jsb2NrLS1tdXRlZFwiPlxuICAgICAgICAgICAgICA8aDI+Q8O0bmcgZOG7pW5nPC9oMj5cbiAgICAgICAgICAgICAgPHAgY2xhc3NOYW1lPVwiZGV0YWlsLXRlbXBsYXRlX19ib2R5XCI+e3VzYWdlfTwvcD5cbiAgICAgICAgICAgIDwvZGl2PlxuICAgICAgICAgICkgOiBudWxsfVxuICAgICAgICAgIHtmZWF0dXJlcy5sZW5ndGggPyAoXG4gICAgICAgICAgICA8ZGl2IGNsYXNzTmFtZT1cImRldGFpbC10ZW1wbGF0ZV9fYmxvY2tcIj5cbiAgICAgICAgICAgICAgPGgyPlTDrW5oIG7Eg25nIG7hu5VpIGLhuq10PC9oMj5cbiAgICAgICAgICAgICAgPHVsIGNsYXNzTmFtZT1cImRldGFpbC10ZW1wbGF0ZV9fZmVhdHVyZS1jaGlwc1wiPlxuICAgICAgICAgICAgICAgIHtmZWF0dXJlcy5tYXAoKGZlYXR1cmUpID0+IDxsaSBrZXk9e2ZlYXR1cmUuY29kZX0+PFVpSWNvbiBuYW1lPVwiY2hlY2tcIiBzaXplPXsxNn0gc3Ryb2tlV2lkdGg9ezIuMn0gLz57ZmVhdHVyZS5sYWJlbH08L2xpPil9XG4gICAgICAgICAgICAgIDwvdWw+XG4gICAgICAgICAgICA8L2Rpdj5cbiAgICAgICAgICApIDogbnVsbH1cbiAgICAgICAgICB7cGFja2FnZUNvbnRlbnRzID8gKFxuICAgICAgICAgICAgPGRpdiBjbGFzc05hbWU9XCJkZXRhaWwtdGVtcGxhdGVfX2Jsb2NrIGRldGFpbC10ZW1wbGF0ZV9fYmxvY2stLW11dGVkXCI+XG4gICAgICAgICAgICAgIDxoMj5QaOG7pSBraeG7h24gdsOgIGPhuqV1IGjDrG5oPC9oMj5cbiAgICAgICAgICAgICAgPHAgY2xhc3NOYW1lPVwiZGV0YWlsLXRlbXBsYXRlX19ib2R5XCI+e3BhY2thZ2VDb250ZW50c308L3A+XG4gICAgICAgICAgICA8L2Rpdj5cbiAgICAgICAgICApIDogbnVsbH1cbiAgICAgICAgICB7dmlzaWJsZUJ1bmRsZUl0ZW1zLmxlbmd0aCA/IChcbiAgICAgICAgICAgIDxkaXYgY2xhc3NOYW1lPVwiZGV0YWlsLXRlbXBsYXRlX19ibG9ja1wiPlxuICAgICAgICAgICAgICA8aDI+QmFvIGfhu5NtPC9oMj5cbiAgICAgICAgICAgICAgPHVsIGNsYXNzTmFtZT1cImRldGFpbC10ZW1wbGF0ZV9fbGlua2VkLWxpc3RcIj5cbiAgICAgICAgICAgICAgICB7dmlzaWJsZUJ1bmRsZUl0ZW1zLm1hcCgoaXRlbSwgaW5kZXgpID0+IChcbiAgICAgICAgICAgICAgICAgIDxsaSBrZXk9e2Ake2l0ZW0ucHJvZHVjdF9zbHVnID8/IFwibGFiZWxcIn06JHtpbmRleH1gfT5cbiAgICAgICAgICAgICAgICAgICAge2l0ZW0ucHJvZHVjdF9zbHVnID8gPGJ1dHRvbiB0eXBlPVwiYnV0dG9uXCIgb25DbGljaz17KCkgPT4gb25PcGVuUHJvZHVjdChpdGVtLnByb2R1Y3Rfc2x1ZyEpfT57dmlzaWJsZVRleHQoaXRlbS5sYWJlbCl9PC9idXR0b24+IDogdmlzaWJsZVRleHQoaXRlbS5sYWJlbCl9XG4gICAgICAgICAgICAgICAgICA8L2xpPlxuICAgICAgICAgICAgICAgICkpfVxuICAgICAgICAgICAgICA8L3VsPlxuICAgICAgICAgICAgPC9kaXY+XG4gICAgICAgICAgKSA6IG51bGx9XG4gICAgICAgICAge3Zpc2libGVDb21wYXRpYmlsaXR5Lmxlbmd0aCA/IChcbiAgICAgICAgICAgIDxkaXYgY2xhc3NOYW1lPVwiZGV0YWlsLXRlbXBsYXRlX19ibG9ja1wiPlxuICAgICAgICAgICAgICA8aDI+VMawxqFuZyB0aMOtY2g8L2gyPlxuICAgICAgICAgICAgICA8dWwgY2xhc3NOYW1lPVwiZGV0YWlsLXRlbXBsYXRlX19saW5rZWQtbGlzdFwiPlxuICAgICAgICAgICAgICAgIHt2aXNpYmxlQ29tcGF0aWJpbGl0eS5tYXAoKGl0ZW0sIGluZGV4KSA9PiAoXG4gICAgICAgICAgICAgICAgICA8bGkga2V5PXtgJHtpdGVtLnByb2R1Y3Rfc2x1ZyA/PyBcImxhYmVsXCJ9OiR7aW5kZXh9YH0+XG4gICAgICAgICAgICAgICAgICAgIHtpdGVtLnByb2R1Y3Rfc2x1ZyA/IDxidXR0b24gdHlwZT1cImJ1dHRvblwiIG9uQ2xpY2s9eygpID0+IG9uT3BlblByb2R1Y3QoaXRlbS5wcm9kdWN0X3NsdWchKX0+e3Zpc2libGVUZXh0KGl0ZW0ubGFiZWwpfTwvYnV0dG9uPiA6IHZpc2libGVUZXh0KGl0ZW0ubGFiZWwpfVxuICAgICAgICAgICAgICAgICAgPC9saT5cbiAgICAgICAgICAgICAgICApKX1cbiAgICAgICAgICAgICAgPC91bD5cbiAgICAgICAgICAgIDwvZGl2PlxuICAgICAgICAgICkgOiBudWxsfVxuICAgICAgICAgIHtjYXRlZ29yeSA/IChcbiAgICAgICAgICAgIDxkaXYgY2xhc3NOYW1lPVwiZGV0YWlsLXRlbXBsYXRlX19ibG9jayBkZXRhaWwtdGVtcGxhdGVfX2NsYXNzaWZpY2F0aW9uXCI+XG4gICAgICAgICAgICAgIDxoMj5QaMOibiBsb+G6oWk8L2gyPlxuICAgICAgICAgICAgICA8ZGl2PjxzcGFuPlRoxrDGoW5nIGhp4buHdTwvc3Bhbj48c3Ryb25nPnt2aXNpYmxlVGV4dChwcm9kdWN0LmJyYW5kLmRpc3BsYXlfbmFtZSl9PC9zdHJvbmc+PC9kaXY+XG4gICAgICAgICAgICAgIDxkaXY+PHNwYW4+RGFuaCBt4bulYzwvc3Bhbj48c3Ryb25nPntjYXRlZ29yeX08L3N0cm9uZz48L2Rpdj5cbiAgICAgICAgICAgICAge2ZhbWlseU5hbWUgPyA8ZGl2PjxzcGFuPkNo4bunbmcgbG/huqFpPC9zcGFuPjxzdHJvbmc+e2ZhbWlseU5hbWV9PC9zdHJvbmc+PC9kaXY+IDogbnVsbH1cbiAgICAgICAgICAgICAge21vZGVsID8gPGRpdj48c3Bhbj5Nb2RlbDwvc3Bhbj48c3Ryb25nPnttb2RlbH08L3N0cm9uZz48L2Rpdj4gOiBudWxsfVxuICAgICAgICAgICAgICB7cHJpbWFyeUNvZGUgJiYgcHJpbWFyeUNvZGUgIT09IG1vZGVsID8gPGRpdj48c3Bhbj5Nw6Mgc+G6o24gcGjhuqltPC9zcGFuPjxzdHJvbmc+e3ByaW1hcnlDb2RlfTwvc3Ryb25nPjwvZGl2PiA6IG51bGx9XG4gICAgICAgICAgICAgIDxkaXY+PHNwYW4+VMOsbmggdHLhuqFuZzwvc3Bhbj48c3Ryb25nIGNsYXNzTmFtZT17aXNQcmVvcmRlciA/IFwiaXMtcHJlb3JkZXJcIiA6IFwiaXMtc3VjY2Vzc1wifT57YXZhaWxhYmlsaXR5TGFiZWx9PC9zdHJvbmc+PC9kaXY+XG4gICAgICAgICAgICA8L2Rpdj5cbiAgICAgICAgICApIDogbnVsbH1cbiAgICAgICAgPC9zZWN0aW9uPlxuICAgICAgKSA6IChcbiAgICAgICAgPHNlY3Rpb24gY2xhc3NOYW1lPVwiZGV0YWlsLXRlbXBsYXRlX19wYW5lbFwiIHJvbGU9XCJ0YWJwYW5lbFwiPlxuICAgICAgICAgIHtzcGVjR3JvdXBzLmxlbmd0aCA/IChcbiAgICAgICAgICAgIDxkaXYgY2xhc3NOYW1lPVwiZGV0YWlsLXRlbXBsYXRlX19ibG9jayBkZXRhaWwtdGVtcGxhdGVfX3NwZWNpZmljYXRpb25zXCI+XG4gICAgICAgICAgICAgIDxoMj5UaMO0bmcgc+G7kSBr4bu5IHRodeG6rXQ8L2gyPlxuICAgICAgICAgICAgICB7c3BlY0dyb3Vwcy5tYXAoKGdyb3VwKSA9PiAoXG4gICAgICAgICAgICAgICAgPGRpdiBrZXk9e2dyb3VwLmNvZGV9IGNsYXNzTmFtZT1cImRldGFpbC10ZW1wbGF0ZV9fc3BlYy1ncm91cFwiPlxuICAgICAgICAgICAgICAgICAge3NwZWNHcm91cHMubGVuZ3RoID4gMSA/IDxoMz57Z3JvdXAubGFiZWx9PC9oMz4gOiBudWxsfVxuICAgICAgICAgICAgICAgICAge2dyb3VwLml0ZW1zLm1hcCgoaXRlbSkgPT4gPGRpdiBrZXk9e2l0ZW0uY29kZX0+PHNwYW4+e2l0ZW0ubGFiZWx9PC9zcGFuPjxzdHJvbmc+e2l0ZW0udmFsdWV9e2l0ZW0udW5pdCA/IGAgJHtpdGVtLnVuaXR9YCA6IFwiXCJ9PC9zdHJvbmc+PC9kaXY+KX1cbiAgICAgICAgICAgICAgICA8L2Rpdj5cbiAgICAgICAgICAgICAgKSl9XG4gICAgICAgICAgICA8L2Rpdj5cbiAgICAgICAgICApIDogPHAgY2xhc3NOYW1lPVwiZGV0YWlsLXRlbXBsYXRlX19lbXB0eVwiPlRow7RuZyBz4buRIHPhur0gaGnhu4NuIHRo4buLIGtoaSBDYXRhbG9ndWUgY8O0bmcga2hhaSBjdW5nIGPhuqVwIGThu68gbGnhu4d1LjwvcD59XG4gICAgICAgIDwvc2VjdGlvbj5cbiAgICAgICl9XG5cbiAgICAgIHtyZWxhdGVkUHJvZHVjdHMubGVuZ3RoID8gKFxuICAgICAgICA8c2VjdGlvbiBjbGFzc05hbWU9XCJkZXRhaWwtdGVtcGxhdGVfX3JlbGF0ZWRcIiBhcmlhLWxhYmVsPVwiU+G6o24gcGjhuqltIGxpw6puIHF1YW5cIj5cbiAgICAgICAgICA8aDI+U+G6o24gcGjhuqltIGxpw6puIHF1YW48L2gyPlxuICAgICAgICAgIDxwPntyZWxhdGVkQXJlU2FtZUNhdGVnb3J5ID8gXCJLaMOhbSBwaMOhIHRow6ptIHPhuqNuIHBo4bqpbSBjw7luZyBkYW5oIG3hu6VjLlwiIDogXCJLaMOhbSBwaMOhIHRow6ptIHPhuqNuIHBo4bqpbSBjw7luZyBuaMOzbS5cIn08L3A+XG4gICAgICAgICAgPGRpdj5cbiAgICAgICAgICAgIHt2aXNpYmxlUmVsYXRlZC5tYXAoKHJlbGF0ZWQpID0+IChcbiAgICAgICAgICAgICAgPGJ1dHRvbiBrZXk9e3JlbGF0ZWQucHJvZHVjdF9pZH0gdHlwZT1cImJ1dHRvblwiIG9uQ2xpY2s9eygpID0+IG9uT3BlblByb2R1Y3QocmVsYXRlZC5zbHVnKX0gYXJpYS1sYWJlbD17YFhlbSAke3Zpc2libGVUZXh0KHJlbGF0ZWQubmFtZSkgPz8gXCJz4bqjbiBwaOG6qW0gbGnDqm4gcXVhblwifWB9PlxuICAgICAgICAgICAgICAgIDxQdWJsaWNJbWFnZSBtZWRpYT17cmVsYXRlZC5jb3Zlcl9tZWRpYX0gYWx0PXtyZWxhdGVkLm5hbWV9IC8+XG4gICAgICAgICAgICAgICAgPHN0cm9uZz57dmlzaWJsZVRleHQocmVsYXRlZC5tb2RlbCkgPz8gdmlzaWJsZVRleHQocmVsYXRlZC5uYW1lKX08L3N0cm9uZz5cbiAgICAgICAgICAgICAgPC9idXR0b24+XG4gICAgICAgICAgICApKX1cbiAgICAgICAgICA8L2Rpdj5cbiAgICAgICAgICB7cmVsYXRlZExpbWl0IDwgcmVsYXRlZFByb2R1Y3RzLmxlbmd0aCA/IDxidXR0b24gY2xhc3NOYW1lPVwiZGV0YWlsLXRlbXBsYXRlX19tb3JlLXJlbGF0ZWRcIiB0eXBlPVwiYnV0dG9uXCIgb25DbGljaz17KCkgPT4gc2V0UmVsYXRlZExpbWl0KChjdXJyZW50KSA9PiBNYXRoLm1pbihyZWxhdGVkUHJvZHVjdHMubGVuZ3RoLCBjdXJyZW50ICsgMikpfT5YZW0gdGjDqm0gc+G6o24gcGjhuqltIGxpw6puIHF1YW48L2J1dHRvbj4gOiBudWxsfVxuICAgICAgICA8L3NlY3Rpb24+XG4gICAgICApIDogbnVsbH1cblxuICAgICAgPHNlY3Rpb24gY2xhc3NOYW1lPVwiZGV0YWlsLXRlbXBsYXRlX19jb252ZXJzaW9uXCIgYXJpYS1sYWJlbD1cIlnDqnUgY+G6p3Ugc+G6o24gcGjhuqltXCI+XG4gICAgICAgIDxidXR0b24gdHlwZT1cImJ1dHRvblwiIGNsYXNzTmFtZT1cImRldGFpbC10ZW1wbGF0ZV9fcmVxdWVzdFwiIG9uQ2xpY2s9eygpID0+IG9uUmVxdWVzdENvbnN1bHRhdGlvbihzZWxlY3RlZFZhcmlhbnQ/LnZhcmlhbnRfaWQpfT57cmVxdWVzdExhYmVsfTwvYnV0dG9uPlxuICAgICAgICA8Q29udGFjdEFjdGlvbnMgY29uZmlnPXtjb25maWd9IHNob3dVbmF2YWlsYWJsZSBjbGFzc05hbWU9XCJkZXRhaWwtdGVtcGxhdGVfX2NvbnRhY3QtYWN0aW9uc1wiIC8+XG4gICAgICA8L3NlY3Rpb24+XG4gICAgPC9hcnRpY2xlPlxuICApO1xufTtcbiJdLCJmaWxlIjoiQzovbGFyYWdvbi93d3cvemFsb19taW5pX2FwcC9ob2FuYW1wcm9kdWN0L3NyYy9jb21wb25lbnRzL2NhdGFsb2d1ZS9wcm9kdWN0LWRldGFpbC10ZW1wbGF0ZS50c3gifQ==

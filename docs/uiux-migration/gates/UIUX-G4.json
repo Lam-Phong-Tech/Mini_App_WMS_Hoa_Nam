@@ -1,99 +1,136 @@
 {
   "schema_version": "1.0",
   "stage": "UIUX-G4",
-  "status": "BLOCKED",
-  "recorded_at": "2026-09-10T00:33:56.0941164+07:00",
+  "status": "PASS",
+  "recorded_at": "2026-09-10T14:19:23.0864237+07:00",
   "target_base_sha": "411ba4d3ae4e287ef40626aba8ca6794924be1ef",
   "design_source_sha": "86079f965f2fcb43a7e3efbbc9467d119b47921f",
-  "implementation_head_sha": "411ba4d3ae4e287ef40626aba8ca6794924be1ef",
+  "implementation_head_sha": "7782cd9af5843d82a39cf6c2b61ee5a9ae931e35",
   "dirty_diff": {
-    "preserved": "The dirty G1–G3 implementation, tests, evidence, public fonts and user-local .env*/.tmp files predate this preflight and were preserved.",
+    "preserved": "Pre-existing user-local .env*/.tmp files and prior G1–G3 changes were preserved. No reset, checkout, merge, push or deployment was used.",
     "g4_changes": [
-      "docs/uiux-migration/g4/preflight.md",
-      "docs/uiux-migration/g4/contract-implementation.md",
-      "docs/uiux-migration/evidence/g4/product-id-rehydration-check.json",
-      "docs/uiux-migration/gates/UIUX-G4.json",
-      "docs/uiux-migration/gates/UIUX-G4.md"
+      "src/services/public-api.ts",
+      "src/services/backend-public-mappers.ts",
+      "src/library/product-library.ts",
+      "src/library/product-compare.ts",
+      "src/state/product-library-context.tsx",
+      "src/state/quote-workflow-context.tsx",
+      "src/state/compare-context.tsx",
+      "src/hooks/use-library-products.ts",
+      "src/pages/product-library.tsx",
+      "src/pages/product-selection.tsx",
+      "src/pages/quote-request.tsx",
+      "src/pages/request-receipts.tsx",
+      "src/pages/compare.tsx",
+      "src/pages/help.tsx",
+      "src/pages/product-detail.tsx",
+      "src/components/catalogue/product-card.tsx",
+      "src/components/catalogue/product-detail-template.tsx",
+      "src/routes.ts",
+      "src/components/layout.tsx",
+      "focused G4 tests and documentation"
     ],
-    "runtime_changes": []
+    "runtime_changes": ["ID-only device library, RAM-only quote workflow/receipt/compare state, public D13 GET adapter"]
   },
   "previous_gate_path": "docs/uiux-migration/gates/UIUX-G3.json",
   "previous_gate_sha256": "2f61f9ea639a46f636f142961e22ec436e8863b1bd14a0802719b91f62fb2007",
   "baseline_id": "UIUX-G1-2026-09-08-source-01",
-  "baseline_manifest": {
-    "path": "docs/uiux-migration/baseline.json",
-    "sha256": "2d07c8c7d4268cd46ba4a42307e4302a6ccbaa40b2f02248c089907fe82bf1d5"
-  },
-  "decisions": {
-    "path": "docs/uiux-migration/decisions.json",
-    "sha256": "1b5f9fa372dac7bd525c0d02eab6b8f725ab6fdd1045327af358caa7f4f399db"
-  },
+  "baseline_manifest": {"path": "docs/uiux-migration/baseline.json", "sha256": "2d07c8c7d4268cd46ba4a42307e4302a6ccbaa40b2f02248c089907fe82bf1d5"},
+  "decisions": {"path": "docs/uiux-migration/decisions.json", "sha256": "8abf3bbd2bb45a51ecabdfd2330f3099a2469306db096230d1a5657de64910e6"},
   "input_artifacts": [
     {"path": "docs/uiux-migration/gates/UIUX-G1.json", "sha256": "a8f83f5f6118cb840888b5c23a7a9df825f778d97e0653d965cca0352e3257d9"},
     {"path": "docs/uiux-migration/gates/UIUX-G2.json", "sha256": "7601b1cc6a689f7372698acfbadd154430b955f756767caa98b077efdc074ee4"},
     {"path": "docs/uiux-migration/gates/UIUX-G3.json", "sha256": "2f61f9ea639a46f636f142961e22ec436e8863b1bd14a0802719b91f62fb2007"},
     {"path": "docs/uiux-migration/baseline.json", "sha256": "2d07c8c7d4268cd46ba4a42307e4302a6ccbaa40b2f02248c089907fe82bf1d5"},
-    {"path": "docs/uiux-migration/decisions.json", "sha256": "1b5f9fa372dac7bd525c0d02eab6b8f725ab6fdd1045327af358caa7f4f399db"}
+    {"path": "docs/uiux-migration/decisions.json", "sha256": "8abf3bbd2bb45a51ecabdfd2330f3099a2469306db096230d1a5657de64910e6"},
+    {"path": "docs/uiux-migration/evidence/reference/user-confirmation-g4-product-id-lookup-2026-09-10.md", "sha256": "f13599d9d1f1f66a16fd43b3466e57e22a67fcc2ce764758245ebe532577bac4"},
+    {"path": "docs/uiux-migration/evidence/g4/product-id-batch-contract-green-2026-09-10.json", "sha256": "7f5e3d12bd7bff449473c6d11fded34321a27fb74f85e6069d71533ee06609a3"}
   ],
   "output_artifacts": [
-    {"path": "docs/uiux-migration/g4/preflight.md", "sha256": "4713dfd3773597595b7d9e720604a561ff226f19d761491d6059f2c6843d0da9"},
-    {"path": "docs/uiux-migration/g4/contract-implementation.md", "sha256": "66d8fe78b2d21154043a297157421afd11c1403abfec7a9f527cb5357fef02f5"},
-    {"path": "docs/uiux-migration/evidence/g4/product-id-rehydration-check.json", "sha256": "f0297ce28d112af7b903c7079684c09aab113fec28715fc9a139f00e8eadd8a4"}
+    {"path": "docs/uiux-migration/g4/preflight.md", "sha256": "41b8113bebeaa34e3dca32e9e6141c90e6d143d193f54c81ded7e3f6688c5a34"},
+    {"path": "docs/uiux-migration/g4/contract-implementation.md", "sha256": "a47a0910a792029ef2f218747d2aed0a9eb8fdc8d51fb4af6a68d9a31c4bd0ca"},
+    {"path": "docs/uiux-migration/g4/api-tests.md", "sha256": "f9c1cc02940bc8350cfb33dc3d4a557e30b94f3bf9e38bede161fa747a314128"},
+    {"path": "docs/uiux-migration/g4/functional-results.md", "sha256": "9a1cb52b666cac7680294d2f902d85c1179ea518e6bb5a8c6239cdd28ce40c91"},
+    {"path": "docs/uiux-migration/gates/UIUX-G4.md", "sha256": "7849f3ad9585bade9ca6e564eeefd2509aa5b48a873ddb6f752e2abdcd5450f7"},
+    {"path": "docs/uiux-migration/evidence/g4/product-id-batch-contract-green-2026-09-10.json", "sha256": "7f5e3d12bd7bff449473c6d11fded34321a27fb74f85e6069d71533ee06609a3"}
   ],
   "checks": [
     {
       "id": "entry-lineage",
-      "expected": "G1, G2 and G3 are PASS, permit the next stage, and their records/hashes match this G4 preflight.",
-      "actual": "PASS: G1, G2 and revalidated G3 are PASS with next_prompt_allowed true; their SHA-256 records match this entry preflight.",
+      "expected": "G1, G2 and G3 are PASS, permit the next stage, and their hashes match the G4 record.",
+      "actual": "PASS: G1, G2 and G3 are PASS with next_prompt_allowed true; all referenced SHA-256 values match.",
       "status": "PASS",
-      "evidence_paths": ["docs/uiux-migration/g4/preflight.md", "docs/uiux-migration/gates/UIUX-G3.json"],
-      "command": "Get-Content G1/G2/G3 gate records; Get-FileHash docs/uiux-migration/gates/UIUX-G{1,2,3}.json -Algorithm SHA256",
+      "evidence_paths": ["docs/uiux-migration/gates/UIUX-G1.json", "docs/uiux-migration/gates/UIUX-G2.json", "docs/uiux-migration/gates/UIUX-G3.json"],
+      "command": "Get-Content gate records; Get-FileHash -Algorithm SHA256",
       "exit_code": 0
     },
     {
-      "id": "g3-revalidation-boundary",
-      "expected": "G3 has no unresolved blockers before G4 starts, and its local-only authority is not expanded into G4.",
-      "actual": "PASS: G3 has no unresolved blockers. Its D11/D12 local-only Designer and in-memory-fixture permissions are retained as G3-only, not as G4 runtime or testing authority.",
+      "id": "quote-consent-and-receipt-boundary",
+      "expected": "One 1..20-product request preserves D01/D02 canonical idempotency, explicit consent, current privacy configuration and RAM-only receipt/draft behavior.",
+      "actual": "PASS: Quote code normalizes/sorts items before fingerprint/key/request, validates the approved phone/name/note/consent/privacy rules, has no province field or fan-out, blocks duplicate taps, and creates an in-memory receipt only after valid backend acceptance.",
       "status": "PASS",
-      "evidence_paths": ["docs/uiux-migration/gates/UIUX-G3.json", "docs/uiux-migration/decisions.json", "docs/uiux-migration/g4/preflight.md"],
+      "evidence_paths": ["src/services/quote-service.ts", "src/pages/quote-request.tsx", "src/state/quote-workflow-context.tsx", "src/services/quote-service.test.ts"],
+      "command": "npm run test",
+      "exit_code": 0
+    },
+    {
+      "id": "d13-id-only-rehydration",
+      "expected": "PV-13/PV-14 persist only product IDs and rehydrate current public DTOs after reload without catalogue snapshots or whole-catalogue scans.",
+      "actual": "PASS: Green D13 ids[] lookup verified ordered items, first-occurrence duplicate handling, missing_ids, no pagination metadata, invalid UUID and conflicting-query rejection. The adapter validates/deduplicates/batches IDs and removes local IDs only after successful missing_ids.",
+      "status": "PASS",
+      "evidence_paths": ["docs/uiux-migration/evidence/g4/product-id-batch-contract-green-2026-09-10.json", "src/services/public-api.ts", "src/library/product-library.ts", "src/hooks/use-library-products.ts"],
+      "command": "Read-only GET Green /api/v1/public/products?ids[]=…; npm run test",
+      "exit_code": 0
+    },
+    {
+      "id": "library-and-preorder-safety",
+      "expected": "Recent/Saved limits, RAM fallback and deletion semantics preserve PREORDER/current/error records and remove only confirmed missing IDs.",
+      "actual": "PASS: Recent is newest-first/max 30 with confirmed clear; Saved is max 100; both store normalized UUID IDs only. Storage failure stays in RAM. PREORDER is labeled Hết hàng / Đặt trước and retained; failed/invalid/throttled lookups are non-destructive.",
+      "status": "PASS",
+      "evidence_paths": ["src/library/product-library.ts", "src/state/product-library-context.tsx", "src/catalogue/catalogue-utils.ts", "src/library/product-library.test.ts"],
+      "command": "npm run test",
+      "exit_code": 0
+    },
+    {
+      "id": "faq-selection-and-comparison",
+      "expected": "FAQ, multi-product selection and comparison meet D04 without invented operational information or unsupported persistence.",
+      "actual": "PASS: FAQ stays within approved topics; selection supports one to twenty current public products; comparison is RAM-only, max three in a single domain/category, and requires two products before rendering the table with explicit missing-spec copy.",
+      "status": "PASS",
+      "evidence_paths": ["src/pages/help.tsx", "src/pages/product-selection.tsx", "src/pages/compare.tsx", "src/library/product-compare.test.ts"],
+      "command": "npm run test",
+      "exit_code": 0
+    },
+    {
+      "id": "local-functional-observation",
+      "expected": "A local Green-backed UI check shows the requested flow without a quote POST or PII entry.",
+      "actual": "PASS: Direct Detail-to-Quote resolved the selected product to a readable label and showed policy link/version, blank name/phone/note and unselected consent. Saved/Recent D13 rehydration, selection and safe contact/FAQ states were observed locally without submitting a request.",
+      "status": "PASS",
+      "evidence_paths": ["docs/uiux-migration/g4/functional-results.md"],
+      "command": "Local backend-preview browser inspection at /products/kim-mui-dai-8-inch-d070101/quote",
+      "exit_code": 0
+    },
+    {
+      "id": "quality-and-preview-build",
+      "expected": "Affected source compiles, lints, passes focused tests and builds in backend-preview mode.",
+      "actual": "PASS: TypeScript 0 errors, ESLint 0 warnings, Vitest 14 files/62 tests, and ZMP CLI backend-preview build all passed after the final G4 changes.",
+      "status": "PASS",
+      "evidence_paths": ["docs/uiux-migration/g4/functional-results.md"],
+      "command": "npm run typecheck; npm run lint; npm run test; npm run build:backend-preview",
+      "exit_code": 0
+    },
+    {
+      "id": "visual-scroll-device-boundary",
+      "expected": "G4 does not falsely claim the G5-owned D06–D08 visual, scroll/dependency or physical Zalo-device matrix.",
+      "actual": "PASS_BOUNDARY: no G4 pixel-match or Android/iPhone Zalo PASS is claimed. D06–D08 remain mandatory G5/final-acceptance evidence and do not block this functional implementation gate.",
+      "status": "PASS",
+      "evidence_paths": ["docs/uiux-migration/g4/functional-results.md", "docs/uiux-migration/decisions.json"],
       "command": null,
       "exit_code": null
-    },
-    {
-      "id": "g4-entry-scope-boundary",
-      "expected": "Opening G4 must not itself perform an implementation, API write, fixture publication or release action.",
-      "actual": "PASS: only the G4 entry artifacts were updated. No quote/contact call, API write, storage migration, fixture, mock receipt, push, merge or deployment was performed.",
-      "status": "PASS",
-      "evidence_paths": ["docs/uiux-migration/g4/preflight.md"],
-      "command": "git status --short; read-only artifact inspection",
-      "exit_code": 0
-    },
-    {
-      "id": "d04-id-only-product-rehydration",
-      "expected": "PV-13/PV-14 may persist only product IDs, and every persisted ID must be rehydrated from current public DTO data after reload without a cached catalogue snapshot or whole-catalogue scan.",
-      "actual": "BLOCKED: Green OpenAPI provides only list filters and a slug detail route. It provides neither a documented product-ID/batch-ID lookup nor a product-ID generic-search contract. A read-only q=<published UUID> probe returned zero matching records.",
-      "status": "BLOCKED",
-      "evidence_paths": ["docs/uiux-migration/g4/contract-implementation.md", "docs/uiux-migration/evidence/g4/product-id-rehydration-check.json"],
-      "command": "GET Green /docs?api-docs.json; GET /api/v1/public/products?domain=POWER_TOOLS&limit=1; GET /api/v1/public/products?q=<published-public-uuid>&limit=5",
-      "exit_code": 0
     }
   ],
-  "unresolved_blockers": [
-    {
-      "id": "G4-D04-PRODUCT-ID-REHYDRATION",
-      "required_confirmation": "Provide and authorize a public Green product-ID or batch-ID lookup returning current public DTOs, or explicitly revise D04 to permit a defined non-PII persisted lookup key and stale-data behavior.",
-      "reason": "PV-13/PV-14 must persist IDs only but must rehydrate their current public records after reload. The documented API exposes only list filters and slug lookup."
-    }
-  ],
-  "approved_decision_ids": ["D01", "D02", "D03", "D04", "D05", "D06", "D07", "D08", "D09", "D10", "D11", "D12"],
-  "changed_files": [
-    "docs/uiux-migration/g4/preflight.md",
-    "docs/uiux-migration/g4/contract-implementation.md",
-    "docs/uiux-migration/evidence/g4/product-id-rehydration-check.json",
-    "docs/uiux-migration/gates/UIUX-G4.json",
-    "docs/uiux-migration/gates/UIUX-G4.md"
-  ],
-  "api_impact": "None. The audit found a missing public read capability; it did not alter any API, quote, contact, config or backend behavior.",
-  "data_impact": "No local-storage migration, fixture publication, quote POST, Green write, Customer/Production operation or deployment occurred.",
-  "next_prompt_allowed": false
+  "unresolved_blockers": [],
+  "approved_decision_ids": ["D01", "D02", "D03", "D04", "D05", "D06", "D07", "D08", "D09", "D10", "D11", "D12", "D13"],
+  "api_impact": "No endpoint or backend change. G4 reads the existing authorized Green D13 GET ids[] mode and retains the existing quote contract without making a new quote request.",
+  "data_impact": "Recent/Saved persist normalized public UUID IDs only; quote draft, selection, comparison and receipt are RAM only. No PII persistence, quote POST, Green write, sale/CRM write, fixture publication, Customer/Production action or deployment occurred.",
+  "next_prompt_allowed": true
 }

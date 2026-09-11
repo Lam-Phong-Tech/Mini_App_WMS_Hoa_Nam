@@ -8,7 +8,7 @@ import {
   serializeProductQuery,
   visibleText,
 } from "@/catalogue/catalogue-utils";
-import { CatalogueFailure, CatalogueSkeleton, EmptyCatalogue } from "@/components/catalogue/catalogue-feedback";
+import { CatalogueFailure, CatalogueSkeleton } from "@/components/catalogue/catalogue-feedback";
 import { AppShell } from "@/components/app-shell";
 import { SystemStatePanel } from "@/components/system-state-panel";
 import { UiIcon } from "@/components/ui-icon";
@@ -18,10 +18,25 @@ import { createLoadingState } from "@/state/system-state";
 import { ApiFailure, CategoryDto, isApiSuccess } from "@/types/public-api";
 
 const categoryRoute = getFoundationRoute("categories");
-// Use the verified shared icon set here. The installed Lucide build does not
-// expose FolderOpen reliably in the ZMP iframe bundle, which previously made
-// the category route crash once the fifth live category rendered.
-const CATEGORY_ICONS = ["hammer", "wrench", "ruler", "sliders"] as const;
+const CATEGORY_ICONS = ["hammer", "drill", "ruler", "sliders"] as const;
+
+const DOMAIN_PRESENTATION = {
+  POWER_TOOLS: {
+    icon: "drill",
+    title: "Máy và thiết bị động lực",
+    description: "Pin, điện AC, khí nén",
+  },
+  HAND_TOOLS: {
+    icon: "wrench",
+    title: "Dụng cụ cầm tay",
+    description: "Lắp ráp, đo đạc, sửa chữa",
+  },
+  ACCESSORIES: {
+    icon: "zap",
+    title: "Phụ kiện và vật tư",
+    description: "Phụ kiện tương thích cho công việc",
+  },
+} as const;
 
 type CategoryState =
   | { kind: "loading" | "success-empty"; categories: []; failure: null }
@@ -68,68 +83,104 @@ const CategoryPage = () => {
   }
 
   const selectedDomainLabel = canonicalDomains.find((domain) => domain.code === selectedDomain)?.display_name ?? "Danh mục";
+  const selectedPresentation = selectedDomain ? DOMAIN_PRESENTATION[selectedDomain] : undefined;
 
   return (
     <AppShell route={categoryRoute}>
-      <section className="catalogue-toolbar catalogue-toolbar--domains" aria-label="Chọn nhóm sản phẩm">
-        {canonicalDomains.map((domain) => (
-          <button
-            key={domain.code}
-            type="button"
-            className={domain.code === selectedDomain ? "is-active" : ""}
-            onClick={() => navigate(`/categories?domain=${domain.code}`, { animate: false })}
-          >
-            {visibleText(domain.display_name)}
-          </button>
-        ))}
-      </section>
+      <section className="category-browser" aria-labelledby="category-browser-title">
+        <header className="category-browser__heading">
+          <h1 id="category-browser-title">Danh mục sản phẩm</h1>
+          <p>Chọn nhóm dụng cụ bạn đang tìm.</p>
+        </header>
 
-      <section className="category-intro">
-        <div>
-          <span>ĐANG XEM</span>
-          <h2>{visibleText(selectedDomainLabel)}</h2>
-          <p>Danh mục chỉ hiển thị khi đã được publish từ Catalogue.</p>
+        <div className="category-browser__tabs" role="tablist" aria-label="Nhóm sản phẩm">
+          {canonicalDomains.map((domain) => {
+            const presentation = DOMAIN_PRESENTATION[domain.code];
+            const active = domain.code === selectedDomain;
+            return (
+              <button
+                key={domain.code}
+                id={`category-domain-${domain.code}`}
+                type="button"
+                role="tab"
+                aria-selected={active}
+                className={active ? "is-active" : ""}
+                onClick={() => navigate(`/categories?domain=${domain.code}`, { animate: false })}
+              >
+                <span className="category-browser__tab-icon"><UiIcon name={presentation.icon} size={23} /></span>
+                <span>{visibleText(domain.display_name)}</span>
+                {active ? <UiIcon className="category-browser__tab-check" name="check" size={18} /> : null}
+              </button>
+            );
+          })}
         </div>
-        <span className="category-intro__icon"><UiIcon name="hammer" size={28} /></span>
+
+        <div
+          className="category-browser__panel"
+          role="tabpanel"
+          aria-labelledby={selectedDomain ? `category-domain-${selectedDomain}` : undefined}
+        >
+          <section className="category-browser__overview">
+            <div className="category-browser__overview-copy">
+              <span className="category-browser__overview-icon"><UiIcon name={selectedPresentation?.icon ?? "grid"} size={28} /></span>
+              <div>
+                <h2>{visibleText(selectedDomainLabel)}</h2>
+                <p>{selectedPresentation?.description ?? "Khám phá sản phẩm công khai theo nhóm."}</p>
+              </div>
+            </div>
+            <button
+              className="category-browser__all"
+              type="button"
+              onClick={() => selectedDomain && navigate(`/products${serializeProductQuery({ domain: selectedDomain })}`, { animate: false })}
+            >
+              <UiIcon name="grid" size={20} />
+              <span>Tất cả sản phẩm</span>
+              <UiIcon name="arrowRight" size={21} />
+            </button>
+          </section>
+
+          {categoryState.kind === "success-data" ? (
+            <section className="category-browser__directory" aria-label="Khám phá theo danh mục">
+              <header>
+                <h3>Khám phá theo danh mục</h3>
+                <span>{categoryState.categories.length} danh mục</span>
+              </header>
+              <ul>
+                {categoryState.categories.map((category) => (
+                  <li key={category.code}>
+                    <button
+                      type="button"
+                      onClick={() => navigate(`/products${serializeProductQuery({ domain: category.domain, category: category.code })}`, { animate: false })}
+                    >
+                      <span className={`category-browser__directory-icon category-browser__directory-icon--${(category.sort_order - 1) % 4}`}>
+                        <UiIcon name={CATEGORY_ICONS[(category.sort_order - 1) % CATEGORY_ICONS.length]} size={20} />
+                      </span>
+                      <span>{visibleText(category.display_name)}</span>
+                      <UiIcon name="chevronRight" size={20} />
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            </section>
+          ) : null}
+        </div>
       </section>
 
       {categoryState.kind === "loading" ? <CatalogueSkeleton /> : null}
       {categoryState.failure ? <CatalogueFailure failure={categoryState.failure} onRetry={() => void loadCategories()} /> : null}
       {categoryState.kind === "success-empty" ? <>
-        <EmptyCatalogue onRetry={() => void loadCategories()} />
-        <button className="category-return" type="button" onClick={() => navigate("/home", { animate: false })}>Quay lại Trang chủ</button>
-      </> : null}
-      {categoryState.kind === "success-data" ? (
-        <section className="category-list" aria-label="Danh mục công khai">
-          <button
-            className="category-card category-card--all"
-            type="button"
-            onClick={() => navigate(`/products${serializeProductQuery({ domain: selectedDomain })}`, { animate: false })}
-          >
-            <span className="category-avatar"><UiIcon name="grid" size={21} /></span>
-            <span className="category-card__copy">
-              <strong>Tất cả sản phẩm</strong>
-              <small>Danh sách đã publish</small>
-            </span>
-            <UiIcon className="category-card__arrow" name="chevronRight" size={22} />
-          </button>
-          {categoryState.categories.map((category) => (
-            <button
-              className="category-card"
-              key={category.code}
-              type="button"
-              onClick={() => navigate(`/products${serializeProductQuery({ domain: category.domain, category: category.code })}`, { animate: false })}
-            >
-              <span className={`category-avatar category-avatar--${(category.sort_order - 1) % 4}`}><UiIcon name={CATEGORY_ICONS[(category.sort_order - 1) % CATEGORY_ICONS.length]} size={20} /></span>
-              <span className="category-card__copy">
-                <strong>{visibleText(category.display_name)}</strong>
-                <small>Tra cứu sản phẩm còn hàng</small>
-              </span>
-              <UiIcon className="category-card__arrow" name="chevronRight" size={22} />
-            </button>
-          ))}
+        <section className="category-browser__empty">
+          <span><UiIcon name="packageX" size={26} /></span>
+          <h3>Chưa có danh mục để hiển thị</h3>
+          <p>Liên hệ để được tư vấn sản phẩm phù hợp với công việc của bạn.</p>
+          <button type="button" onClick={() => navigate("/contact", { animate: false })}>Tư vấn sản phẩm <UiIcon name="arrowRight" size={18} /></button>
         </section>
-      ) : null}
+      </> : null}
+      <aside className="category-browser__help" aria-label="Hỗ trợ chọn sản phẩm">
+        <UiIcon name="helpCircle" size={20} />
+        <span>Cần giúp chọn dụng cụ?</span>
+        <button type="button" onClick={() => navigate("/contact", { animate: false })}>Liên hệ tư vấn <UiIcon name="chevronRight" size={18} /></button>
+      </aside>
     </AppShell>
   );
 };

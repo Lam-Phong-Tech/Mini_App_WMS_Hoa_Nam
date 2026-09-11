@@ -10,6 +10,7 @@ import {
   HomeSectionDto,
   MediaDto,
   ProductCardDto,
+  ProductIdLookupDto,
   ProductDetailDto,
   PublicAvailability,
   PublicConfigDto,
@@ -231,7 +232,7 @@ const mapVariants = (value: unknown): VariantDto[] =>
   });
 
 /**
- * The storefront only receives PUBLISHED + IN_STOCK rows. An item without the
+ * Public catalogue rows may be IN_STOCK or PREORDER. An item without the
  * agreed domain, category, or brand cannot be rendered safely in the public
  * Mini App taxonomy, so the adapter omits it instead of inventing a value.
  */
@@ -409,6 +410,19 @@ const mapBackendProductList = (value: unknown): BackendProductPage => {
 };
 
 export const mapBackendProductPage = mapBackendProductList;
+
+/** D13 list mode has no page_info: the server preserves ids[] request order. */
+export const mapBackendProductsByIds = (value: unknown): ProductIdLookupDto => {
+  const data = toRecord(value);
+  return {
+    items: toArray(data.items)
+      .map(mapBackendProduct)
+      .filter((product): product is ProductCardDto => Boolean(product)),
+    missing_ids: toArray(data.missing_ids)
+      .map(toText)
+      .filter((id): id is string => Boolean(id)),
+  };
+};
 
 export const mapBackendFacets = (value: unknown): FacetDto[] => {
   const data = toRecord(value);

@@ -17,6 +17,11 @@ const MENU_DESTINATIONS = [
   { label: "Trang chủ", path: "/home", icon: "home" },
   { label: "Danh mục", path: "/categories", icon: "grid" },
   { label: "Tìm kiếm", path: "/search", icon: "search" },
+  { label: "Đã xem", path: "/recent", icon: "clock" },
+  { label: "Đã lưu", path: "/saved", icon: "bookmark" },
+  { label: "Yêu cầu nhiều sản phẩm", path: "/selection", icon: "send" },
+  { label: "So sánh", path: "/compare", icon: "layers" },
+  { label: "Hướng dẫn", path: "/help", icon: "fileText" },
   { label: "Liên hệ", path: "/contact", icon: "phone" },
 ] as const satisfies ReadonlyArray<{ label: string; path: string; icon: UiIconName }>;
 
@@ -57,7 +62,10 @@ export const AppShell = ({
   const menuButtonRef = useRef<HTMLButtonElement | null>(null);
   const menuDialogRef = useRef<HTMLDivElement | null>(null);
   const shouldRestoreMenuFocus = useRef(false);
-  const showTopbarSearch = route.key === "home" || route.key === "products";
+  // The locked Preview keeps its discovery affordance available from Home,
+  // product groups and catalogue.  Search itself owns a real input below the
+  // header, so it deliberately does not receive a duplicate button here.
+  const showTopbarSearch = route.key === "home" || route.key === "categories" || route.key === "products";
 
   const closeMenu = () => setMenuOpen(false);
 
@@ -128,7 +136,7 @@ export const AppShell = ({
     >
       <div className="hn-shell hn-theme">
         <div className="hn-topbar">
-          <header className="hn-header" aria-label="Điều hướng Hoa Nam Tools">
+          <header className="hn-header hn-header--safe-area-top hn-header--zalo-capsule-safe" aria-label="Điều hướng Hoa Nam Tools">
             <button
               ref={menuButtonRef}
               className="hn-header-action"
@@ -148,10 +156,10 @@ export const AppShell = ({
               </span>
             </button>
             <button
-              className="hn-header-action"
+              className="hn-header-action hn-header-action--quote"
               type="button"
               aria-label="Chọn sản phẩm để gửi yêu cầu tư vấn"
-              onClick={() => navigate("/products", { animate: false })}
+              onClick={() => navigate("/selection", { animate: false })}
             >
               <UiIcon name="send" size={21} />
             </button>

@@ -2,15 +2,15 @@ import { Button, Sheet } from "zmp-ui";
 import { useEffect, useMemo, useState } from "react";
 
 import {
-  countActiveFilters,
   getFacetOptions,
   normalizeProductQuery,
-  resetProductFilters,
   visibleText,
 } from "@/catalogue/catalogue-utils";
+import { AvailabilityFilter, AvailabilityFilterValue } from "@/components/catalogue/availability-filter";
 import { PublicApiAdapter } from "@/services/public-api";
 import {
   ApiFailure,
+  DomainDto,
   FacetDto,
   ProductQuery,
   ProductSort,
@@ -23,14 +23,16 @@ interface FilterSheetProps {
   visible: boolean;
   api: PublicApiAdapter;
   query: ProductQuery;
+  availability: AvailabilityFilterValue;
+  domains: DomainDto[];
+  productCount?: number;
   onClose: () => void;
-  onApply: (query: ProductQuery) => void;
+  onApply: (query: ProductQuery, availability: AvailabilityFilterValue) => void;
 }
 
 const SORT_OPTIONS: Array<{ value: ProductSort; label: string }> = [
-  { value: "featured", label: "Nổi bật" },
-  { value: "updated_desc", label: "Mới cập nhật" },
-  { value: "name_asc", label: "Tên A–Z" },
+  { value: "featured", label: "Mặc định" },
+  { value: "name_asc", label: "Tên sản phẩm A–Z" },
 ];
 
 type FacetLoadState =
@@ -38,22 +40,31 @@ type FacetLoadState =
   | { kind: "success-data"; facets: FacetDto[]; failure: null }
   | { kind: "error"; facets: []; failure: ApiFailure };
 
-const updateMultiValue = (current: string[] | undefined, value: string): string[] | undefined => {
-  const next = new Set(current ?? []);
-  if (next.has(value)) next.delete(value);
-  else next.add(value);
-  const values = Array.from(next);
-  return values.length ? values : undefined;
-};
+/** The approved reference only exposes the catalogue default and A–Z order.
+ * Keep legacy updated_desc URLs valid in the data contract, but normalize this
+ * UI back to the reference default as soon as the customer changes a filter. */
+const toReferenceQuery = (query: ProductQuery): ProductQuery =>
+  normalizeProductQuery({ ...query, sort: query.sort === "updated_desc" ? "featured" : query.sort });
 
-export const FilterSheet = ({ visible, api, query, onClose, onApply }: FilterSheetProps) => {
-  const [draft, setDraft] = useState<ProductQuery>(() => normalizeProductQuery(query));
+export const FilterSheet = ({
+  visible,
+  api,
+  query,
+  availability,
+  domains,
+  productCount,
+  onClose,
+  onApply,
+}: FilterSheetProps) => {
+  const [draft, setDraft] = useState<ProductQuery>(() => toReferenceQuery(query));
+  const [draftAvailability, setDraftAvailability] = useState<AvailabilityFilterValue>(availability);
   const [facetState, setFacetState] = useState<FacetLoadState>({ kind: "idle", facets: [], failure: null });
   const [reloadToken, setReloadToken] = useState(0);
 
   useEffect(() => {
-    setDraft(normalizeProductQuery(query));
-  }, [query, visible]);
+    setDraft(toReferenceQuery(query));
+    setDraftAvailability(availability);
+  }, [availability, query, visible]);
 
   useEffect(() => {
     let current = true;
@@ -90,79 +101,79 @@ export const FilterSheet = ({ visible, api, query, onClose, onApply }: FilterShe
     return () => document.removeEventListener("keydown", onKeyDown);
   }, [onClose, visible]);
 
-  const activeCount = useMemo(() => countActiveFilters(draft), [draft]);
-  const selectValue = (facet: FacetDto, value: string) => {
-    if (facet.type === "CATEGORY") {
-      setDraft((current) => normalizeProductQuery({ ...current, category: current.category === value ? undefined : value }));
-      return;
-    }
-    if (facet.type === "POWER_SOURCE") {
-      setDraft((current) => normalizeProductQuery({ ...current, power_source: current.power_source === value ? undefined : value as ProductQuery["power_source"] }));
-      return;
-    }
-    if (facet.type === "FEATURE") {
-      setDraft((current) => normalizeProductQuery({ ...current, feature: updateMultiValue(current.feature, value) }));
-      return;
-    }
-    setDraft((current) => {
-      const existing = Array.isArray(current.spec?.[facet.code])
-        ? current.spec?.[facet.code] as string[]
-        : current.spec?.[facet.code] ? [current.spec[facet.code] as string] : undefined;
-      const nextValues = updateMultiValue(existing, value);
-      const nextSpec = { ...(current.spec ?? {}) };
-      if (nextValues?.length) nextSpec[facet.code] = nextValues;
-      else delete nextSpec[facet.code];
-      return normalizeProductQuery({ ...current, spec: nextSpec });
-    });
-  };
-
-  const isSelected = (facet: FacetDto, value: string): boolean => {
-    if (facet.type === "CATEGORY") return draft.category === value;
-    if (facet.type === "POWER_SOURCE") return draft.power_source === value;
-    if (facet.type === "FEATURE") return draft.feature?.includes(value) ?? false;
-    const specValue = draft.spec?.[facet.code];
-    return Array.isArray(specValue) ? specValue.includes(value) : specValue === value;
+  const categoryFacet = useMemo(
+    () => facetState.kind === "success-data" ? facetState.facets.find((facet) => facet.type === "CATEGORY") ?? null : null,
+    [facetState],
+  );
+  const categoryOptions = categoryFacet ? getFacetOptions(categoryFacet) : [];
+  const applyLabel = typeof productCount === "number" ? `Áp dụng · ${productCount} sản phẩm` : "Áp dụng";
+  const clearFilters = () => {
+    setDraft(normalizeProductQuery({ q: query.q, sort: "featured" }));
+    setDraftAvailability("ALL");
   };
 
   return (
-    <Sheet visible={visible} onClose={onClose} title="Lọc & sắp xếp" autoHeight unmountOnClose modalClassName="catalogue-filter-sheet">
+    <Sheet visible={visible} onClose={onClose} title="Lọc và sắp xếp" autoHeight unmountOnClose modalClassName="catalogue-filter-sheet">
       <div className="filter-sheet__content">
+        <p className="filter-sheet__intro">Chọn sản phẩm phù hợp với nhu cầu của bạn.</p>
+
         <section className="filter-group">
-          <h3>Sắp xếp</h3>
-          <div className="filter-options">
-            {SORT_OPTIONS.map((option) => (
-              <button className={draft.sort === option.value ? "is-selected" : ""} key={option.value} type="button" onClick={() => setDraft((current) => normalizeProductQuery({ ...current, sort: option.value }))}>
-                {option.label}
-              </button>
-            ))}
-          </div>
+          <h3>Trạng thái hàng</h3>
+          <AvailabilityFilter value={draftAvailability} onChange={setDraftAvailability} />
         </section>
 
-        {facetState.kind === "loading" ? <CatalogueSkeleton cards={2} /> : null}
+        <label className="filter-select-field">
+          <span>Nhóm sản phẩm</span>
+          <select
+            value={draft.domain ?? ""}
+            onChange={(event) => {
+              const domain = domains.find((candidate) => candidate.code === event.target.value)?.code;
+              setDraft((current) => normalizeProductQuery({
+                ...current,
+                domain,
+                category: undefined,
+              }));
+            }}
+          >
+            <option value="">Tất cả nhóm</option>
+            {domains.map((domain) => <option key={domain.code} value={domain.code}>{visibleText(domain.display_name)}</option>)}
+          </select>
+        </label>
+
+        <label className="filter-select-field">
+          <span>Danh mục</span>
+          <select
+            value={draft.category ?? ""}
+            disabled={facetState.kind === "loading"}
+            onChange={(event) => setDraft((current) => normalizeProductQuery({
+              ...current,
+              category: event.target.value || undefined,
+            }))}
+          >
+            <option value="">Tất cả danh mục</option>
+            {categoryOptions.map((option) => <option key={option.value} value={option.value}>{visibleText(option.label)}</option>)}
+          </select>
+        </label>
+
+        <label className="filter-select-field">
+          <span>Sắp xếp</span>
+          <select
+            value={draft.sort ?? "featured"}
+            onChange={(event) => setDraft((current) => normalizeProductQuery({
+              ...current,
+              sort: event.target.value as ProductSort,
+            }))}
+          >
+            {SORT_OPTIONS.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
+          </select>
+        </label>
+
+        {facetState.kind === "loading" ? <CatalogueSkeleton cards={1} /> : null}
         {facetState.failure ? <CatalogueFailure failure={facetState.failure} onRetry={() => setReloadToken((current) => current + 1)} /> : null}
-        {facetState.kind === "success-data" ? facetState.facets.map((facet) => (
-          <section className="filter-group" key={`${facet.type}:${facet.code}`}>
-            <h3>{visibleText(facet.label)}</h3>
-            <div className="filter-options">
-              {getFacetOptions(facet).map((option) => (
-                <button
-                  className={isSelected(facet, option.value) ? "is-selected" : ""}
-                  key={option.value}
-                  type="button"
-                  onClick={() => selectValue(facet, option.value)}
-                >
-                  {visibleText(option.label)}
-                </button>
-              ))}
-            </div>
-          </section>
-        )) : null}
 
         <footer className="filter-sheet__footer">
-          <Button variant="secondary" onClick={() => setDraft(resetProductFilters(query))}>Đặt lại</Button>
-          <Button variant="primary" onClick={() => onApply(normalizeProductQuery(draft))}>
-            Áp dụng{activeCount ? ` (${activeCount})` : ""}
-          </Button>
+          <Button variant="secondary" onClick={clearFilters}>Xóa bộ lọc</Button>
+          <Button variant="primary" onClick={() => onApply(toReferenceQuery(draft), draftAvailability)}>{applyLabel}</Button>
         </footer>
       </div>
     </Sheet>

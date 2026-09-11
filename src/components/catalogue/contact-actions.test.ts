@@ -36,4 +36,9 @@ describe("config-driven contact actions", () => {
       hotline_fallback: { display: "1800 0000", tel: "1800 0000" },
     })).toEqual({ display: "1800 0000", tel: "1800 0000" });
   });
+
+  it("keeps malformed or non-HTTPS OA configuration unavailable", () => {
+    expect(getContactTargets(config("0901 234 567", "javascript:alert(1)")).oaUrl).toBeNull();
+    expect(getContactTargets(config("0901 234 567", "http://zalo.me/unsafe")).oaUrl).toBeNull();
+  });
 });

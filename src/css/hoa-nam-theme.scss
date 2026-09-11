@@ -79,8 +79,11 @@
   --hn-canvas: var(--hn-near-white);
   --hn-radius: 8px;
   --hn-shadow: var(--hn-card-shadow);
-  --hn-safe-top: env(safe-area-inset-top, 0px);
-  --hn-safe-bottom: env(safe-area-inset-bottom, 0px);
+  /* ZaUI maps these tokens to the WebView's CSS safe-area environment.
+     Keep the native CSS fallback so this stylesheet also works before ZaUI's
+     global styles load and in ordinary browser previews. */
+  --hn-safe-top: var(--zaui-safe-area-inset-top, env(safe-area-inset-top, 0px));
+  --hn-safe-bottom: var(--zaui-safe-area-inset-bottom, env(safe-area-inset-bottom, 0px));
   --hn-touch: 44px;
   --hn-control-height: 48px;
 }
@@ -156,9 +159,56 @@ body,
   grid-template-columns: 48px minmax(0, 1fr) 48px;
   align-items: center;
   gap: 8px;
-  min-height: calc(68px + var(--hn-safe-top));
   margin: 0;
-  padding: var(--hn-safe-top) 16px 8px;
+}
+
+/* The content header is padded by the inset exposed by the current Zalo
+   WebView, plus a small breathing gap below the status bar. */
+.hn-header--safe-area-top {
+  min-height: calc(68px + var(--hn-safe-top) + 8px);
+  padding: calc(var(--hn-safe-top) + 8px) 16px 8px;
+}
+
+/* Zalo's native capsule is painted in the top-right corner above an embedded
+   Mini App.  Reserve its measured 90px rail on compact layouts so the quote
+   action cannot be covered; the grid automatically keeps menu, logo and
+   action on a single baseline inside the remaining inline space. */
+@media (max-width: 700px) {
+  .hn-header.hn-header--zalo-capsule-safe {
+    padding-right: 90px;
+  }
+}
+
+/* A 320–380px layout cannot fit the full 48px controls, wordmark and capsule
+   rail at once.  Keep touch targets valid while letting the wordmark shrink
+   inside its grid track instead of spilling into either control. */
+@media (max-width: 380px) {
+  .hn-header.hn-header--zalo-capsule-safe {
+    grid-template-columns: 44px minmax(0, 1fr) 44px;
+    gap: 6px;
+    padding-left: 12px;
+  }
+
+  .hn-header--zalo-capsule-safe .hn-header-action {
+    width: 44px;
+    height: 44px;
+    min-height: 44px;
+  }
+
+  .hn-header--zalo-capsule-safe .hn-wordmark {
+    width: 100%;
+    gap: 8px;
+  }
+}
+
+@media (max-width: 340px) {
+  .hn-header--zalo-capsule-safe .hn-wordmark {
+    gap: 0;
+  }
+
+  .hn-header--zalo-capsule-safe .hn-wordmark__brand {
+    display: none;
+  }
 }
 
 .hn-header-action {
@@ -180,10 +230,6 @@ body,
   color: var(--hn-primary-dark);
   border-color: var(--hn-primary);
   background: var(--hn-primary-a06);
-}
-
-.hn-header-action {
-  transform: translateY(4px);
 }
 
 .hn-wordmark {
@@ -728,6 +774,38 @@ body,
   background: var(--hn-surface);
 }
 
+/* Each product card has three independent overlays.  The former layout placed
+   the availability chip and the save control at the same top-right anchor,
+   which made them cover one another in the two-column mobile grid.  Keep the
+   status clear on the left and reserve a single action rail on the right. */
+.product-card .availability-chip {
+  position: absolute;
+  z-index: 1;
+  top: 8px;
+  right: auto;
+  left: 8px;
+  max-width: calc(100% - 64px);
+  margin: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.product-card__save,
+.product-card__compare {
+  position: absolute;
+  z-index: 2;
+  right: 8px;
+}
+
+.product-card__save {
+  top: 8px;
+}
+
+.product-card__compare {
+  top: 52px;
+}
+
 .product-card__name {
   overflow: hidden;
   font-size: 15px;
@@ -981,21 +1059,40 @@ body,
   }
 
   .home-hero.hero-card {
-    min-height: 260px;
-    grid-template-columns: minmax(0, 1.28fr) minmax(92px, 0.72fr);
+    /* Keep the mobile hero as compact as the approved browser mockup.  Give
+       the copy enough width for its deliberate two-line headline.  The image
+       is decorative on mobile, so it is layered in the lower-right instead
+       of taking a grid column and making every copy line wrap twice. */
+    display: block;
+    min-height: 272px;
   }
 
   .home-hero .hero-copy {
-    padding: 24px 20px;
+    padding: 22px 20px;
   }
 
   .home-hero h1 {
-    font-size: clamp(26px, 7.9vw, 38px);
+    font-size: clamp(27px, 6.8vw, 33px);
+    line-height: 1.12;
   }
 
   .home-hero .hero-copy > p:not(.hero-card__eyebrow) {
     max-width: 30ch;
-    font-size: 14px;
+    font-size: 13px;
+    line-height: 1.55;
+  }
+
+  .home-hero .hn-button {
+    margin-top: 16px;
+  }
+
+  .home-hero .hero-visual {
+    position: absolute;
+    z-index: 0;
+    width: 126px;
+    right: 0;
+    top: 78px;
+    bottom: 0;
   }
 
   .home-hero .hero-visual::before {
@@ -1114,6 +1211,448 @@ body,
   }
 }
 
+/* UIUX-G5: category browser mirrors the locked Designer group's hierarchy.
+   The items themselves stay exclusively sourced from Green public API. */
+.hn-page--categories .hn-content {
+  gap: 20px;
+}
+
+.category-browser {
+  display: grid;
+  gap: 20px;
+}
+
+.category-browser__heading h1 {
+  margin: 0;
+  color: var(--hn-text-primary);
+  font-size: 30px;
+  font-weight: 700;
+  letter-spacing: -0.035em;
+  line-height: 1.25;
+}
+
+.category-browser__heading p {
+  margin: 8px 0 0;
+  color: var(--hn-text-secondary);
+  font-size: 16px;
+  line-height: 1.5;
+}
+
+.category-browser__tabs {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.category-browser__tabs > button {
+  position: relative;
+  display: flex;
+  min-width: 0;
+  min-height: 82px;
+  align-items: center;
+  gap: 14px;
+  padding: 16px 20px;
+  color: var(--hn-text-muted);
+  font: inherit;
+  font-size: 16px;
+  font-weight: 600;
+  line-height: 1.4;
+  text-align: left;
+  cursor: pointer;
+  border: 1px solid var(--hn-border);
+  border-radius: 14px;
+  background: var(--hn-surface);
+  box-shadow: var(--hn-card-shadow);
+}
+
+.category-browser__tabs > button:is(:hover, :active) {
+  border-color: var(--hn-primary-a28);
+  background: var(--hn-primary-a06);
+}
+
+.category-browser__tabs > button.is-active {
+  color: var(--hn-surface);
+  border-color: var(--hn-primary);
+  background: var(--hn-gradient-primary);
+  box-shadow: none;
+}
+
+.category-browser__tab-icon {
+  display: grid;
+  width: 44px;
+  height: 44px;
+  flex: 0 0 44px;
+  place-items: center;
+  color: var(--hn-primary);
+  border-radius: 12px;
+  background: var(--hn-support-a08);
+}
+
+.category-browser__tabs > button.is-active .category-browser__tab-icon {
+  color: var(--hn-primary);
+  background: var(--hn-surface);
+}
+
+.category-browser__tab-check {
+  margin-left: auto;
+}
+
+.category-browser__panel {
+  display: grid;
+  grid-template-columns: minmax(240px, 0.75fr) minmax(0, 1.6fr);
+  align-items: start;
+  gap: 20px;
+}
+
+.category-browser__overview {
+  padding: 24px;
+  border: 1px solid var(--hn-border);
+  border-radius: 16px;
+  background: var(--hn-gradient-hero);
+}
+
+.category-browser__overview-copy {
+  display: flex;
+  align-items: flex-start;
+  gap: 16px;
+}
+
+.category-browser__overview-icon {
+  display: grid;
+  width: 60px;
+  height: 60px;
+  flex: 0 0 60px;
+  place-items: center;
+  color: var(--hn-primary);
+  border-radius: 14px;
+  background: var(--hn-surface);
+  box-shadow: var(--hn-card-shadow);
+}
+
+.category-browser__overview h2 {
+  margin: 0;
+  color: var(--hn-text-primary);
+  font-size: 22px;
+  font-weight: 700;
+  line-height: 1.4;
+}
+
+.category-browser__overview p {
+  margin: 8px 0 0;
+  color: var(--hn-text-secondary);
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.category-browser__all {
+  display: flex;
+  width: 100%;
+  min-height: 48px;
+  align-items: center;
+  gap: 10px;
+  margin-top: 24px;
+  padding: 12px 16px;
+  color: var(--hn-primary);
+  font: inherit;
+  font-size: 15px;
+  font-weight: 700;
+  cursor: pointer;
+  border: 1px solid var(--hn-primary-a28);
+  border-radius: 10px;
+  background: var(--hn-surface);
+}
+
+.category-browser__all > svg:last-child {
+  margin-left: auto;
+}
+
+.category-browser__all:is(:hover, :active) {
+  border-color: var(--hn-primary);
+  background: var(--hn-primary-a06);
+}
+
+.category-browser__directory {
+  overflow: hidden;
+  border: 1px solid var(--hn-border);
+  border-radius: 16px;
+  background: var(--hn-surface);
+  box-shadow: var(--hn-card-shadow);
+}
+
+.category-browser__directory > header {
+  display: flex;
+  min-height: 72px;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 14px 20px;
+  border-bottom: 1px solid var(--hn-border);
+}
+
+.category-browser__directory h3 {
+  margin: 0;
+  color: var(--hn-text-primary);
+  font-size: 16px;
+  font-weight: 700;
+}
+
+.category-browser__directory header span {
+  color: var(--hn-text-muted);
+  font-size: 13px;
+}
+
+.category-browser__directory ul {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.category-browser__directory li + li {
+  border-top: 1px solid var(--hn-border);
+}
+
+.category-browser__directory li > button {
+  display: flex;
+  width: 100%;
+  min-height: 76px;
+  align-items: center;
+  gap: 14px;
+  padding: 16px 20px;
+  color: var(--hn-text-primary);
+  font: inherit;
+  font-size: 16px;
+  font-weight: 600;
+  line-height: 1.45;
+  text-align: left;
+  cursor: pointer;
+  border: 0;
+  background: var(--hn-surface);
+}
+
+.category-browser__directory li > button > span:nth-child(2) {
+  min-width: 0;
+  flex: 1 1 auto;
+}
+
+.category-browser__directory li > button > svg:last-child {
+  flex: 0 0 auto;
+  color: var(--hn-text-muted);
+}
+
+.category-browser__directory li > button:is(:hover, :active) {
+  background: var(--hn-primary-a06);
+}
+
+.category-browser__directory-icon {
+  display: grid;
+  width: 40px;
+  height: 40px;
+  flex: 0 0 40px;
+  place-items: center;
+  color: var(--hn-primary);
+  border-radius: 10px;
+  background: var(--hn-support-a08);
+}
+
+.category-browser__directory-icon--1,
+.category-browser__directory-icon--3 {
+  background: var(--hn-primary-a06);
+}
+
+.category-browser__empty {
+  display: grid;
+  justify-items: center;
+  padding: 40px 24px;
+  text-align: center;
+  border: 1px solid var(--hn-border);
+  border-radius: 16px;
+  background: var(--hn-surface);
+}
+
+.category-browser__empty > span {
+  display: grid;
+  width: 56px;
+  height: 56px;
+  place-items: center;
+  color: var(--hn-primary);
+  border-radius: 16px;
+  background: var(--hn-support-a08);
+}
+
+.category-browser__empty h3 {
+  margin: 16px 0 0;
+  color: var(--hn-text-primary);
+  font-size: 18px;
+}
+
+.category-browser__empty p {
+  max-width: 38ch;
+  margin: 8px 0 0;
+  color: var(--hn-text-secondary);
+  font-size: 14px;
+  line-height: 1.6;
+}
+
+.category-browser__empty button,
+.category-browser__help button {
+  display: inline-flex;
+  min-height: 44px;
+  align-items: center;
+  gap: 4px;
+  padding: 8px;
+  color: var(--hn-primary);
+  font: inherit;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+  border: 0;
+  background: transparent;
+}
+
+.category-browser__empty button {
+  margin-top: 12px;
+}
+
+.category-browser__help {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  margin-top: -8px;
+  color: var(--hn-text-muted);
+  font-size: 14px;
+}
+
+@media (max-width: 900px) {
+  .category-browser__panel {
+    grid-template-columns: 1fr;
+    gap: 16px;
+  }
+
+  .category-browser__overview {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+  }
+
+  .category-browser__all {
+    width: auto;
+    margin-top: 0;
+  }
+}
+
+@media (max-width: 700px) {
+  .hn-page--categories .hn-content {
+    gap: 16px;
+    padding-top: 24px;
+  }
+
+  .category-browser {
+    gap: 16px;
+  }
+
+  .category-browser__heading h1 {
+    font-size: 24px;
+  }
+
+  .category-browser__heading p {
+    margin-top: 6px;
+    font-size: 14px;
+  }
+
+  .category-browser__tabs {
+    gap: 8px;
+  }
+
+  .category-browser__tabs > button {
+    min-height: 110px;
+    flex-direction: column;
+    justify-content: flex-start;
+    gap: 8px;
+    padding: 12px 6px;
+    font-size: 14px;
+    text-align: center;
+  }
+
+  .category-browser__tab-icon {
+    width: 40px;
+    height: 40px;
+    flex-basis: 40px;
+  }
+
+  .category-browser__tab-check {
+    display: none;
+  }
+
+  .category-browser__overview {
+    display: block;
+    padding: 16px;
+    border-radius: 14px;
+  }
+
+  .category-browser__overview-copy {
+    gap: 14px;
+  }
+
+  .category-browser__overview-icon {
+    width: 48px;
+    height: 48px;
+    flex-basis: 48px;
+    border-radius: 12px;
+  }
+
+  .category-browser__overview h2 {
+    font-size: 17px;
+  }
+
+  .category-browser__overview p {
+    margin-top: 4px;
+    font-size: 14px;
+  }
+
+  .category-browser__all {
+    width: 100%;
+    min-height: 48px;
+    margin-top: 16px;
+    padding: 10px 12px;
+  }
+
+  .category-browser__directory {
+    border-radius: 14px;
+  }
+
+  .category-browser__directory > header {
+    min-height: 62px;
+    padding: 12px 16px;
+  }
+
+  .category-browser__directory h3 {
+    font-size: 15px;
+  }
+
+  .category-browser__directory li > button {
+    min-height: 70px;
+    gap: 12px;
+    padding: 14px 16px;
+    font-size: 15px;
+  }
+
+  .category-browser__directory-icon {
+    width: 36px;
+    height: 36px;
+    flex-basis: 36px;
+    border-radius: 9px;
+  }
+
+  .category-browser__help {
+    gap: 4px;
+    margin-top: -4px;
+    font-size: 14px;
+  }
+}
+
 @media (max-width: 359px) {
   .hn-header {
     padding-right: 12px;
@@ -1156,4 +1695,1912 @@ body,
     animation-duration: 0.01ms !important;
     animation-iteration-count: 1 !important;
   }
+}
+
+/* UIUX-G5: public-config contact surface.  No runtime hotline/OA/support
+   value is copied from the Designer fixture. */
+.contact-screen {
+  display: grid;
+  gap: 24px;
+  width: min(100%, 1030px);
+  margin: 8px auto 0;
+}
+
+.contact-screen__kicker,
+.contact-screen__card-heading {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.contact-screen__kicker {
+  color: var(--hn-primary);
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.09em;
+}
+
+.contact-screen__intro h1 {
+  margin: 10px 0 0;
+  color: var(--hn-text-primary);
+  font-size: 32px;
+  font-weight: 700;
+  letter-spacing: -0.035em;
+  line-height: 1.2;
+}
+
+.contact-screen__intro p {
+  margin: 10px 0 0;
+  color: var(--hn-text-secondary);
+  font-size: 15px;
+}
+
+.contact-screen__methods {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.contact-screen__card {
+  display: flex;
+  min-width: 0;
+  min-height: 248px;
+  flex-direction: column;
+  align-items: flex-start;
+  padding: 24px;
+  border: 1px solid var(--hn-border);
+  border-radius: 16px;
+  background: var(--hn-surface);
+}
+
+.contact-screen__card--primary {
+  border-color: var(--hn-primary-a28);
+  background: var(--hn-gradient-hero);
+}
+
+.contact-screen__card-heading {
+  color: var(--hn-primary);
+}
+
+.contact-screen__card-heading h2 {
+  margin: 0;
+  color: var(--hn-text-primary);
+  font-size: 18px;
+  font-weight: 700;
+  line-height: 1.35;
+}
+
+.contact-screen__icon {
+  display: grid;
+  width: 46px;
+  height: 46px;
+  flex: 0 0 46px;
+  place-items: center;
+  color: var(--hn-surface);
+  border-radius: 12px;
+  background: var(--hn-gradient-primary);
+}
+
+.contact-screen__icon--neutral {
+  color: var(--hn-primary);
+  background: var(--hn-support-a08);
+}
+
+.contact-screen__card > p {
+  margin: 16px 0 0;
+  color: var(--hn-text-secondary);
+  font-size: 14px;
+  line-height: 1.65;
+}
+
+.contact-screen__phone {
+  display: inline-flex;
+  margin-top: 18px;
+  color: var(--hn-primary);
+  font-size: 21px;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  text-decoration: none;
+}
+
+.contact-screen__unavailable {
+  display: inline-flex;
+  margin-top: 18px;
+  padding: 5px 8px;
+  color: var(--hn-text-secondary);
+  font-size: 12px;
+  font-weight: 600;
+  border: 1px solid var(--hn-border);
+  border-radius: 999px;
+  background: var(--hn-near-white);
+}
+
+.contact-screen__button {
+  display: inline-flex;
+  min-height: 46px;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  margin-top: auto;
+  padding: 10px 14px;
+  color: var(--hn-primary);
+  font: inherit;
+  font-size: 14px;
+  font-weight: 700;
+  text-decoration: none;
+  cursor: pointer;
+  border: 1px solid var(--hn-primary);
+  border-radius: 10px;
+  background: var(--hn-surface);
+}
+
+.contact-screen__button--primary {
+  color: var(--hn-surface);
+  background: var(--hn-gradient-primary);
+  box-shadow: var(--hn-card-shadow);
+}
+
+.contact-screen__button--tonal {
+  border-color: transparent;
+  background: var(--hn-primary-a06);
+}
+
+.contact-screen__button:is(:hover, :active),
+.contact-screen__browse:is(:hover, :active),
+.contact-screen__privacy:is(:hover, :active) {
+  color: var(--hn-primary-dark);
+  border-color: var(--hn-primary-dark);
+}
+
+.contact-screen__button--primary:is(:hover, :active) {
+  color: var(--hn-surface);
+}
+
+.contact-screen__hours {
+  min-height: 0;
+}
+
+.contact-screen__hours dl {
+  width: 100%;
+  margin: 18px 0 0;
+}
+
+.contact-screen__hours dl > div {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 13px 0;
+  color: var(--hn-text-secondary);
+  font-size: 14px;
+  border-top: 1px solid var(--hn-border);
+}
+
+.contact-screen__hours dt,
+.contact-screen__hours dd {
+  margin: 0;
+}
+
+.contact-screen__hours dd {
+  flex: 0 0 auto;
+  color: var(--hn-text-primary);
+  font-weight: 700;
+}
+
+.contact-screen__browse,
+.contact-screen__privacy {
+  display: inline-flex;
+  width: fit-content;
+  min-height: 44px;
+  align-items: center;
+  gap: 4px;
+  margin: -8px 0 0;
+  padding: 8px 0;
+  color: var(--hn-primary);
+  font: inherit;
+  font-size: 14px;
+  font-weight: 700;
+  text-decoration: none;
+  cursor: pointer;
+  border: 0;
+  background: transparent;
+}
+
+.contact-screen__privacy {
+  margin-top: -24px;
+  color: var(--hn-text-muted);
+  font-size: 13px;
+  font-weight: 600;
+}
+
+@media (max-width: 900px) {
+  .contact-screen__methods {
+    grid-template-columns: 1fr;
+  }
+
+  .contact-screen__card {
+    min-height: 0;
+  }
+
+  .contact-screen__button {
+    margin-top: 20px;
+  }
+}
+
+@media (max-width: 700px) {
+  .contact-screen {
+    gap: 16px;
+    margin-top: 0;
+  }
+
+  .contact-screen__intro h1 {
+    font-size: 25px;
+  }
+
+  .contact-screen__intro p {
+    font-size: 14px;
+  }
+
+  .contact-screen__methods {
+    gap: 12px;
+  }
+
+  .contact-screen__card {
+    padding: 18px 16px;
+    border-radius: 14px;
+  }
+
+  .contact-screen__card-heading h2 {
+    font-size: 17px;
+  }
+
+  .contact-screen__phone {
+    font-size: 20px;
+  }
+
+  .contact-screen__hours dl > div {
+    padding: 12px 0;
+    font-size: 13px;
+  }
+}
+
+/* Catalogue and search visual hierarchy follows the Designer screen while
+   filters remain limited to fields supported by the public API contract. */
+.catalogue-screen {
+  display: grid;
+  gap: 16px;
+}
+
+.catalogue-screen__back {
+  display: inline-flex;
+  width: fit-content;
+  min-height: 44px;
+  align-items: center;
+  gap: 6px;
+  margin: -8px 0 0;
+  padding: 8px 0;
+  color: var(--hn-primary);
+  font: inherit;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+  border: 0;
+  background: transparent;
+}
+
+.catalogue-screen__title > span {
+  color: var(--hn-primary);
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+}
+
+.catalogue-screen__title h1 {
+  margin: 8px 0 0;
+  color: var(--hn-text-primary);
+  font-size: 30px;
+  font-weight: 700;
+  letter-spacing: -0.035em;
+  line-height: 1.2;
+}
+
+.catalogue-screen__title p {
+  margin: 10px 0 0;
+  color: var(--hn-text-secondary);
+  font-size: 15px;
+  line-height: 1.6;
+}
+
+.catalogue-screen__toolbar {
+  display: flex;
+  min-height: 48px;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.catalogue-screen__toolbar > button {
+  display: inline-flex;
+  min-height: 46px;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 14px;
+  color: var(--hn-primary);
+  font: inherit;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+  border: 1px solid var(--hn-primary);
+  border-radius: 10px;
+  background: var(--hn-surface);
+}
+
+.catalogue-screen__toolbar > button:is(:hover, :active) {
+  color: var(--hn-primary-dark);
+  background: var(--hn-primary-a06);
+}
+
+.catalogue-screen__toolbar output {
+  color: var(--hn-text-muted);
+  font-size: 14px;
+  white-space: nowrap;
+}
+
+.catalogue-screen__availability {
+  margin: -8px 0 0;
+  color: var(--hn-text-muted);
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+@media (max-width: 700px) {
+  .catalogue-screen {
+    gap: 12px;
+  }
+
+  .catalogue-screen__back {
+    min-height: 40px;
+    margin-top: -6px;
+    font-size: 13px;
+  }
+
+  .catalogue-screen__title h1 {
+    font-size: 24px;
+  }
+
+  .catalogue-screen__title p {
+    margin-top: 8px;
+    font-size: 14px;
+  }
+
+  .catalogue-screen__toolbar > button {
+    min-height: 44px;
+    padding: 9px 12px;
+    font-size: 13px;
+  }
+
+  .catalogue-screen__toolbar output {
+    font-size: 13px;
+  }
+}
+
+.search-screen__title > span {
+  color: var(--hn-primary);
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+}
+
+.search-screen__title h1 {
+  margin: 8px 0 0;
+  color: var(--hn-text-primary);
+  font-size: 30px;
+  font-weight: 700;
+  letter-spacing: -0.035em;
+  line-height: 1.2;
+}
+
+.search-screen__title p {
+  margin: 10px 0 0;
+  color: var(--hn-text-secondary);
+  font-size: 15px;
+}
+
+.search-screen__toolbar {
+  display: flex;
+  min-height: 46px;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.search-screen__toolbar > button {
+  display: inline-flex;
+  min-height: 46px;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 14px;
+  color: var(--hn-primary);
+  font: inherit;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+  border: 1px solid var(--hn-primary);
+  border-radius: 10px;
+  background: var(--hn-surface);
+}
+
+.search-screen__toolbar > button:is(:hover, :active) {
+  color: var(--hn-primary-dark);
+  background: var(--hn-primary-a06);
+}
+
+.search-screen__toolbar output {
+  color: var(--hn-text-muted);
+  font-size: 14px;
+  white-space: nowrap;
+}
+
+@media (max-width: 700px) {
+  .search-screen__title h1 {
+    font-size: 24px;
+  }
+
+  .search-screen__title p {
+    margin-top: 8px;
+    font-size: 14px;
+  }
+
+  .search-screen__toolbar > button {
+    min-height: 44px;
+    padding: 9px 12px;
+    font-size: 13px;
+  }
+
+  .search-screen__toolbar output {
+    font-size: 13px;
+  }
+}
+
+/* Quote screen: spatial layout from the locked Designer; submission,
+   idempotency, consent and public-config gating stay in the existing logic. */
+.quote-screen {
+  width: min(100%, 1030px);
+  margin: 0 auto;
+}
+
+.quote-screen__back {
+  display: inline-flex;
+  min-height: 44px;
+  align-items: center;
+  gap: 6px;
+  margin: -8px 0 0;
+  padding: 8px 0;
+  color: var(--hn-primary);
+  font: inherit;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+  border: 0;
+  background: transparent;
+}
+
+.quote-screen__heading {
+  margin: 8px 0 28px;
+}
+
+.quote-screen__heading > span {
+  color: var(--hn-primary);
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+}
+
+.quote-screen__heading h1 {
+  margin: 8px 0 0;
+  color: var(--hn-text-primary);
+  font-size: 32px;
+  font-weight: 700;
+  letter-spacing: -0.035em;
+  line-height: 1.2;
+}
+
+.quote-screen__heading p {
+  margin: 10px 0 0;
+  color: var(--hn-text-secondary);
+  font-size: 15px;
+  line-height: 1.6;
+}
+
+.quote-screen__layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1.4fr) minmax(260px, 0.85fr);
+  align-items: start;
+  gap: 24px;
+}
+
+.quote-screen__layout > .system-state {
+  grid-column: 1 / -1;
+}
+
+.quote-form,
+.quote-context {
+  min-width: 0;
+  border: 1px solid var(--hn-border);
+  border-radius: 16px;
+  background: var(--hn-surface);
+}
+
+.quote-form {
+  display: grid;
+  order: 1;
+  gap: 18px;
+  padding: 28px;
+}
+
+.quote-form__heading h2,
+.quote-context h2 {
+  margin: 0;
+  color: var(--hn-text-primary);
+  font-size: 18px;
+  font-weight: 700;
+}
+
+.quote-form__heading p {
+  margin: 6px 0 0;
+  color: var(--hn-text-muted);
+  font-size: 13px;
+}
+
+.quote-form > label {
+  display: grid;
+  gap: 8px;
+  color: var(--hn-text-primary);
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.quote-form input:not([type="checkbox"]),
+.quote-form textarea {
+  display: block;
+  width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
+  min-height: 48px;
+  padding: 12px 14px;
+  color: var(--hn-text-primary);
+  font: inherit;
+  font-size: 16px;
+  font-weight: 400;
+  line-height: 1.5;
+  border: 1px solid var(--hn-border);
+  border-radius: 10px;
+  background: var(--hn-surface);
+}
+
+.quote-form textarea {
+  min-height: 120px;
+  resize: vertical;
+}
+
+.quote-form input:not([type="checkbox"]):focus,
+.quote-form textarea:focus {
+  border-color: var(--hn-primary);
+  outline: 0;
+  box-shadow: var(--hn-focus-ring);
+}
+
+.quote-form .field-hint {
+  justify-self: end;
+  margin-top: -4px;
+  color: var(--hn-text-muted);
+  font-size: 12px;
+  font-weight: 400;
+}
+
+.quote-form .consent-field {
+  display: grid;
+  grid-template-columns: 20px minmax(0, 1fr);
+  align-items: start;
+  gap: 10px;
+  margin-top: 2px;
+  color: var(--hn-text-secondary);
+  font-size: 13px;
+  font-weight: 400;
+  line-height: 1.6;
+}
+
+.quote-form .consent-field input {
+  width: 18px;
+  height: 18px;
+  margin: 2px 0 0;
+  accent-color: var(--hn-primary);
+}
+
+.quote-form .consent-field .field-error {
+  grid-column: 2;
+}
+
+.quote-context {
+  position: sticky;
+  top: 100px;
+  display: grid;
+  order: 2;
+  gap: 12px;
+  padding: 24px;
+}
+
+.quote-context__count {
+  margin: -6px 0 0;
+  color: var(--hn-text-muted);
+  font-size: 13px;
+}
+
+.quote-context .quote-selected-items {
+  margin: 0;
+  border-top: 1px solid var(--hn-border);
+}
+
+.quote-context .quote-selected-items li {
+  padding: 12px 0;
+  color: var(--hn-text-secondary);
+  border: 0;
+  border-bottom: 1px solid var(--hn-border);
+  border-radius: 0;
+}
+
+.quote-context .quote-edit-selection {
+  justify-self: start;
+  min-height: 44px;
+  padding: 9px 0;
+  color: var(--hn-primary);
+  font: inherit;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+  border: 0;
+  background: transparent;
+}
+
+.quote-context .privacy-link {
+  width: fit-content;
+  color: var(--hn-primary);
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.quote-form .quote-submit {
+  width: 100%;
+  min-height: 50px;
+  margin-top: 2px;
+  color: var(--hn-surface);
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+  border: 1px solid var(--hn-primary);
+  border-radius: 10px;
+  background: var(--hn-gradient-primary);
+  box-shadow: var(--hn-card-shadow);
+}
+
+.quote-form .quote-submit:disabled {
+  color: var(--hn-text-muted);
+  cursor: not-allowed;
+  border-color: var(--hn-border);
+  background: var(--hn-near-white);
+  box-shadow: none;
+}
+
+@media (max-width: 700px) {
+  .quote-screen__heading {
+    margin: 4px 0 20px;
+  }
+
+  .quote-screen__heading h1 {
+    font-size: 25px;
+  }
+
+  .quote-screen__heading p {
+    font-size: 14px;
+  }
+
+  .quote-screen__layout {
+    grid-template-columns: 1fr;
+    gap: 14px;
+  }
+
+  .quote-context {
+    position: static;
+    order: -1;
+    padding: 18px 16px;
+    border-radius: 14px;
+  }
+
+  .quote-form {
+    gap: 16px;
+    padding: 22px 16px;
+    border-radius: 14px;
+  }
+}
+
+/* Local-only library state is presented with the same heading/card system as
+   the Designer screens; no catalogue or PII is stored in these lists. */
+.library-heading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.library-heading h1 {
+  margin: 6px 0 0;
+  color: var(--hn-text-primary);
+  font-size: 30px;
+  font-weight: 700;
+  letter-spacing: -0.035em;
+  line-height: 1.2;
+}
+
+.library-heading__description {
+  max-width: 52ch;
+  margin: 10px 0 0;
+  color: var(--hn-text-secondary);
+  font-size: 14px;
+  line-height: 1.6;
+}
+
+.library-heading__actions {
+  display: flex;
+  min-height: 44px;
+  flex: 0 0 auto;
+  align-items: center;
+  gap: 10px;
+}
+
+.library-heading__actions output {
+  color: var(--hn-text-muted);
+  font-size: 13px;
+  white-space: nowrap;
+}
+
+.library-clear {
+  min-height: 40px;
+  padding: 8px;
+  color: var(--hn-primary);
+  font: inherit;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  border: 0;
+  background: transparent;
+}
+
+@media (max-width: 700px) {
+  .library-heading {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 12px;
+  }
+
+  .library-heading h1 {
+    font-size: 24px;
+  }
+
+  .library-heading__description {
+    font-size: 14px;
+  }
+
+  .library-heading__actions {
+    align-self: start;
+  }
+}
+
+/* Embedded iPhone WebViews have a much narrower layout viewport than the
+   desktop preview.  An implicit CSS-grid track uses its children's automatic
+   minimum size; on Home, the hero/product grids could therefore enlarge that
+   track to 460px at a 393px viewport.  The page hid the resulting horizontal
+   scroll, but the right-hand content was still rendered off-screen.  Keep the
+   single content track explicitly shrinkable and constrain every direct
+   screen section to its available inline size. */
+.hn-content {
+  max-width: 1280px;
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.hn-content > * {
+  min-width: 0;
+  max-width: 100%;
+}
+
+/* Catalogue G6 -------------------------------------------------------------
+   This is the shared mobile catalogue silhouette: information always follows
+   the same sequence (image → model → name → detail action) and never relies
+   on a card's implicit minimum width. It deliberately leaves the app header
+   untouched so its Zalo safe-area and Capsule offsets remain in force. */
+.product-card {
+  position: relative;
+  overflow: hidden;
+  min-width: 0;
+  border: 1px solid var(--hn-border);
+  border-radius: 14px;
+  background: var(--hn-surface);
+  box-shadow: none;
+}
+
+.product-card__link {
+  display: grid;
+  width: 100%;
+  min-width: 0;
+  gap: 0;
+  padding: 0;
+  color: var(--hn-text-primary);
+  text-align: left;
+  background: var(--hn-surface);
+}
+
+.product-card__image {
+  width: 100%;
+  height: 184px;
+  min-height: 0;
+  margin: 0;
+  border: 0;
+  border-bottom: 1px solid var(--hn-border);
+  border-radius: 0;
+  background: var(--hn-surface);
+}
+
+.product-card__identity {
+  display: block;
+  min-height: 18px;
+  margin: 0;
+  padding: 14px 13px 0;
+  overflow: hidden;
+  color: var(--hn-primary);
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.025em;
+  line-height: 1.45;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.product-card__name {
+  display: -webkit-box;
+  min-height: 44px;
+  margin: 0;
+  padding: 6px 13px 0;
+  overflow: hidden;
+  color: var(--hn-text-primary);
+  font-size: 15px;
+  font-weight: 700;
+  letter-spacing: -0.015em;
+  line-height: 1.42;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+}
+
+.product-card__cta {
+  display: flex;
+  min-height: 47px;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin: 8px 13px 0;
+  color: var(--hn-primary);
+  font-size: 13px;
+  font-weight: 800;
+  line-height: 1;
+}
+
+.product-card__cta svg {
+  flex: 0 0 auto;
+}
+
+.product-card__code {
+  display: none;
+}
+
+.product-card .availability-chip {
+  top: 10px;
+  left: 10px;
+  max-width: calc(100% - 54px);
+  padding: 5px 8px;
+  color: #087a45;
+  font-size: 11px;
+  font-weight: 800;
+  border-color: #c7edda;
+  background: rgba(255, 255, 255, 0.96);
+}
+
+.product-card .availability-chip--preorder {
+  color: #9a5a00;
+  border-color: #ffd38b;
+}
+
+.product-card__save,
+.product-card__compare {
+  display: grid;
+  width: 30px;
+  height: 30px;
+  place-items: center;
+  color: var(--hn-primary);
+  border: 1px solid var(--hn-border);
+  border-radius: 9px;
+  background: rgba(255, 255, 255, 0.96);
+  box-shadow: 0 2px 6px var(--hn-dark-a12);
+}
+
+.product-card__save {
+  top: 10px;
+  right: 10px;
+}
+
+.product-card__compare {
+  top: 46px;
+  right: 10px;
+}
+
+.product-card__save svg,
+.product-card__compare svg {
+  width: 16px;
+  height: 16px;
+}
+
+.product-card__save.is-saved,
+.product-card__compare.is-compared {
+  color: var(--hn-surface);
+  border-color: var(--hn-primary);
+  background: var(--hn-primary);
+}
+
+/* The virtual grid contains one spacer, not product cards directly.  It must
+   therefore stay a block: when the generic two-column product-grid rule wins,
+   the spacer becomes the first grid cell and every virtual row is constrained
+   to half the available width.  That was the source of the narrow, clipped
+   cards in long category results. */
+.product-grid.product-grid--virtual {
+  display: block;
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+}
+
+.product-grid--virtual .product-grid__virtual-spacer,
+.product-grid--virtual .product-grid__virtual-row {
+  width: 100%;
+  min-width: 0;
+}
+
+.product-grid--virtual .product-grid__virtual-row {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.availability-filter {
+  display: grid;
+  gap: 7px;
+}
+
+.availability-filter__label {
+  color: var(--hn-text-secondary);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.availability-filter__options {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.availability-filter__options > button {
+  display: inline-flex;
+  min-height: 44px;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 13px;
+  color: var(--hn-text-secondary);
+  font: inherit;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+  border: 0;
+  border-radius: 9px;
+  background: var(--hn-support-a08);
+}
+
+.availability-filter__options > button.is-active {
+  color: var(--hn-surface);
+  background: var(--hn-primary);
+}
+
+.availability-filter__options > button:not(.is-active):is(:hover, :active) {
+  color: var(--hn-primary);
+  background: var(--hn-primary-a10);
+}
+
+.catalogue-filter-empty {
+  margin: 0;
+  padding: 18px 16px;
+  color: var(--hn-text-secondary);
+  font-size: 14px;
+  line-height: 1.5;
+  text-align: center;
+  border: 1px dashed var(--hn-border);
+  border-radius: 12px;
+  background: var(--hn-surface);
+}
+
+.search-suggestion-results {
+  display: grid;
+  gap: 10px;
+}
+
+.search-suggestion-results__heading {
+  display: flex;
+  align-items: center;
+  min-height: 30px;
+  color: var(--hn-text-primary);
+  font-size: 18px;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+}
+
+.search-suggestion-results__heading strong {
+  display: none;
+}
+
+.search-suggestion-results__list {
+  overflow: hidden;
+  border: 1px solid var(--hn-border);
+  border-radius: 14px;
+  background: var(--hn-surface);
+}
+
+.search-suggestion-results__list > button {
+  display: grid;
+  width: 100%;
+  min-height: 112px;
+  grid-template-columns: 78px minmax(0, 1fr);
+  grid-template-rows: minmax(0, 1fr) auto;
+  column-gap: 16px;
+  padding: 14px;
+  color: var(--hn-text-primary);
+  text-align: left;
+  cursor: pointer;
+  border: 0;
+  border-bottom: 1px solid var(--hn-border);
+  background: var(--hn-surface);
+}
+
+.search-suggestion-results__list > button:last-child {
+  border-bottom: 0;
+}
+
+.search-suggestion-results__list > button:is(:hover, :active) {
+  background: var(--hn-primary-a06);
+}
+
+.search-suggestion-results__image {
+  width: 78px;
+  height: 78px;
+  min-height: 78px;
+  grid-row: 1 / -1;
+  border-radius: 10px;
+  background: var(--hn-near-white);
+}
+
+.search-suggestion-results__copy {
+  display: grid;
+  align-content: center;
+  min-width: 0;
+  gap: 5px;
+}
+
+.search-suggestion-results__copy strong {
+  display: -webkit-box;
+  overflow: hidden;
+  color: var(--hn-text-primary);
+  font-size: 15px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  line-height: 1.38;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+}
+
+.search-suggestion-results__copy small {
+  overflow: hidden;
+  color: var(--hn-primary);
+  font-size: 13px;
+  line-height: 1.35;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.search-suggestion-results__list .availability-chip {
+  align-self: end;
+  margin: 0;
+  padding: 5px 8px;
+  color: #087a45;
+  font-size: 11px;
+  font-weight: 800;
+  border: 1px solid #c7edda;
+  background: var(--hn-surface);
+}
+
+.search-suggestion-results__list .availability-chip--preorder {
+  color: #9a5a00;
+  border-color: #ffd38b;
+}
+
+.home-library-links {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.home-library-links button {
+  min-width: 0;
+  min-height: 58px;
+  padding: 8px 6px;
+  font-size: 12px;
+  line-height: 1.25;
+}
+
+.home-library-links button svg {
+  flex: 0 0 auto;
+}
+
+@media (max-width: 700px) {
+  .hn-page--products .hn-content,
+  .hn-page--search .hn-content {
+    gap: 16px;
+    padding-top: 24px;
+  }
+
+  .catalogue-screen {
+    gap: 14px;
+  }
+
+  .catalogue-screen__title h1,
+  .search-screen__title h1 {
+    font-size: 25px;
+  }
+
+  .catalogue-screen__title p,
+  .search-screen__title p {
+    font-size: 14px;
+    line-height: 1.55;
+  }
+
+  .availability-filter {
+    gap: 0;
+  }
+
+  .availability-filter__label {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    white-space: nowrap;
+  }
+
+  .availability-filter__options {
+    gap: 7px;
+  }
+
+  .availability-filter__options > button {
+    min-height: 44px;
+    padding: 8px 13px;
+    font-size: 14px;
+  }
+
+  .product-grid,
+  .catalogue-skeleton {
+    gap: 12px;
+  }
+
+  .product-grid.product-grid--virtual {
+    display: block;
+    grid-template-columns: none;
+    gap: 0;
+  }
+
+  .product-grid--virtual .product-grid__virtual-row {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 12px;
+    padding-bottom: 12px;
+  }
+
+  .product-card {
+    border-radius: 13px;
+  }
+
+  .product-card__image {
+    height: auto;
+    aspect-ratio: 4 / 3;
+  }
+
+  .product-card__identity {
+    min-height: 17px;
+    padding: 12px 12px 0;
+    font-size: 11px;
+  }
+
+  .product-card__name {
+    min-height: 51px;
+    padding: 6px 12px 0;
+    font-size: 14px;
+    line-height: 1.38;
+  }
+
+  .product-card__cta {
+    min-height: 42px;
+    margin: 7px 12px 0;
+    font-size: 12px;
+  }
+
+  .product-card .availability-chip {
+    top: 8px;
+    left: 8px;
+    max-width: calc(100% - 47px);
+    padding: 4px 7px;
+    font-size: 10px;
+  }
+
+  .product-card__save,
+  .product-card__compare {
+    width: 27px;
+    height: 27px;
+    right: 8px;
+    border-radius: 8px;
+  }
+
+  .product-card__save {
+    top: 8px;
+  }
+
+  .product-card__compare {
+    top: 40px;
+  }
+
+  .product-card__save svg,
+  .product-card__compare svg {
+    width: 14px;
+    height: 14px;
+  }
+
+  .home-library-links {
+    gap: 8px;
+  }
+
+  .home-library-links button {
+    display: grid;
+    min-height: 72px;
+    align-content: center;
+    justify-items: center;
+    gap: 5px;
+    padding: 8px 4px;
+    font-size: 11px;
+    text-align: center;
+  }
+
+  .home-library-links button svg {
+    width: 18px;
+    height: 18px;
+  }
+
+  .hn-page--categories .hn-content {
+    padding-top: 24px;
+  }
+
+  .category-browser {
+    gap: 14px;
+  }
+
+  .category-browser__heading h1 {
+    font-size: 25px;
+  }
+
+  .category-browser__tabs {
+    gap: 6px;
+    padding: 6px;
+    border: 1px solid var(--hn-border);
+    border-radius: 13px;
+    background: var(--hn-surface);
+  }
+
+  .category-browser__tabs > button {
+    min-height: 48px;
+    justify-content: center;
+    gap: 0;
+    padding: 7px 5px;
+    font-size: 12px;
+    line-height: 1.25;
+    text-align: center;
+    border: 1px solid transparent;
+    border-radius: 8px;
+    box-shadow: none;
+  }
+
+  .category-browser__tabs > button.is-active {
+    color: var(--hn-surface);
+    border-color: var(--hn-primary);
+    background: var(--hn-primary);
+    box-shadow: none;
+  }
+
+  .category-browser__tab-icon,
+  .category-browser__tab-check {
+    display: none;
+  }
+
+  .category-browser__panel {
+    display: block;
+  }
+
+  .category-browser__overview {
+    display: grid;
+    gap: 14px;
+    padding: 18px 16px;
+    border: 0;
+    border-radius: 13px;
+    background: var(--hn-surface);
+  }
+
+  .category-browser__overview-copy {
+    align-items: center;
+    gap: 12px;
+  }
+
+  .category-browser__overview-icon {
+    width: 44px;
+    height: 44px;
+    flex-basis: 44px;
+    color: var(--hn-surface);
+    border-radius: 12px;
+    background: var(--hn-primary);
+    box-shadow: none;
+  }
+
+  .category-browser__overview h2 {
+    font-size: 18px;
+  }
+
+  .category-browser__overview p {
+    font-size: 12px;
+  }
+
+  .category-browser__all {
+    width: 100%;
+    min-height: 56px;
+    margin: 0;
+    padding: 10px 12px;
+    font-size: 14px;
+  }
+
+  .category-browser__directory {
+    margin-top: 14px;
+    border-radius: 13px;
+    box-shadow: none;
+  }
+
+  .category-browser__directory > header {
+    min-height: 58px;
+    padding: 10px 14px;
+  }
+
+  .category-browser__directory li > button {
+    min-height: 72px;
+    gap: 12px;
+    padding: 12px 14px;
+    font-size: 14px;
+  }
+
+  .category-browser__directory-icon {
+    width: 38px;
+    height: 38px;
+    flex-basis: 38px;
+  }
+
+  .category-browser__help {
+    padding: 0 2px;
+    font-size: 13px;
+  }
+
+  .search-suggestion-results__heading {
+    min-height: 28px;
+    font-size: 18px;
+  }
+
+  .search-suggestion-results__list > button {
+    min-height: 104px;
+    grid-template-columns: 68px minmax(0, 1fr);
+    column-gap: 13px;
+    padding: 13px;
+  }
+
+  .search-suggestion-results__image {
+    width: 68px;
+    height: 68px;
+    min-height: 68px;
+  }
+
+  .search-suggestion-results__copy strong {
+    font-size: 14px;
+  }
+}
+
+@media (max-width: 359px) {
+  .availability-filter__options > button {
+    padding-right: 10px;
+    padding-left: 10px;
+    font-size: 13px;
+  }
+
+  .home-library-links button {
+    font-size: 10px;
+  }
+}
+
+/* Product card P7 ----------------------------------------------------------
+   The public catalogue uses one unbroken card silhouette everywhere: product
+   status over the image, product code, title and detail link, then a separate
+   two-action footer. This is deliberately defined after earlier catalogue
+   rules so both regular and virtual result grids receive the same contract. */
+.product-card {
+  display: flex;
+  min-height: 0;
+  flex-direction: column;
+  overflow: hidden;
+  border-color: #bfd8e5;
+  border-radius: 16px;
+  background: #ffffff;
+}
+
+.product-card__link {
+  position: relative;
+  flex: 1 1 auto;
+  align-content: start;
+  background: #ffffff;
+}
+
+.product-card__image {
+  height: auto;
+  aspect-ratio: 6 / 5;
+  border-bottom: 1px solid #d8e5ec;
+  background: #ffffff;
+}
+
+.product-card .availability-chip {
+  z-index: 2;
+  top: 12px;
+  right: 12px;
+  left: auto;
+  max-width: calc(100% - 24px);
+  min-height: 32px;
+  padding: 5px 9px;
+  color: #102337;
+  align-items: center;
+  gap: 5px;
+  font-size: 13px;
+  font-weight: 700;
+  border-color: #d6e3ea;
+  border-radius: 9px;
+  background: rgba(255, 255, 255, 0.97);
+  box-shadow: 0 1px 2px rgba(8, 41, 64, 0.04);
+}
+
+.product-card .availability-chip::before {
+  content: "✓";
+  display: inline-grid;
+  width: 14px;
+  height: 14px;
+  flex: 0 0 14px;
+  place-items: center;
+  color: #09a95b;
+  font-size: 10px;
+  font-weight: 800;
+  line-height: 1;
+  border: 1.5px solid #0ac86b;
+  border-radius: 50%;
+  background: #ffffff;
+}
+
+.product-card .availability-chip--preorder {
+  color: #8a5600;
+  border-color: #f5d296;
+  background: #fffaf0;
+}
+
+.product-card .availability-chip--preorder::before {
+  content: "•";
+  color: #a76700;
+  border-color: #d39116;
+  background: #ffffff;
+}
+
+.product-card__identity {
+  min-height: 21px;
+  padding: 18px 16px 0;
+  color: #687b92;
+  font-size: 14px;
+  font-weight: 500;
+  letter-spacing: 0;
+  line-height: 1.5;
+}
+
+.product-card__name {
+  min-height: 56px;
+  padding: 7px 16px 0;
+  color: #0f2236;
+  font-size: 19px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  line-height: 1.38;
+}
+
+.product-card__cta {
+  min-height: 58px;
+  margin: 7px 16px 0;
+  color: #086981;
+  font-size: 15px;
+  font-weight: 700;
+}
+
+.product-card__cta svg {
+  width: 20px;
+  height: 20px;
+}
+
+.product-card__actions {
+  display: grid;
+  min-height: 64px;
+  flex: 0 0 auto;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  margin: 0;
+  border-top: 1px solid #d8e5ec;
+  background: #ffffff;
+}
+
+.product-card__actions > button {
+  position: static;
+  z-index: auto;
+  display: inline-flex;
+  width: auto;
+  height: auto;
+  min-width: 0;
+  min-height: 64px;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 10px 8px;
+  color: #647691;
+  font: inherit;
+  font-size: 16px;
+  font-weight: 500;
+  line-height: 1.35;
+  cursor: pointer;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+  transform: none;
+}
+
+.product-card__actions > button + button {
+  border-left: 1px solid #d8e5ec;
+}
+
+.product-card__actions > button svg {
+  width: 21px;
+  height: 21px;
+  flex: 0 0 auto;
+}
+
+.product-card__actions > button.is-saved,
+.product-card__actions > button.is-compared {
+  color: #086981;
+  border-color: #d8e5ec;
+  background: #edf9fb;
+}
+
+.product-card__actions > button:active {
+  background: #f1f8fa;
+}
+
+@media (max-width: 700px) {
+  .product-card__image {
+    aspect-ratio: 6 / 5;
+  }
+
+  .product-card .availability-chip {
+    top: 8px;
+    right: 8px;
+    min-height: 24px;
+    padding: 3px 6px;
+    font-size: 10px;
+    border-radius: 7px;
+  }
+
+  .product-card .availability-chip::before {
+    width: 10px;
+    height: 10px;
+  }
+
+  .product-card__identity {
+    min-height: 18px;
+    padding: 12px 12px 0;
+    font-size: 12px;
+  }
+
+  .product-card__name {
+    min-height: 50px;
+    padding: 5px 12px 0;
+    font-size: 15px;
+    line-height: 1.38;
+  }
+
+  .product-card__cta {
+    min-height: 47px;
+    margin: 5px 12px 0;
+    font-size: 13px;
+  }
+
+  .product-card__cta svg {
+    width: 18px;
+    height: 18px;
+  }
+
+  .product-card__actions,
+  .product-card__actions > button {
+    min-height: 54px;
+  }
+
+  .product-card__actions > button {
+    gap: 5px;
+    padding: 8px 4px;
+    font-size: 13px;
+  }
+
+  .product-card__actions > button svg {
+    width: 18px;
+    height: 18px;
+  }
+}
+
+@media (max-width: 359px) {
+  .product-card__actions > button {
+    font-size: 12px;
+  }
+}
+
+/* Detail-related products deliberately reuse the catalogue card rather than a
+   second compact rendition. These scoped rules neutralise the former related
+   button styling while retaining the detail page's two-column grid. */
+.detail-template__related > div {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.detail-template__related .product-card {
+  min-width: 0;
+  margin: 0;
+}
+
+.detail-template__related .product-card__link {
+  position: relative;
+  display: grid;
+  gap: 0;
+  color: #0f2236;
+  border: 0;
+  border-radius: 0;
+  background: #ffffff;
+}
+
+.detail-template__related .product-card__image {
+  width: 100%;
+  height: auto;
+  min-height: 0;
+  aspect-ratio: 6 / 5;
+  border-bottom: 1px solid #d8e5ec;
+}
+
+.detail-template__related .product-card .availability-chip {
+  top: 8px;
+  right: 8px;
+  left: auto;
+  min-height: 24px;
+  padding: 3px 6px;
+  font-size: 10px;
+  border-radius: 7px;
+}
+
+.detail-template__related .product-card .availability-chip::before {
+  width: 10px;
+  height: 10px;
+  flex-basis: 10px;
+  font-size: 8px;
+}
+
+.detail-template__related .product-card__identity {
+  min-height: 18px;
+  padding: 12px 12px 0;
+  color: #687b92;
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.detail-template__related .product-card__name {
+  display: -webkit-box;
+  min-height: 50px;
+  padding: 5px 12px 0;
+  color: #0f2236;
+  font-size: 15px;
+  font-weight: 700;
+  line-height: 1.38;
+}
+
+.detail-template__related .product-card__cta {
+  min-height: 47px;
+  margin: 5px 12px 0;
+  color: #086981;
+  font-size: 13px;
+}
+
+.detail-template__related .product-card__actions > button {
+  display: inline-flex;
+  min-height: 54px;
+  gap: 5px;
+  padding: 8px 4px;
+  color: #647691;
+  font-size: 13px;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+}
+
+.detail-template__related .product-card__actions > button + button {
+  border-left: 1px solid #d8e5ec;
+}
+
+.detail-template__related .product-card__actions > button.is-saved,
+.detail-template__related .product-card__actions > button.is-compared {
+  color: #086981;
+  background: #edf9fb;
+}
+
+/* Home uses one catalogue source, matching the reference flow. It never
+   creates visually competing featured or newly updated carousels. */
+.home-recent-section,
+.home-catalogue-section {
+  gap: 14px;
+}
+
+.home-product-count,
+.home-product-progress {
+  margin: 0;
+  color: var(--hn-text-muted);
+  font-size: 13px;
+  line-height: 1.45;
+}
+
+.home-product-progress {
+  text-align: center;
+}
+
+.home-product-status {
+  margin: 0;
+  padding: 14px 16px;
+  color: var(--hn-text-secondary);
+  font-size: 14px;
+  line-height: 1.5;
+  text-align: center;
+  border: 1px dashed var(--hn-border);
+  border-radius: 12px;
+  background: var(--hn-surface);
+}
+
+.home-catalogue-link {
+  display: inline-flex;
+  width: fit-content;
+  min-height: 44px;
+  align-items: center;
+  justify-self: center;
+  gap: 6px;
+  padding: 8px 12px;
+  color: var(--hn-primary);
+  font: inherit;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+  border: 1px solid var(--hn-border);
+  border-radius: 10px;
+  background: var(--hn-surface);
+}
+
+.home-catalogue-link:is(:hover, :active) {
+  border-color: var(--hn-primary);
+  background: var(--hn-primary-a06);
+}
+
+/* The catalogue sheet intentionally mirrors the reference controls: stock
+   status, product group, category, and the two supported display orders. */
+.filter-sheet__intro {
+  margin: -2px 0 0;
+  color: var(--hn-text-secondary);
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.filter-group > .availability-filter {
+  gap: 8px;
+}
+
+.filter-group > .availability-filter .availability-filter__label {
+  display: none;
+}
+
+.filter-select-field {
+  display: grid;
+  gap: 8px;
+  color: var(--hn-text-primary);
+  font-size: 15px;
+  font-weight: 700;
+}
+
+.filter-select-field select {
+  width: 100%;
+  min-height: 46px;
+  padding: 0 38px 0 13px;
+  color: var(--hn-text-secondary);
+  font: inherit;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  border: 1px solid var(--hn-border);
+  border-radius: 10px;
+  outline: 0;
+  background-color: var(--hn-surface);
+}
+
+.filter-select-field select:focus-visible {
+  border-color: var(--hn-primary);
+  box-shadow: 0 0 0 3px var(--hn-primary-a10);
+}
+
+.filter-select-field select:disabled {
+  color: var(--hn-text-muted);
+  cursor: wait;
+  background: var(--hn-support-a08);
+}
+
+.quote-selection-note {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 8px;
+  padding: 11px 12px;
+  color: var(--hn-text-secondary);
+  font-size: 13px;
+  line-height: 1.45;
+  border: 1px solid var(--hn-border);
+  border-radius: 10px;
+  background: var(--hn-primary-a06);
+}
+
+.quote-selection-note svg {
+  color: var(--hn-primary);
+}
+
+.quote-selection-note button {
+  min-height: 34px;
+  padding: 6px 8px;
+  color: var(--hn-primary);
+  font: inherit;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  border: 0;
+  background: transparent;
 }

@@ -33,6 +33,7 @@ const validationFailure = (errors: QuoteFieldErrors): ApiFailure => ({
 const PHONE_SEPARATORS = /[\s.()\-]/g;
 const UNSUPPORTED_PHONE_CHARACTERS = /[^\d+\s.()\-]/;
 const VIETNAMESE_MOBILE_LOCAL = /^0[35789]\d{8}$/;
+const VIETNAMESE_MOBILE_CANONICAL = /^\+84[35789]\d{8}$/;
 
 export const normalizeVietnamesePhone = (phone: string): string => {
   const raw = phone.trim();
@@ -49,9 +50,10 @@ export const normalizeVietnamesePhone = (phone: string): string => {
  * attached to the phone field before the customer submits the request.
  */
 export const getVietnamesePhoneValidationError = (phone: string): string | null => {
-  return VIETNAMESE_MOBILE_LOCAL.test(phone)
+  const normalized = normalizeVietnamesePhone(phone);
+  return (VIETNAMESE_MOBILE_LOCAL.test(phone.trim()) || VIETNAMESE_MOBILE_CANONICAL.test(normalized))
     ? null
-    : "Nhập đúng 10 số điện thoại di động Việt Nam.";
+    : "Nhập số di động Việt Nam, ví dụ 0901234567 hoặc +84901234567.";
 };
 
 const normalizeNote = (note: string | null | undefined): string | null => {

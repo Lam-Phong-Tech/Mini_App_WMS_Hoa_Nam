@@ -3,7 +3,7 @@ import { useEffect, useMemo, useState } from "react";
 import { getAvailabilityLabel, getProductMedia, getVisibleVariants, isPreorderAvailability, visibleText } from "@/catalogue/catalogue-utils";
 import { ContactActions } from "@/components/catalogue/contact-actions";
 import { ProductGallery } from "@/components/catalogue/product-gallery";
-import { PublicImage } from "@/components/catalogue/public-image";
+import { ProductCard } from "@/components/catalogue/product-card";
 import { UiIcon } from "@/components/ui-icon";
 import {
   ProductCardDto,
@@ -23,9 +23,14 @@ interface ProductDetailTemplateProps {
   product: ProductDetailDto;
   config: PublicConfigDto | null;
   relatedProducts: ProductCardDto[];
+  onBack: () => void;
   onOpenGallery: (variantId?: string) => void;
   onOpenProduct: (slug: string) => void;
   onRequestConsultation: (variantId?: string) => void;
+  isSaved: boolean;
+  onToggleSaved: () => void;
+  isCompared: boolean;
+  onToggleCompare: () => void;
 }
 
 /**
@@ -40,9 +45,14 @@ export const ProductDetailTemplate = ({
   product,
   config,
   relatedProducts,
+  onBack,
   onOpenGallery,
   onOpenProduct,
   onRequestConsultation,
+  isSaved,
+  onToggleSaved,
+  isCompared,
+  onToggleCompare,
 }: ProductDetailTemplateProps) => {
   const [activeTab, setActiveTab] = useState<DetailTab>("information");
   const variants = useMemo(() => getVisibleVariants(product.variants), [product.variants]);
@@ -87,6 +97,10 @@ export const ProductDetailTemplate = ({
 
   return (
     <article className="product-detail-template">
+      <button type="button" className="detail-template__back" onClick={onBack}>
+        <UiIcon name="chevronLeft" size={19} strokeWidth={2.1} />
+        Quay lại sản phẩm
+      </button>
       <section className="detail-template__gallery" aria-label="Hình ảnh sản phẩm">
         <ProductGallery product={product} variant={selectedVariant} />
         {hasGalleryMedia ? <button className="detail-template__zoom" type="button" onClick={() => onOpenGallery(selectedVariant?.variant_id)}>
@@ -100,9 +114,17 @@ export const ProductDetailTemplate = ({
           <span className={`availability-chip ${isPreorder ? "availability-chip--preorder" : ""}`}>{availabilityLabel}</span>
           <span className="detail-template__domain">{DOMAIN_LABELS[product.domain]}</span>
         </div>
+        {primaryCode ? <p className="detail-template__code">{primaryCode}</p> : null}
         <h1>{visibleText(product.name)}</h1>
         {model ? <p className="detail-template__model">Model: <strong>{model}</strong></p> : null}
-        {primaryCode && primaryCode !== model ? <p className="detail-template__model">Mã sản phẩm: <strong>{primaryCode}</strong></p> : null}
+        <div className="detail-template__identity-actions">
+          <button type="button" className={`detail-template__save ${isSaved ? "is-saved" : ""}`} aria-pressed={isSaved} onClick={onToggleSaved}>
+            <UiIcon name="bookmark" size={17} />{isSaved ? "Đã lưu" : "Lưu"}
+          </button>
+          <button type="button" className={`detail-template__save ${isCompared ? "is-saved" : ""}`} aria-pressed={isCompared} onClick={onToggleCompare}>
+            <UiIcon name="layers" size={17} />{isCompared ? "Đang so sánh" : "So sánh"}
+          </button>
+        </div>
         {identitySummary ? <p className="detail-template__description">{identitySummary}</p> : null}
         {variants.length ? (
           <div className="detail-template__variants" aria-label="Chọn phiên bản">
@@ -231,10 +253,7 @@ export const ProductDetailTemplate = ({
           <p>{relatedAreSameCategory ? "Khám phá thêm sản phẩm cùng danh mục." : "Khám phá thêm sản phẩm cùng nhóm."}</p>
           <div>
             {visibleRelated.map((related) => (
-              <button key={related.product_id} type="button" onClick={() => onOpenProduct(related.slug)} aria-label={`Xem ${visibleText(related.name) ?? "sản phẩm liên quan"}`}>
-                <PublicImage media={related.cover_media} alt={related.name} />
-                <strong>{visibleText(related.model) ?? visibleText(related.name)}</strong>
-              </button>
+              <ProductCard key={related.product_id} product={related} onOpen={() => onOpenProduct(related.slug)} />
             ))}
           </div>
           {relatedLimit < relatedProducts.length ? <button className="detail-template__more-related" type="button" onClick={() => setRelatedLimit((current) => Math.min(relatedProducts.length, current + 2))}>Xem thêm sản phẩm liên quan</button> : null}
@@ -243,7 +262,7 @@ export const ProductDetailTemplate = ({
 
       <section className="detail-template__conversion" aria-label="Yêu cầu sản phẩm">
         <button type="button" className="detail-template__request" onClick={() => onRequestConsultation(selectedVariant?.variant_id)}>{requestLabel}</button>
-        <ContactActions config={config} showUnavailable className="detail-template__contact-actions" />
+        <ContactActions config={config} compact showUnavailable className="detail-template__contact-actions" />
       </section>
     </article>
   );

@@ -1,6 +1,6 @@
-# UIUX-G4 preflight — BLOCKED
+# UIUX-G4 preflight and completion — PASS
 
-**Recorded:** 2026-09-10T00:33:56.0941164+07:00
+**Completed:** 2026-09-10T14:19:23.0864237+07:00
 
 ## Entry lineage
 
@@ -11,11 +11,11 @@
 
 ## Scope opened
 
-G4 may now implement and verify PV-08 through PV-18: safe contact surfaces,
+G4 implemented and verified PV-08 through PV-18: safe contact surfaces,
 multi-product selection and request drafting, consent/config boundaries, RAM
-receipt, local-only recent/saved product IDs, FAQ, and comparison. It must
-preserve the public Green runtime boundary and the approved PII, storage, API
-and idempotency rules.
+receipt, local-only recent/saved product IDs, FAQ, and comparison. It preserves
+the Green public-runtime boundary and the approved PII, storage, API and
+idempotency rules.
 
 The prior G3-only Designer snapshot and in-memory fixture authorities do not
 authorize their use by G4. G4 must use its own approved test protocol and must
@@ -23,12 +23,12 @@ not issue a new Green quote POST without the user's explicit authorization.
 
 ## Entry decision
 
-The predecessor condition was met, so UIUX-G4 opened correctly. A subsequent
-read-only contract audit found that the public API cannot rehydrate D04's
-ID-only persistent recent/saved records after reload. G4 is therefore now
-`BLOCKED`; see `contract-implementation.md` for the exact required endpoint
-or approved D04 change. It is not a G4 acceptance result.
+The predecessor condition was met, and D13 resolved the ID-only rehydration
+dependency with a Green read-only verification. The implementation, focused
+local UI observation, quality suite and preview build now pass. The formal
+completion record is [UIUX-G4.json](../gates/UIUX-G4.json).
 
-No quote/contact action, API write, storage migration, fixture publication,
-Customer/Production operation, deployment, push or merge was performed when
-opening this gate.
+No quote POST, contact handoff, API write, fixture publication,
+Customer/Production operation, deployment, push or merge was performed in G4.
+The app's ordinary local browser storage was exercised only through its
+ID-only PV-13/PV-14 behavior; no storage migration was run.

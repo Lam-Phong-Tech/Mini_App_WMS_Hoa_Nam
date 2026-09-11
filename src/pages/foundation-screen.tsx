@@ -7,7 +7,7 @@ import { FoundationRouteKey, getFoundationRoute } from "@/routes";
 import { useAppContext } from "@/state/app-context";
 import { createEmptyState, createLoadingState } from "@/state/system-state";
 import { UiIcon } from "@/components/ui-icon";
-import { getContactTargets, getPublicHotline, OA_MAINTENANCE_MESSAGE } from "@/services/contact-config";
+import { getContactTargets, getPublicHotline, OA_UNAVAILABLE_MESSAGE } from "@/services/contact-config";
 import { openDeviceDialer } from "@/services/phone-dialer";
 
 interface FoundationScreenProps {
@@ -47,6 +47,30 @@ const screenCopy: Record<FoundationScreenProps["routeKey"], { heading: string; b
     heading: "Liên hệ Hoa Nam",
     body: "Chọn kênh hỗ trợ phù hợp với nhu cầu của bạn.",
   },
+  recent: {
+    heading: "Sản phẩm đã xem",
+    body: "Danh sách sản phẩm đã xem trên thiết bị này.",
+  },
+  saved: {
+    heading: "Sản phẩm đã lưu",
+    body: "Danh sách sản phẩm đã lưu trên thiết bị này.",
+  },
+  selection: {
+    heading: "Chọn sản phẩm",
+    body: "Chọn sản phẩm để gửi yêu cầu tư vấn.",
+  },
+  compare: {
+    heading: "So sánh sản phẩm",
+    body: "Đối chiếu các sản phẩm cùng danh mục.",
+  },
+  requests: {
+    heading: "Yêu cầu đã gửi",
+    body: "Các yêu cầu được tiếp nhận trong lần mở app này.",
+  },
+  help: {
+    heading: "Hướng dẫn",
+    body: "Câu hỏi thường gặp về sản phẩm và yêu cầu tư vấn.",
+  },
   "system-states": {
     heading: "Trạng thái hệ thống",
     body: "Loading, empty, no-network, API error, rate-limit, maintenance, unavailable và update-required dùng thông điệp an toàn.",
@@ -82,57 +106,94 @@ export const FoundationScreen = ({ routeKey }: FoundationScreenProps) => {
     const supportHours = config?.support_hours?.intervals ?? [];
     return (
       <AppShell route={route}>
-        <section className="contact-hero-card">
-          <div className="contact-hero-card__icon"><UiIcon name="message" size={34} strokeWidth={1.8} /></div>
-          <h2>Cần hỗ trợ về sản phẩm?</h2>
-          <p>Chọn một trong hai kênh liên hệ chính thức của Hoa Nam.</p>
-        </section>
-        <section className="contact-channel-list" aria-label="Kênh liên hệ">
-          <a
-            className="contact-channel-card contact-channel-card--hotline"
-            href={contactTargets.hotlineHref ?? undefined}
-            aria-disabled={!hotline}
-            onClick={(event) => {
-              if (!hotline || !contactTargets.hotlineHref) {
-                event.preventDefault();
-                return;
-              }
+        <section className="contact-screen" aria-labelledby="contact-screen-title">
+          <header className="contact-screen__intro">
+            <div className="contact-screen__kicker"><UiIcon name="message" size={20} /><span>KẾT NỐI VỚI HOA NAM</span></div>
+            <h1 id="contact-screen-title">Liên hệ & tư vấn</h1>
+            <p>Chọn cách kết nối phù hợp với bạn.</p>
+          </header>
 
-              event.preventDefault();
-              openDeviceDialer(hotline.tel, contactTargets.hotlineHref);
-            }}
-          >
-              <span className="contact-channel-card__icon"><UiIcon name="phone" size={27} strokeWidth={1.8} /></span>
-              <span><strong>Gọi hotline</strong><small>{hotline?.display ?? "Hotline đang được cập nhật"}</small></span>
-              <UiIcon name="chevronRight" size={22} />
-          </a>
-          <button
-            className="contact-channel-card contact-channel-card--oa"
-            type="button"
-            onClick={() => openSnackbar({ text: OA_MAINTENANCE_MESSAGE, type: "warning", icon: true, duration: 3500 })}
-          >
-              <span className="contact-channel-card__icon"><strong>Z</strong></span>
-              <span><strong>Chat Zalo OA</strong><small>Tính năng đang được bảo trì</small></span>
-              <UiIcon name="chevronRight" size={22} />
-          </button>
+          <div className="contact-screen__methods" aria-label="Kênh liên hệ">
+            <article className="contact-screen__card contact-screen__card--primary">
+              <div className="contact-screen__card-heading">
+                <span className="contact-screen__icon"><UiIcon name="send" size={24} /></span>
+                <h2>Gửi yêu cầu tư vấn</h2>
+              </div>
+              <p>Chọn một hoặc nhiều sản phẩm và để lại thông tin để Hoa Nam tiếp nhận yêu cầu tư vấn.</p>
+              <button className="contact-screen__button contact-screen__button--primary" type="button" onClick={() => navigate("/selection", { animate: false })}>
+                Gửi yêu cầu <UiIcon name="arrowRight" size={19} />
+              </button>
+            </article>
+
+            <article className="contact-screen__card">
+              <div className="contact-screen__card-heading">
+                <UiIcon name="phone" size={24} />
+                <h2>Gọi hotline</h2>
+              </div>
+              {hotline && contactTargets.hotlineHref ? (
+                <>
+                  <a
+                    className="contact-screen__phone"
+                    href={contactTargets.hotlineHref}
+                    aria-label={`Gọi hotline ${hotline.display}`}
+                    onClick={(event) => {
+                      event.preventDefault();
+                      openDeviceDialer(hotline.tel, contactTargets.hotlineHref!);
+                    }}
+                  >
+                    {hotline.display}
+                  </a>
+                  <p>Trao đổi trực tiếp với nhân viên tư vấn.</p>
+                  <a
+                    className="contact-screen__button contact-screen__button--outline"
+                    href={contactTargets.hotlineHref}
+                    onClick={(event) => {
+                      event.preventDefault();
+                      openDeviceDialer(hotline.tel, contactTargets.hotlineHref!);
+                    }}
+                  >
+                    <UiIcon name="phone" size={18} /> Gọi ngay
+                  </a>
+                </>
+              ) : <>
+                <span className="contact-screen__unavailable">Hotline đang được cập nhật</span>
+                <p>Kênh gọi chưa có cấu hình công khai.</p>
+              </>}
+            </article>
+
+            <article className="contact-screen__card">
+              <div className="contact-screen__card-heading">
+                <span className="contact-screen__icon contact-screen__icon--neutral"><UiIcon name="message" size={24} /></span>
+                <h2>Nhắn Zalo OA</h2>
+              </div>
+              {contactTargets.oaUrl ? <>
+                <p>Trao đổi với Hoa Nam về sản phẩm bạn quan tâm.</p>
+                <a className="contact-screen__button contact-screen__button--tonal" href={contactTargets.oaUrl}>Mở Zalo OA <UiIcon name="arrowRight" size={19} /></a>
+              </> : <>
+                <span className="contact-screen__unavailable">Tạm thời chưa khả dụng</span>
+                <p>Bạn vẫn có thể gửi yêu cầu hoặc gọi hotline.</p>
+                <button className="contact-screen__button contact-screen__button--outline" type="button" onClick={() => openSnackbar({ text: OA_UNAVAILABLE_MESSAGE, type: "warning", icon: true, duration: 3500 })}>Xem thông tin kênh</button>
+              </>}
+            </article>
+          </div>
+
+          {supportHours.length ? (
+            <section className="contact-screen__card contact-screen__hours" aria-labelledby="contact-hours-title">
+              <div className="contact-screen__card-heading"><UiIcon name="clock" size={24} /><h2 id="contact-hours-title">Giờ hỗ trợ</h2></div>
+              <dl>
+                {supportHours.map((interval, index) => (
+                  <div key={`${interval.days.join("-")}:${interval.opens_at}:${index}`}>
+                    <dt>{interval.days.join(", ")}</dt>
+                    <dd>{interval.opens_at} – {interval.closes_at}</dd>
+                  </div>
+                ))}
+              </dl>
+            </section>
+          ) : null}
+
+          <button className="contact-screen__browse" type="button" onClick={() => navigate("/products", { animate: false })}>Tiếp tục xem sản phẩm <UiIcon name="arrowRight" size={19} /></button>
+          {config?.privacy_policy_url ? <a className="contact-screen__privacy" href={config.privacy_policy_url}>Chính sách sử dụng thông tin</a> : null}
         </section>
-        <aside className="contact-demo-alert">
-          <UiIcon name="info" size={20} />
-          <p>Hotline nhận giá trị từ Public Config API. Chat Zalo OA tạm thời hiển thị trạng thái bảo trì.</p>
-        </aside>
-        {supportHours.length ? (
-          <section className="info-card contact-info-card">
-            <div className="contact-hours">
-              <strong>Giờ hỗ trợ</strong>
-              {supportHours.map((interval, index) => (
-                <p key={`${interval.days.join("-")}:${interval.opens_at}:${index}`}>
-                  {interval.days.join(", ")}: {interval.opens_at} – {interval.closes_at}
-                </p>
-              ))}
-            </div>
-          </section>
-        ) : null}
-        {config?.privacy_policy_url ? <a className="privacy-link" href={config.privacy_policy_url}>Chính sách dữ liệu</a> : null}
       </AppShell>
     );
   }

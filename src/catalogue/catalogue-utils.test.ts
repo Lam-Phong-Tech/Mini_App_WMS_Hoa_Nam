@@ -143,7 +143,7 @@ describe("catalogue contract presentation", () => {
     const preorder = product("preorder", { availability: "PREORDER" });
     expect(isEligiblePublicProduct(preorder)).toBe(true);
     expect(isPreorderAvailability(preorder.availability)).toBe(true);
-    expect(getAvailabilityLabel(preorder.availability)).toBe("Đặt trước");
+    expect(getAvailabilityLabel(preorder.availability)).toBe("Hết hàng / Đặt trước");
     expect(getPublicProducts([{ ...product("hidden"), availability: "INACTIVE" } as unknown as ProductCardDto])).toEqual([]);
     expect(isPublicMediaUrl("not-a-public-url")).toBe(false);
     expect(MOBILE_TOUCH_TARGET_PX).toBeGreaterThanOrEqual(44);

@@ -9,6 +9,12 @@ export type FoundationRouteKey =
   | "gallery"
   | "quote-request"
   | "contact"
+  | "recent"
+  | "saved"
+  | "selection"
+  | "compare"
+  | "requests"
+  | "help"
   | "system-states";
 
 export interface FoundationRoute {
@@ -29,6 +35,12 @@ export const FOUNDATION_ROUTES: FoundationRoute[] = [
   { key: "gallery", path: "/products/:slug/gallery", title: "Hình ảnh", eyebrow: "SẢN PHẨM" },
   { key: "quote-request", path: "/products/:slug/quote", title: "Yêu cầu tư vấn", eyebrow: "SẢN PHẨM" },
   { key: "contact", path: "/contact", title: "Liên hệ", eyebrow: "HỖ TRỢ" },
+  { key: "recent", path: "/recent", title: "Đã xem", eyebrow: "THƯ VIỆN" },
+  { key: "saved", path: "/saved", title: "Đã lưu", eyebrow: "THƯ VIỆN" },
+  { key: "selection", path: "/selection", title: "Chọn sản phẩm", eyebrow: "YÊU CẦU" },
+  { key: "compare", path: "/compare", title: "So sánh", eyebrow: "THƯ VIỆN" },
+  { key: "requests", path: "/requests", title: "Yêu cầu đã gửi", eyebrow: "THƯ VIỆN" },
+  { key: "help", path: "/help", title: "Hướng dẫn", eyebrow: "HỖ TRỢ" },
   { key: "system-states", path: "/system", title: "Trạng thái hệ thống", eyebrow: "HỖ TRỢ" },
 ];
 

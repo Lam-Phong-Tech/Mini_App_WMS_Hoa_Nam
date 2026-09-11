@@ -183,6 +183,27 @@
         "environment_scope": "Green/DEV-TEST G2 integration only; no Customer/Production deployment authorization is implied."
       },
       "status": "APPROVED_FOR_G2"
+    },
+    {
+      "id": "D13",
+      "conflict": "D04 requires ID-only persistence and current-public-data rehydration after reload, while the earlier Green list contract had no product-ID lookup.",
+      "selected_option": "Use the new public `GET /api/v1/public/products?ids[]=…` list mode in batches of at most 50 IDs; preserve the requested ID order, keep PREORDER items, and remove persisted IDs only when a successful response includes them in missing_ids.",
+      "scope": ["PV-13 recent products", "PV-14 saved products", "PublicApiAdapter", "ID-only local storage", "Green/DEV-TEST integration"],
+      "user_confirmation_verbatim": "GET /api/v1/public/products?ids[]=<uuid-1>&ids[]=<uuid-2> ... Thứ tự trả về = đúng thứ tự id gửi lên ... missing_ids = đã bị gỡ khỏi App ... Lỗi mạng thì giữ nguyên id để thử lại.",
+      "confirmation_context": "User-supplied BE handoff for the G4 product-ID lookup; its implementation-critical text is preserved in evidence/reference/user-confirmation-g4-product-id-lookup-2026-09-10.md.",
+      "confirmed_at": "2026-09-10T11:27:41.5831816+07:00",
+      "source_references": ["user message in this thread dated 2026-09-10", "docs/uiux-migration/evidence/reference/user-confirmation-g4-product-id-lookup-2026-09-10.md", "docs/uiux-migration/evidence/g4/product-id-batch-contract-green-2026-09-10.json", "D04"],
+      "locked_behavior": {
+        "endpoint": "GET {BASE_URL}/api/v1/public/products?ids[]=<uuid>",
+        "max_ids_per_request": 50,
+        "request_constraints": "ids[] cannot be mixed with q, domain, category, power_source, feature, spec.*, sort, cursor or limit; empty/invalid IDs are validation failures.",
+        "response": "No page_info; items preserve first-occurrence request order; missing_ids contains only IDs removed from the public App.",
+        "availability": { "IN_STOCK": "render normally", "PREORDER": "retain and render the approved unavailable/pre-order label" },
+        "network_failure": "retain all persisted IDs for a future retry",
+        "forbidden": ["persisting catalogue metadata or PII", "deleting PREORDER IDs", "deleting IDs due to network failure", "whole-catalogue scan to rehydrate saved/recent lists"]
+      },
+      "verification": "Green read-only tests passed ordered lookup, duplicate removal preserving first occurrence, missing_ids, no pagination metadata, conflicting parameter rejection and invalid UUID rejection. See product-id-batch-contract-green-2026-09-10.json.",
+      "status": "APPROVED_RUNTIME_VERIFIED_FOR_GREEN_DEV_TEST"
     }
   ]
 }

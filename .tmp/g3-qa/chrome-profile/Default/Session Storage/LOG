@@ -1,0 +1,53 @@
+2026/09/09-23:57:32.950 1aa8 Creating DB C:\laragon\www\zalo_mini_app\hoanamproduct\.tmp\g3-qa\chrome-profile\Default\Session Storage since it was missing.
+2026/09/09-23:57:32.985 1aa8 Reusing MANIFEST C:\laragon\www\zalo_mini_app\hoanamproduct\.tmp\g3-qa\chrome-profile\Default\Session Storage/MANIFEST-000001
+2026/09/10-00:04:11.970 1aa8 Level-0 table #5: started
+2026/09/10-00:04:11.981 1aa8 Level-0 table #5: 9721 bytes OK
+2026/09/10-00:04:11.985 1aa8 Delete type=0 #3
+2026/09/10-00:10:35.003 1aa8 Level-0 table #7: started
+2026/09/10-00:10:35.015 1aa8 Level-0 table #7: 14291 bytes OK
+2026/09/10-00:10:35.017 1aa8 Delete type=0 #4
+2026/09/10-00:14:09.309 1aa8 Level-0 table #9: started
+2026/09/10-00:14:09.386 1aa8 Level-0 table #9: 19302 bytes OK
+2026/09/10-00:14:09.420 1aa8 Delete type=0 #6
+2026/09/10-00:15:03.406 1aa8 Level-0 table #11: started
+2026/09/10-00:15:03.413 1aa8 Level-0 table #11: 9726 bytes OK
+2026/09/10-00:15:03.416 1aa8 Delete type=0 #8
+2026/09/10-11:29:48.276 1aa8 Level-0 table #13: started
+2026/09/10-11:29:48.287 1aa8 Level-0 table #13: 9707 bytes OK
+2026/09/10-11:29:48.289 1aa8 Delete type=0 #10
+2026/09/10-11:29:54.429 1aa8 Level-0 table #15: started
+2026/09/10-11:29:54.439 1aa8 Level-0 table #15: 18179 bytes OK
+2026/09/10-11:29:54.441 1aa8 Delete type=0 #12
+2026/09/10-11:29:54.443 1aa8 Compacting 4@0 + 1@1 files
+2026/09/10-11:29:54.456 1aa8 Generated table #16@0: 12 keys, 13281 bytes
+2026/09/10-11:29:54.456 1aa8 Compacted 4@0 + 1@1 files => 13281 bytes
+2026/09/10-11:29:54.457 1aa8 compacted to: files[ 0 1 1 0 0 0 0 ]
+2026/09/10-11:29:54.459 1aa8 Delete type=2 #7
+2026/09/10-11:29:54.459 1aa8 Delete type=2 #9
+2026/09/10-11:29:54.459 1aa8 Delete type=2 #11
+2026/09/10-11:29:54.459 1aa8 Delete type=2 #13
+2026/09/10-11:29:54.459 1aa8 Delete type=2 #15
+2026/09/10-11:29:58.444 1aa8 Level-0 table #18: started
+2026/09/10-11:29:58.451 1aa8 Level-0 table #18: 11040 bytes OK
+2026/09/10-11:29:58.453 1aa8 Delete type=0 #14
+2026/09/10-11:31:29.786 1aa8 Level-0 table #20: started
+2026/09/10-11:31:29.797 1aa8 Level-0 table #20: 14604 bytes OK
+2026/09/10-11:31:29.800 1aa8 Delete type=0 #17
+2026/09/10-11:36:50.089 1aa8 Level-0 table #22: started
+2026/09/10-11:36:50.308 1aa8 Level-0 table #22: 11022 bytes OK
+2026/09/10-11:36:50.310 1aa8 Delete type=0 #19
+2026/09/10-11:39:20.539 1aa8 Level-0 table #24: started
+2026/09/10-11:39:20.547 1aa8 Level-0 table #24: 11034 bytes OK
+2026/09/10-11:39:20.549 1aa8 Delete type=0 #21
+2026/09/10-11:39:20.550 1aa8 Compacting 4@0 + 1@1 files
+2026/09/10-11:39:20.559 1aa8 Generated table #25@0: 12 keys, 13286 bytes
+2026/09/10-11:39:20.559 1aa8 Compacted 4@0 + 1@1 files => 13286 bytes
+2026/09/10-11:39:20.560 1aa8 compacted to: files[ 0 1 1 0 0 0 0 ]
+2026/09/10-11:39:20.561 1aa8 Delete type=2 #16
+2026/09/10-11:39:20.561 1aa8 Delete type=2 #18
+2026/09/10-11:39:20.562 1aa8 Delete type=2 #20
+2026/09/10-11:39:20.562 1aa8 Delete type=2 #22
+2026/09/10-11:39:20.562 1aa8 Delete type=2 #24
+2026/09/10-11:43:44.610 1aa8 Level-0 table #27: started
+2026/09/10-11:43:44.618 1aa8 Level-0 table #27: 11026 bytes OK
+2026/09/10-11:43:44.620 1aa8 Delete type=0 #23
