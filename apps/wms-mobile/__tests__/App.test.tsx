@@ -47,8 +47,8 @@ test('chưa đăng nhập thì App dựng được và render màn Đăng nhập
   });
 
   const rendered = JSON.stringify(tree?.toJSON());
-  expect(rendered).toContain('WMS HOA NAM');
-  expect(rendered).toContain('Sử dụng tài khoản được cấp để tiếp tục.');
+  expect(rendered).toContain('HOA NAM SCANNER');
+  expect(rendered).toContain('Đăng nhập để bắt đầu phiên làm việc');
   // Không được lọt vào khung nghiệp vụ khi chưa đăng nhập.
   expect(rendered).not.toContain('Ca làm việc hiện tại');
 

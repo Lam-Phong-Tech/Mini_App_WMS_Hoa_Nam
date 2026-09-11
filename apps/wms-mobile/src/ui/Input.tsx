@@ -18,7 +18,7 @@
  * của chính người dùng chứ không phải dữ liệu khách.
  */
 
-import React, { useState } from 'react';
+import React, { useState, type ReactNode } from 'react';
 import {
   StyleSheet,
   TextInput,
@@ -33,6 +33,20 @@ import { Text } from './Text';
 const styles = StyleSheet.create({
   field: {
     borderWidth: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    width: '100%',
+    minWidth: 0,
+  },
+  adornment: {
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  input: {
+    flex: 1,
+    height: '100%',
+    minWidth: 0,
+    paddingVertical: 0,
   },
 });
 
@@ -42,6 +56,9 @@ export interface InputProps extends Omit<TextInputProps, 'style'> {
   /** Chuỗi lỗi. Có giá trị = ô nhập ở trạng thái lỗi. */
   errorText?: string;
   containerStyle?: StyleProp<ViewStyle>;
+  /** Icon/nút nằm trong vùng nhập; dùng cho các màn cần bám thiết kế. */
+  leftAdornment?: ReactNode;
+  rightAdornment?: ReactNode;
 }
 
 export function Input({
@@ -49,6 +66,8 @@ export function Input({
   helperText,
   errorText,
   containerStyle,
+  leftAdornment,
+  rightAdornment,
   onFocus,
   onBlur,
   editable = true,
@@ -79,21 +98,7 @@ export function Input({
         </Text>
       )}
 
-      <TextInput
-        {...rest}
-        editable={editable}
-        autoComplete={autoComplete}
-        importantForAutofill={importantForAutofill}
-        onFocus={event => {
-          setFocused(true);
-          onFocus?.(event);
-        }}
-        onBlur={event => {
-          setFocused(false);
-          onBlur?.(event);
-        }}
-        placeholderTextColor={theme.colors.textMuted}
-        accessibilityLabel={rest.accessibilityLabel ?? label}
+      <View
         style={[
           styles.field,
           {
@@ -104,12 +109,44 @@ export function Input({
             backgroundColor: editable
               ? theme.field.background
               : theme.field.disabledBackground,
-            color: theme.colors.textStrong,
-            fontFamily: theme.typography.fontFamily,
-            fontSize: theme.typography.body.fontSize,
           },
         ]}
-      />
+      >
+        {leftAdornment === undefined ? null : (
+          <View style={[styles.adornment, { marginRight: theme.spacing.sm }]}>
+            {leftAdornment}
+          </View>
+        )}
+        <TextInput
+          {...rest}
+          editable={editable}
+          autoComplete={autoComplete}
+          importantForAutofill={importantForAutofill}
+          onFocus={event => {
+            setFocused(true);
+            onFocus?.(event);
+          }}
+          onBlur={event => {
+            setFocused(false);
+            onBlur?.(event);
+          }}
+          placeholderTextColor={theme.colors.textMuted}
+          accessibilityLabel={rest.accessibilityLabel ?? label}
+          style={[
+            styles.input,
+            {
+              color: theme.colors.textStrong,
+              fontFamily: theme.typography.fontFamily,
+              fontSize: theme.typography.body.fontSize,
+            },
+          ]}
+        />
+        {rightAdornment === undefined ? null : (
+          <View style={[styles.adornment, { marginLeft: theme.spacing.sm }]}>
+            {rightAdornment}
+          </View>
+        )}
+      </View>
 
       {hasError ? (
         <Text

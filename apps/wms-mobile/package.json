@@ -4,11 +4,11 @@
   "private": true,
   "scripts": {
     "android": "react-native run-android",
-    "lint": "eslint .",
+    "lint": "eslint src __tests__",
     "start": "react-native start",
     "test": "jest",
     "typecheck": "tsc --noEmit",
-    "lint:fix": "eslint . --fix",
+    "lint:fix": "eslint src __tests__ --fix",
     "format": "prettier --write .",
     "build:android": "react-native build-android --mode=debug",
     "web": "vite --host 127.0.0.1 --port 5175",

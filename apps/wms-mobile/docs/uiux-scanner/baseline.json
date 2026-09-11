@@ -1,0 +1,120 @@
+{
+  "schema_version": 1,
+  "prompt_id": "00",
+  "captured_at": "2026-09-11T11:00:23+07:00",
+  "app": {
+    "repository": "https://github.com/Lam-Phong-Tech/Mini_App_WMS_Hoa_Nam",
+    "path": "apps/wms-mobile",
+    "baseline_revision": "7f4d4006608009c400a4d6652200db030677db86",
+    "current_revision": "28447eb9d3a5bd6ffb571d9437c3395e01ed40ec",
+    "branch": "codex/gate-01-inventory",
+    "source_tree": "e253d49c7d0b7b78d62f2fff43b9f2a29f4dbb4f",
+    "runtime": {
+      "node": "v24.19.0",
+      "npm": "11.17.0",
+      "react": "19.2.3",
+      "react_native": "0.87.1",
+      "react_native_web": "^0.21.0",
+      "vite": "^5.4.21"
+    }
+  },
+  "designer": {
+    "repository": "https://github.com/Duc-Nguyen98/ScannerHNApp",
+    "source_revision": "90b0032b970e4f40cf4ccc8a95407577f1ab720a",
+    "public_url": "https://duc-nguyen98.github.io/ScannerHNApp/",
+    "public_probe": {
+      "at": "2026-09-11T11:00:23+07:00",
+      "http_status": 200,
+      "etag": "W/\\\"6aa27648-28ee\\\"",
+      "last_modified": "Thu, 10 Sep 2026 09:20:08 GMT",
+      "html_sha256": "92a5065b7d41cfe01660e339e822dffeb4617b7f344582b1de2f13ce99a9d843",
+      "source_sha_exposed_in_html": false,
+      "conclusion": "Trang public trả 200 và có tiêu đề đúng, nhưng không công bố commit SHA; không thể chứng minh byte-for-byte deployment bằng source SHA."
+    },
+    "catalog_sha256": "e21140eeb851e375b841b853fe935bd9d2b9bb4554a9e5f0c86216877d7f4890",
+    "prototype": {
+      "flow_js_sha256": "2c2a2b0491a09fed6dfdbb88fc2b5833fb95fac3ceec6cbbfb2102f1048640a2",
+      "style_css_sha256": "91f09657963f1ad45ab968d84010baf7feeb057073ee0968d802cf8ce88adcee",
+      "screen_viewport_css_px": { "width": 390, "height": 844 },
+      "note": "Kích thước này chỉ được source prototype 17–22 chứng minh; không suy áp cho 18 board ảnh còn lại."
+    }
+  },
+  "locked_images": [
+    {
+      "id": "01-login-session",
+      "path": "design/01_Main/BOARDS/00_LOCKED_ORIGINALS/01_Dang_nhap_va_Xac_nhan_phien_ORIGINAL.jpg",
+      "width": 1448,
+      "height": 1086,
+      "sha256": "260e483a6447af2fb84cd5c1a5c5f5d75bd1a756ec6e37d69e0743aea5bd5853",
+      "immutable": true
+    },
+    {
+      "id": "02-home",
+      "path": "design/01_Main/BOARDS/00_LOCKED_ORIGINALS/02_Trang_chu_ORIGINAL.jpg",
+      "width": 1536,
+      "height": 1024,
+      "sha256": "ed0d7b90fdb66778cab0ff53b9537785e55ec60227d7666e5d7693f42eb15ef8",
+      "immutable": true
+    }
+  ],
+  "assets_and_fonts": {
+    "status": "source inventoried; not copied into the App during Prompt 00",
+    "approved_asset_root": "assets/scanner-approved",
+    "manifest": {
+      "path": "assets/scanner-approved/ASSET_MANIFEST.json",
+      "sha256": "abf9d2f2d9de92853ddd9ac3a3fb14ce0856f0f22a8d63a03428f041f6566517",
+      "license_or_provenance_readme_sha256": "f754c5d54d52e182335e92916ed00e37197d6339cb48295bc5bb1f71b7ef307d"
+    },
+    "fonts": [
+      { "path": "flows/warranty-components/fonts/OFL.txt", "sha256": "e0468b7b70bcf81a25f3f2347080e05514562380f54d998711fc356f0c8fda33" },
+      { "path": "flows/warranty-components/fonts/public-sans-2090ae7a.woff2", "sha256": "e43b193880fdb1d6adf494192bcdf77b008cafe910b0cb07d44d46a564d1cdae", "unicode_range": "Vietnamese" },
+      { "path": "flows/warranty-components/fonts/public-sans-da9f89d3.woff2", "sha256": "1c8a26c0ed4312dacc36670714794c9f4b4a0972ccb45f2936646bd8d444d5f8", "unicode_range": "extended latin" },
+      { "path": "flows/warranty-components/fonts/public-sans-f631476b.woff2", "sha256": "c1b6da516e0062e9c2f341b3a51dd2d621d946da72f06c6cfe05fd9d2dd8622d", "unicode_range": "latin" }
+    ]
+  },
+  "board_inventory": [
+    { "prompt": "01", "title": "Đăng nhập & Xác nhận phiên", "path": "00_LOCKED_ORIGINALS/01_Dang_nhap_va_Xac_nhan_phien_ORIGINAL.jpg", "width": 1448, "height": 1086, "sha256": "260e483a6447af2fb84cd5c1a5c5f5d75bd1a756ec6e37d69e0743aea5bd5853", "kind": "locked" },
+    { "prompt": "02", "title": "Trang chủ đã khóa", "path": "00_LOCKED_ORIGINALS/02_Trang_chu_ORIGINAL.jpg", "width": 1536, "height": 1024, "sha256": "ed0d7b90fdb66778cab0ff53b9537785e55ec60227d7666e5d7693f42eb15ef8", "kind": "locked" },
+    { "prompt": "03", "title": "Dialog cố định", "path": "01_UPDATED_BOARDS/01_dialog_header_aligned_v2.png", "width": 1774, "height": 887, "sha256": "a13e65a782ac8f64048a1a3ea2dfe615a62cdb9c99076d8ba5cdefaeb0901caa", "kind": "updated" },
+    { "prompt": "04", "title": "Nhập kho", "path": "01_UPDATED_BOARDS/02_nhap_kho.png", "width": 1536, "height": 1024, "sha256": "b0f13c4aff332518a6d5348eac6452dd8e4aa9bf98347568df9e527073c3a67f", "kind": "updated" },
+    { "prompt": "05", "title": "Xuất kho", "path": "01_UPDATED_BOARDS/03_xuat_kho.png", "width": 1536, "height": 1024, "sha256": "c27ce612b8b1cffe997c28d6beceb0246950707d03a03c5da4cc795419d5e0e9", "kind": "updated" },
+    { "prompt": "06", "title": "Tra cứu", "path": "01_UPDATED_BOARDS/04_tra_cuu.png", "width": 1536, "height": 1024, "sha256": "9e501dee3a5c7e014336233d9978ff776bec12ea2bc707944ac132dfda2f973b", "kind": "updated" },
+    { "prompt": "07", "title": "NFC", "path": "01_UPDATED_BOARDS/05_nfc.png", "width": 1672, "height": 941, "sha256": "63f4b3876547ffec943f0e8f369eb22b48ba715ec38b14c51030a150b19a3b65", "kind": "updated" },
+    { "prompt": "08", "title": "Lịch sử", "path": "01_UPDATED_BOARDS/06_lich_su.png", "width": 1672, "height": 941, "sha256": "78aa9384caf3f2ed600ead4f1c8518a8c254fccaadc96d1e5c8483d5f4c67aa2", "kind": "updated" },
+    { "prompt": "09", "title": "Bảo hành", "path": "01_UPDATED_BOARDS/07_bao_hanh.png", "width": 1672, "height": 941, "sha256": "2ca3af4c77313c14eb709436ebd4dc98f74461c8890b1a8dc56db622bab57608", "kind": "updated" },
+    { "prompt": "10", "title": "Cá nhân", "path": "01_UPDATED_BOARDS/08_ca_nhan.png", "width": 1671, "height": 941, "sha256": "751f5f0d7b840d3a75e98aca9e52a9bdfedb2ae0a3d275fcf20df7d021affee4", "kind": "updated" },
+    { "prompt": "11", "title": "Bảo mật", "path": "01_UPDATED_BOARDS/09_bao_mat.png", "width": 1536, "height": 1024, "sha256": "f36a6d757793b0c3a4e059e61e9c023c00c88f71df1c12dbadaf43ba6c663272", "kind": "updated" },
+    { "prompt": "12", "title": "Chứng từ", "path": "01_UPDATED_BOARDS/10_chung_tu.png", "width": 1536, "height": 1024, "sha256": "bb73f81c628986d6a763d4a846f19229e60898ef016eb02022926603bea776ad", "kind": "updated" },
+    { "prompt": "13", "title": "Thông báo phê duyệt — tham chiếu cũ", "path": "02_NEW_BOARDS/11_thong_bao_phe_duyet.png", "width": 1536, "height": 1024, "sha256": "34490e3317a14b17e9ad43772796325745bd278f7402fb68e4282f917f144f69", "kind": "reference-old" },
+    { "prompt": "14", "title": "Khôi phục tài khoản & kết thúc ca", "path": "02_NEW_BOARDS/12_khoi_phuc_va_ca_fixed.png", "width": 1536, "height": 1024, "sha256": "b2d4e23679822a467d02b0eef67144e3eb040b78381e6d0b7fb1a53ef2f9f649", "kind": "reference-old" },
+    { "prompt": "15", "title": "Hệ thống", "path": "02_NEW_BOARDS/13_he_thong_fixed.png", "width": 1774, "height": 887, "sha256": "00ab6b9fb469305e206986afbcb78565d9eee72a57557989fbe864a374802d01", "kind": "reference-old" },
+    { "prompt": "16", "title": "Dữ liệu quyết lỗi", "path": "02_NEW_BOARDS/14_du_lieu_quyet_loi_fixed.png", "width": 1536, "height": 1024, "sha256": "411441cd8eef6ed2ccfac459079870da00b610736b68cb0a3415ab2c86c3a8c8", "kind": "reference-old" },
+    { "prompt": "17", "title": "Ngoại lệ quét", "path": "02_NEW_BOARDS/15_ngoai_le_quet_fixed.png", "width": 1536, "height": 1024, "sha256": "3bc6851e8ddeb494e1885a8e8683ba41327a8180880d2a11b74726a06f40b392", "kind": "reference-old" },
+    { "prompt": "18", "title": "Đính kèm & bàn giao", "path": "02_NEW_BOARDS/16_dinh_kem_ban_giao_fixed.png", "width": 1536, "height": 1024, "sha256": "d224f33e82eab41f08b23fc092522181a5439e42b8b1901e0e483be4f95331ad", "kind": "reference-old" },
+    { "prompt": "19", "title": "Xuất linh kiện bảo hành", "path": "02_NEW_BOARDS/17_xuat_linh_kien_bao_hanh.png", "width": 3584, "height": 2080, "sha256": "8add85c191c4ac872a00eab66d3461308aa7c78bcff22a5980bf6091ef94cfef", "kind": "current-prototype" },
+    { "prompt": "20", "title": "Lịch sử linh kiện", "path": "02_NEW_BOARDS/18_lich_su_linh_kien.png", "width": 3584, "height": 2080, "sha256": "a578d7c8123dc57b71177bbd7c5eb8b42e74215051d4c2d63660f51ae6b96bd7", "kind": "current-prototype" },
+    { "prompt": "21", "title": "Tiếp tục phiếu linh kiện", "path": "02_NEW_BOARDS/19_tiep_tuc_phieu_linh_kien.png", "width": 3584, "height": 2080, "sha256": "2615f46a810ae54eec0e45c209d2dad236f52457f7c3def57e2b2d576bae1d0b", "kind": "current-prototype" },
+    { "prompt": "22", "title": "Lịch sử thao tác & NFC", "path": "02_NEW_BOARDS/20_lich_su_thao_tac_nfc.png", "width": 3584, "height": 2080, "sha256": "317b6852649994a35d22aff63ab87766f47063235890a8f37dbf5cbdf7acd2c5", "kind": "current-prototype" },
+    { "prompt": "23", "title": "Bảo hành & phiên quét", "path": "02_NEW_BOARDS/21_lich_su_bao_hanh_phien_quet.png", "width": 3584, "height": 2080, "sha256": "ddf7ae5493b7932184808eef684b9406d2cea88c074d7d8d64cfe7d298f97f09", "kind": "current-prototype" },
+    { "prompt": "24", "title": "Trạng thái Scanner", "path": "02_NEW_BOARDS/22_trang_thai_scanner.png", "width": 3584, "height": 2080, "sha256": "ad3cc5fdedac0a6351778787f9b87fa7ad8d1e416110f7be1c23cb0118bd9717", "kind": "current-prototype" }
+  ],
+  "comparison_profiles": [
+    {
+      "id": "prototype-17-22",
+      "viewport_css_px": "390x844",
+      "dpr": "NOT_YET_FIXED",
+      "browser": "NOT_YET_FIXED",
+      "font": "Public Sans local WOFF2",
+      "locale": "vi-VN",
+      "timezone": "Asia/Ho_Chi_Minh",
+      "fixture_clock": "must be frozen before visual diff",
+      "safe_area": "must be captured per target device",
+      "reduced_motion": "both no-preference and reduce required"
+    },
+    {
+      "id": "boards-01-18",
+      "viewport_css_px": "NOT_YET_DERIVED",
+      "reason": "Các board là ảnh composite/khung điện thoại khác nhau; chưa có crop và scale được phê duyệt."
+    }
+  ]
+}

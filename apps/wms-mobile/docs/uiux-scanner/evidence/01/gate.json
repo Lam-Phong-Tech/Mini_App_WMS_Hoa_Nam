@@ -1,0 +1,117 @@
+{
+  "schema_version": 1,
+  "prompt_id": "01",
+  "status": "BLOCKED",
+  "started_at": "2026-09-11T11:30:00+07:00",
+  "agent": "Codex",
+  "completed_at": "2026-09-11T12:05:00+07:00",
+  "scope": {
+    "included": [
+      "login presentation and current validation states",
+      "authenticated session-confirmation UI",
+      "real logout reuse",
+      "Prompt 01 unit/type/build evidence"
+    ],
+    "excluded": [
+      "shift start/end business action",
+      "account recovery",
+      "new motion or scroll packages",
+      "backend/auth/permission/schema changes",
+      "DEV API credentials, Android camera/NFC or hardware acceptance",
+      "Prompt 02 and later"
+    ],
+    "scope_revision": "D06 user confirmation: independent UI sub-gates may run only after explicit prompt assignment. User assigned Prompt 01 by supplying it after requesting independent screens first."
+  },
+  "baseline_revision": {
+    "app": "7f4d4006608009c400a4d6652200db030677db86",
+    "designer": "90b0032b970e4f40cf4ccc8a95407577f1ab720a"
+  },
+  "dependency_gates": [
+    {
+      "prompt_id": "00",
+      "status": "BLOCKED_TOTAL_GATE",
+      "sha256": "not-self-hashed",
+      "subgate_exception": "gate.json scope.partial_ui_subgates.allowed=true; this Prompt 01 execution is explicitly assigned and does not claim Gate 00 PASS."
+    }
+  ],
+  "preflight": [
+    {
+      "id": "gate-00-json",
+      "status": "PASS",
+      "evidence": "docs/uiux-scanner/evidence/00/gate.json parses; it records D06 partial_ui_subgates.allowed=true."
+    },
+    {
+      "id": "gate-00-total-status",
+      "status": "BLOCKED_SCOPED",
+      "evidence": "Gate 00 remains BLOCKED for total lint, absolute visual acceptance, DEV/hardware, BA and deploy-SHA items. D06 scopes these out of independent UI work; no total-gate PASS is claimed."
+    },
+    {
+      "id": "prompt-01-unresolved-business",
+      "status": "RESOLVED_BY_SCOPE",
+      "evidence": "D06 says shift is hidden or labelled Chưa áp dụng; account recovery is not implemented."
+    },
+    {
+      "id": "motion",
+      "status": "BLOCKED_SCOPED",
+      "evidence": "motion-spec.md has no approved Prompt 01 native timing/call-site; UI remains static and no dependency is installed."
+    }
+  ],
+  "input_revision": {
+    "branch": "codex/gate-01-inventory",
+    "app_head": "28447eb9d3a5bd6ffb571d9437c3395e01ed40ec",
+    "gate_00_sha256": "ba8e22d28e50f702c0c93e7b08282431fced68f863bbb60dce67132dfcb675fa",
+    "baseline_sha256": "f880e45bc6bbee368ce23f3b9dbb359c13db7ae06f9266749e811efb3d92ea90"
+  },
+  "output_revision": {
+    "kind": "uncommitted source and evidence",
+    "content_hashes": {
+      "app_shell": "a8a1680c8c9a9000b0ff1a9b23c6e28e2abf4adf83eb4730cf05583f263ea05b",
+      "login_screen": "b847f5b65865309d9a4352b0549d746164655227c0c3aff4453ae24361b971b9",
+      "session_confirmation_screen": "827b890fca592c377714023d2a1b69f0b41844dea65f8920b483ecc513fbfdc0",
+      "queries": "31499911dbf66ffd083821962a9362ace511e81a15f881e67d5922ebee4ea92f",
+      "types": "08537f7550502c167a9036f7667054b9216b41d1bce84e89eaa9b6b66aa26a25",
+      "auth_tests": "e04f1a661d69faff11b00997bbf9de1ec2ad399674c9122b84da1e4d0aac2418"
+    }
+  },
+  "changed_files": [
+    "apps/wms-mobile/src/app/AppShell.tsx",
+    "apps/wms-mobile/src/features/auth/LoginScreen.tsx",
+    "apps/wms-mobile/src/features/auth/SessionConfirmationScreen.tsx",
+    "apps/wms-mobile/src/services/wms/queries.ts",
+    "apps/wms-mobile/src/services/wms/types.ts",
+    "apps/wms-mobile/__tests__/authFlow.test.tsx",
+    "apps/wms-mobile/docs/uiux-scanner/evidence/01/state-matrix.md",
+    "apps/wms-mobile/docs/uiux-scanner/evidence/01/changes.md",
+    "apps/wms-mobile/docs/uiux-scanner/evidence/01/checks.md",
+    "apps/wms-mobile/docs/uiux-scanner/evidence/01/blockers.md",
+    "apps/wms-mobile/docs/uiux-scanner/evidence/01/gate.json"
+  ],
+  "checks": [
+    { "id": "typecheck", "status": "PASS", "command": "npm run typecheck", "exit_code": 0 },
+    { "id": "relevant-lint", "status": "PASS", "command": "npx eslint <six changed source/test files>", "exit_code": 0 },
+    { "id": "relevant-tests", "status": "PASS", "command": "npm test -- --runInBand __tests__/authFlow.test.tsx", "exit_code": 0, "detail": "1 suite / 22 tests" },
+    { "id": "full-tests", "status": "PASS", "command": "npm test -- --runInBand --silent", "exit_code": 0, "detail": "32 suites / 863 tests" },
+    { "id": "web-build", "status": "PASS", "command": "npm run build:web", "exit_code": 0, "detail": "Vite size warning only" },
+    { "id": "web-preview-390x844", "status": "PASS_SCOPED", "detail": "Manual production-preview inspection: normal and empty-form/error states plus password visibility label." },
+    { "id": "web-dev-server", "status": "FAIL", "command": "npm run web", "detail": "Vite/esbuild Flow parse failure while prebundling React Native source; production build/preview pass." },
+    { "id": "dev-auth-integration", "status": "NOT_RUN", "detail": "No DEV account/role/test warehouse supplied; no credentials sent." },
+    { "id": "android-hardware", "status": "NOT_RUN", "detail": "No physical device supplied." },
+    { "id": "visual-motion-diff", "status": "NOT_RUN", "detail": "No approved board-01 crop/DPR/safe-area/native motion profile." }
+  ],
+  "unresolved_blockers": [
+    "Authenticated DEV login/logout and role data have not been tested with a supplied account.",
+    "Board 01 does not have approved crop/DPR/safe-area data for pixel comparison.",
+    "No approved native motion call-site/timing exists for board 01.",
+    "npm run web currently fails although build:web and production preview pass."
+  ],
+  "approvals": [
+    {
+      "source": "user D06 message",
+      "excerpt": "UI/unit work does not wait for DEV hardware; do not implement shifts or recovery; do not install motion packages; keep four tabs."
+    },
+    {
+      "source": "current user instruction",
+      "excerpt": "Implement independent screens first and report when a screen needs unresolved information; Prompt 01 was supplied."
+    }
+  ]
+}

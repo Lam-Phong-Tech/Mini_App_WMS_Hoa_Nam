@@ -1,0 +1,178 @@
+{
+  "schema_version": 1,
+  "prompt_id": "00",
+  "status": "BLOCKED",
+  "started_at": "2026-09-11T10:29:00+07:00",
+  "completed_at": "2026-09-11T11:00:23+07:00",
+  "agent": "Codex",
+  "scope": {
+    "included": [
+      "workspace/source survey",
+      "24-board designer inventory",
+      "baseline/state/API/motion evidence",
+      "foundation checks"
+    ],
+    "excluded": [
+      "UI implementation",
+      "dependency installation",
+      "API client/write-gate changes",
+      "backend changes",
+      "deployment",
+      "Prompt 01–24 execution"
+    ],
+    "partial_ui_subgates": {
+      "allowed": true,
+      "requires_explicit_prompt_assignment": true,
+      "not_allowed": [
+        "claiming Gate 00 PASS",
+        "DEV API or hardware acceptance without D05 evidence",
+        "pixel-perfect claim for boards 01–18",
+        "shift/work/handover/account-recovery business implementation",
+        "automatic execution of Prompt 01"
+      ]
+    }
+  },
+  "baseline_revision": {
+    "app": "7f4d4006608009c400a4d6652200db030677db86",
+    "designer": "90b0032b970e4f40cf4ccc8a95407577f1ab720a"
+  },
+  "input_revision": {
+    "app_head": "28447eb9d3a5bd6ffb571d9437c3395e01ed40ec",
+    "branch": "codex/gate-01-inventory",
+    "app_source_tree": "e253d49c7d0b7b78d62f2fff43b9f2a29f4dbb4f",
+    "designer_public_html_sha256": "92a5065b7d41cfe01660e339e822dffeb4617b7f344582b1de2f13ce99a9d843"
+  },
+  "output_revision": {
+    "kind": "uncommitted documentation evidence",
+    "content_hashes": {
+      "baseline": "f880e45bc6bbee368ce23f3b9dbb359c13db7ae06f9266749e811efb3d92ea90",
+      "board_map": "b663aa0ffdaafa364cc1234030c39df6260e3ef1137efa2b58640653f5566406",
+      "state_inventory": "ff057fa79e83635c4c3e889c4f0e0f3972a7f999fa78f03694c0e33cfe9cae2b",
+      "source_contract_map": "f26d50f0e5da5d674906f3313d02599c43ca6101e2487381e8ece1f7b77139a4",
+      "decisions": "e3dfc706f2cd8855bc1a08e33d8780543b4a6373f4f3f16975c02a5ad1aa55cf",
+      "motion_spec": "988e98acc79574745421d3c15ae6df5e049a8bcd1eaf99c30abfb017375e0d56"
+    }
+  },
+  "dependency_gates": [],
+  "changed_files": [
+    "apps/wms-mobile/docs/uiux-scanner/baseline.json",
+    "apps/wms-mobile/docs/uiux-scanner/board-map.md",
+    "apps/wms-mobile/docs/uiux-scanner/state-inventory.md",
+    "apps/wms-mobile/docs/uiux-scanner/source-contract-map.md",
+    "apps/wms-mobile/docs/uiux-scanner/decisions.md",
+    "apps/wms-mobile/docs/uiux-scanner/motion-spec.md",
+    "apps/wms-mobile/docs/uiux-scanner/evidence/00/state-matrix.md",
+    "apps/wms-mobile/docs/uiux-scanner/evidence/00/changes.md",
+    "apps/wms-mobile/docs/uiux-scanner/evidence/00/foundation-checks.md",
+    "apps/wms-mobile/docs/uiux-scanner/evidence/00/blockers.md",
+    "apps/wms-mobile/docs/uiux-scanner/evidence/00/visual-check.md",
+    "apps/wms-mobile/docs/uiux-scanner/evidence/00/designer-deployment-check.md",
+    "apps/wms-mobile/docs/uiux-scanner/evidence/00/gate.json"
+  ],
+  "checks": [
+    {
+      "id": "workspace-and-remotes",
+      "status": "PASS",
+      "evidence": "Git remote is Lam-Phong-Tech/Mini_App_WMS_Hoa_Nam; current branch and baseline delta captured in baseline.json."
+    },
+    {
+      "id": "designer-source-revision",
+      "status": "PASS",
+      "evidence": "git ls-remote returned Designer main/HEAD 90b0032b970e4f40cf4ccc8a95407577f1ab720a."
+    },
+    {
+      "id": "designer-deployment",
+      "status": "PASS",
+      "evidence": "Public HEAD/main both resolve to 90b0032b970e4f40cf4ccc8a95407577f1ab720a; live Pages entry document's normalized SHA-256 matches docs/index.html at that commit. See designer-deployment-check.md."
+    },
+    {
+      "id": "board-and-state-inventory",
+      "status": "PASS",
+      "evidence": "24 catalog boards; hashes/dimensions in baseline.json; state graph/mapping in state-inventory.md and board-map.md."
+    },
+    {
+      "id": "D01-platform-boundary",
+      "status": "PASS",
+      "evidence": "User-confirmed Web-by-role; RN/FlashList Android/PDA boundary recorded in decisions.md and motion-spec.md."
+    },
+    {
+      "id": "D03-real-api-boundary",
+      "status": "PASS",
+      "evidence": "User rule and BE response contract recorded; unresolved BA aggregates remain separately blocked."
+    },
+    {
+      "id": "D04-visual-acceptance-profile",
+      "status": "BLOCKED",
+      "evidence": "D07 fixes the test parameters, but the locked Login source is a two-device composite (1448×1086), not an app-only/crop-ready raster. No raw fixture or crop bounds exists; visual-check.md records the failed validation."
+    },
+    {
+      "id": "D05-dev-hardware-environment",
+      "status": "DEFERRED",
+      "evidence": "Credentials must arrive through a secure channel. Android/PDA camera/NFC test remains an external physical-device dependency and cannot be claimed before it occurs."
+    },
+    {
+      "id": "typecheck",
+      "status": "PASS",
+      "command": "npm run typecheck",
+      "exit_code": 0
+    },
+    {
+      "id": "tests",
+      "status": "PASS",
+      "command": "npm test -- --runInBand",
+      "exit_code": 0,
+      "detail": "32 suites / 863 tests passed; warnings are recorded in foundation-checks.md."
+    },
+    {
+      "id": "lint",
+      "status": "PASS",
+      "command": "npm run lint",
+      "exit_code": 0,
+      "detail": "D07 source/test scope: 0 errors / 9 pre-existing warnings. Changed source files lint clean with no warning; web-dist is generated output and excluded."
+    },
+    {
+      "id": "web-build",
+      "status": "PASS",
+      "command": "npm run build:web",
+      "exit_code": 0,
+      "detail": "Succeeded outside sandbox after sandbox directory access failure; Vite bundle-size warning remains."
+    },
+    {
+      "id": "android-and-hardware",
+      "status": "EXTERNAL_DEPENDENCY",
+      "detail": "Requires an Android/PDA camera/NFC device and secure DEV account delivery; not claimed as verified."
+    },
+    {
+      "id": "visual-and-motion-diff",
+      "status": "BLOCKED",
+      "detail": "The current Login capture at 390×844/DPR 3 has no horizontal overflow and is stored in evidence/00. The Designer Login board cannot form a valid app-only reference, so the required pixel parity cannot yet be measured; see visual-check.md."
+    }
+  ],
+  "approvals": [
+    {
+      "scope": "D01–D05",
+      "source": "user message in this thread",
+      "excerpt": "Web uses role-appropriate libraries; Android/PDA keeps React Native and FlashList; real functions only after BE confirms endpoint/data/permission; compare by approved viewport/device/font/icon/color/motion; DEV plus physical camera/NFC testing."
+    },
+    {
+      "scope": "D03 BE contracts",
+      "source": "user-pasted BE response in this thread",
+      "excerpt": "BE confirms profile/password/sessions/notifications/document attachments/NFC history/scan-event contracts and marks shifts, work assignment and warranty handover as BA decisions."
+    },
+    {
+      "scope": "D06 partial UI scope",
+      "source": "user message in this thread",
+      "excerpt": "Keep four tabs; use 390×844 vi-VN Asia/Ho_Chi_Minh preview; defer shifts/work/handover/recovery and new motion packages; use Designer 90b003 local baseline; handle lint per changed files; do not auto-run Prompt 01."
+    },
+    {
+      "scope": "D07 Gate 00 close criteria",
+      "source": "user message in this thread",
+      "excerpt": "Lint source/test only; Chromium 390×844 DPR 3 with specified crop/diff thresholds; secure DEV credentials; four BA flows not applicable; no new motion/virtual-list package; Designer deploy SHA required."
+    }
+  ],
+  "unresolved_blockers": [
+    "B00-02 Designer must provide crop-ready/raw visual fixtures; current Login visual validation fails"
+  ],
+  "next_stage_allowed": false,
+  "next_stage": "Do not automatically execute Prompt 01. A non-dependent prompt may run only after the user assigns that prompt and its sub-gate; Gate 00 remains BLOCKED until total-gate blockers are cleared."
+}

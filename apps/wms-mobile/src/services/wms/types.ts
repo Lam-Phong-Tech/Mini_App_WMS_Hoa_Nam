@@ -270,4 +270,6 @@ export interface CurrentUser {
   readonly avatar_url?: string;
   readonly role?: string;
   readonly permissions?: readonly string[];
+  /** Phạm vi kho do BE trả; UI chỉ hiển thị, không biến thành lựa chọn kho. */
+  readonly warehouse_scope_ids?: readonly string[];
 }

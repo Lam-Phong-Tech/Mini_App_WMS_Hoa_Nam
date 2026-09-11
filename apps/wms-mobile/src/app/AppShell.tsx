@@ -4,7 +4,8 @@
  * ## Bốn tab cho nhân viên quét
  *
  * App chỉ quét và gửi phiếu. Duyệt/Ghi sổ tồn kho thuộc Web WMS, nên App không
- * có tab thao tác Post trên thiết bị quét.
+ * có tab thao tác Post trên thiết bị quét. Chứng từ mở từ Trang chủ hoặc Lịch
+ * sử, chỉ để xem danh sách/chi tiết có thật, không duyệt hoặc ghi sổ.
  *
  * Suốt đợt 1–4 thanh tab chỉ hiện tab đã dựng, vì nguyên tắc #4 của Prompt 4 cấm
  * *"màn hình demo để thay thế"* — một tab bấm vào ra màn trống đúng là thứ đó,
@@ -17,8 +18,8 @@
  *
  * 🔒 Mục 2 của luồng bắt buộc (2026-09-06): gọi `GET /api/v1/health` và chỉ bật
  * quét khi header `X-WMS-Deployment-Tier` khớp bản dựng. Chạy ở đây — **một
- * lần, sớm nhất có thể** — thay vì để từng màn tự hỏi: năm màn tự hỏi là năm
- * request, và tệ hơn, năm màn có thể đi tới năm kết luận khác nhau.
+ * lần, sớm nhất có thể** — thay vì để từng màn tự hỏi: nhiều request có thể
+ * đi tới nhiều kết luận khác nhau.
  *
  * ## Khôi phục phiên khi mở app
  *
@@ -31,6 +32,7 @@ import React, { useCallback, useEffect, useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 import { BottomNav, type BottomNavItem } from '../ui/BottomNav';
 import { LoginScreen } from '../features/auth/LoginScreen';
+import { SessionConfirmationScreen } from '../features/auth/SessionConfirmationScreen';
 import {
   LogoutProgressScreen,
   SessionExpiredScreen,
@@ -69,7 +71,7 @@ const styles = StyleSheet.create({
   },
 });
 
-/** Chỉ những tab đã có màn thật. Thêm dần theo đợt — xem chú thích đầu tệp. */
+/** Bốn tab đã chốt: chứng từ được mở từ Trang chủ hoặc Lịch sử. */
 const IMPLEMENTED_TABS: readonly BottomNavItem[] = [
   { key: 'home', label: 'Trang chủ', icon: 'home' },
   { key: 'scan', label: 'Quét mã', icon: 'scan' },
@@ -85,7 +87,7 @@ function renderTab(
     onLogoutStarted: () => void;
     onSelectTask: (task: HomeTaskKey) => void;
     onHome: () => void;
-    onOpenHistory: () => void;
+    onOpenDocuments: () => void;
     onOpenDocument: (kind: 'inbound' | 'outbound', documentId: string) => void;
     onLookupNfc: () => void;
     onScanLookup: () => void;
@@ -121,7 +123,8 @@ function renderTab(
         <HomeScreen
           userName={handlers.userName}
           onSelectTask={handlers.onSelectTask}
-          onSeeAll={handlers.onOpenHistory}
+          onSeeAll={handlers.onOpenDocuments}
+          onOpenDocument={handlers.onOpenDocument}
         />
       );
     default:
@@ -150,6 +153,7 @@ export function AppShell(): React.ReactElement {
     | 'nfc-tags'
     | 'inventory-scan'
     | 'inventory-lookup'
+    | 'session-confirmation'
     | undefined
   >();
   /**
@@ -203,6 +207,11 @@ export function AppShell(): React.ReactElement {
     }
     if (openDocument !== undefined) {
       setOpenDocument(undefined);
+      return true;
+    }
+    // Xác nhận phiên chỉ được rời bằng hai CTA có chủ đích. Back không được
+    // bỏ qua nó để nhảy thẳng vào Home sau một đăng nhập mới.
+    if (flow === 'session-confirmation') {
       return true;
     }
     if (flow === 'warranty-components') {
@@ -268,7 +277,7 @@ export function AppShell(): React.ReactElement {
     setForcedRelogin(undefined);
     setSessionState(getSession());
     setTab('home');
-    setFlow(undefined);
+    setFlow('session-confirmation');
   }, []);
 
   const handleTask = useCallback((key: HomeTaskKey) => {
@@ -333,6 +342,15 @@ export function AppShell(): React.ReactElement {
         kind={openDocument.kind}
         documentId={openDocument.id}
         onBack={() => setOpenDocument(undefined)}
+      />
+    );
+  }
+
+  if (flow === 'session-confirmation') {
+    return (
+      <SessionConfirmationScreen
+        onContinue={() => setFlow(undefined)}
+        onLoggedOut={handleLoggedOut}
       />
     );
   }
@@ -522,7 +540,7 @@ export function AppShell(): React.ReactElement {
           onLogoutStarted: handleLogoutStarted,
           onSelectTask: handleTask,
           onHome: () => setTab('home'),
-          onOpenHistory: () => setTab('history'),
+          onOpenDocuments: () => setTab('history'),
           onOpenDocument: handleOpenDocument,
           onLookupNfc: () => setFlow('nfc-lookup'),
           onScanLookup: () => {

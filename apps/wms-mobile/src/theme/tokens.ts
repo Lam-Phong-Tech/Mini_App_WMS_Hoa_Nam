@@ -1,63 +1,63 @@
 /**
  * Design tokens.
  *
- * Nguồn duy nhất: khối `:root` trong `src/css/app.scss` của Mini App — được
- * GATE_01 Q7 chốt là "the only visual source of truth for migrated WMS UI",
- * bổ sung typography từ `docs/ui-system-x-vuexy.md §2`.
- *
- * ❌ Không sáng tạo lại nhận diện thương hiệu (Prompt 2 §3). Mọi giá trị dưới
- * đây đều copy nguyên từ hai nguồn trên; phần suy ra được ghi chú rõ.
+ * Nguồn duy nhất: bộ thiết kế Scanner v2 do người dùng chấp thuận,
+ * `ScannerHNApp@90b0032` (palette trong `flows/warranty-components/style.css`).
+ * Các token này dùng chung cho Web và React Native; nghiệp vụ/API không phụ
+ * thuộc vào chúng.
  */
 
+import { Platform } from 'react-native';
+
 export const colors = {
-  surfaceCanvas: '#f8f7fa',
+  surfaceCanvas: '#f3f8fb',
   surface: '#ffffff',
-  surfaceSubtle: '#f8f7fa',
+  surfaceSubtle: '#eaf5fa',
 
-  primary: '#7367f0',
-  primaryStrong: '#5e54d8',
-  primarySoft: '#efedff',
+  primary: '#0c6286',
+  primaryStrong: '#0c5d7d',
+  primarySoft: '#eaf5fa',
 
-  textStrong: '#2f2b3d',
-  text: 'rgba(47, 43, 61, 0.78)',
-  textMuted: 'rgba(47, 43, 61, 0.42)',
-  divider: 'rgba(47, 43, 61, 0.12)',
+  textStrong: '#12384e',
+  text: '#355a6c',
+  textMuted: '#527186',
+  divider: '#dce9ef',
 
-  success: '#28c76f',
-  successSoft: 'rgba(40, 199, 111, 0.12)',
-  successText: '#167a45',
+  success: '#168657',
+  successSoft: '#e1f5ea',
+  successText: '#168657',
 
-  danger: '#ea5455',
-  dangerSoft: 'rgba(234, 84, 85, 0.12)',
-  dangerText: '#b52f3b',
+  danger: '#c63c43',
+  dangerSoft: '#fff0f0',
+  dangerText: '#c63c43',
 
-  warning: '#ff9f43',
-  warningSoft: 'rgba(255, 159, 67, 0.14)',
-  warningText: '#98520e',
+  warning: '#a4640c',
+  warningSoft: '#fff5e3',
+  warningText: '#a4640c',
 
-  info: '#00cfe8',
-  infoSoft: 'rgba(0, 207, 232, 0.12)',
-  infoText: '#087c90',
+  info: '#0c6286',
+  infoSoft: '#eaf5fa',
+  infoText: '#0c6286',
 } as const;
 
 export const field = {
   height: 50,
-  radius: 8,
+  radius: 9,
   paddingX: 14,
-  border: 'rgba(47, 43, 61, 0.2)',
-  borderHover: 'rgba(47, 43, 61, 0.34)',
+  border: '#dce9ef',
+  borderHover: '#a9c6d3',
   borderFocus: colors.primary,
   borderError: colors.danger,
   background: colors.surface,
-  disabledBackground: 'rgba(47, 43, 61, 0.05)',
+  disabledBackground: '#edf3f5',
   labelSize: 12,
   helperSize: 12,
 } as const;
 
 export const radius = {
-  card: 8,
-  control: 8,
-  sheet: 18,
+  card: 12,
+  control: 9,
+  sheet: 23,
 } as const;
 
 /** Thang khoảng cách — ui-system-x-vuexy.md §2 "Khoảng cách và hình khối". */
@@ -73,7 +73,8 @@ export const spacing = {
 /**
  * Đổ bóng.
  *
- * CSS gốc: card `0 4px 18px rgba(47,43,61,0.10)`, floating `0 8px 24px rgba(47,43,61,0.14)`.
+ * CSS gốc: card `0 3px 10px rgba(18,75,101,0.02)`, floating
+ * `0 -12px 36px rgba(7,59,82,0.15)`.
  * Android không nhận `shadow*` của RN mà dùng `elevation`; giá trị elevation
  * dưới đây lấy theo độ lệch dọc của bóng gốc (4px → 4, 8px → 8).
  */
@@ -90,12 +91,14 @@ export const elevation = {
  * thống làm fallback, đúng như spec cho phép ("fallback về font hệ thống").
  */
 export const typography = {
-  fontFamily: undefined as string | undefined,
-  body: { fontSize: 15, lineHeight: 22, fontWeight: '400' },
-  caption: { fontSize: 13, lineHeight: 20, fontWeight: '400' },
-  cardTitle: { fontSize: 18, lineHeight: 24, fontWeight: '600' },
-  metric: { fontSize: 22, lineHeight: 30, fontWeight: '600' },
-  screenTitle: { fontSize: 21, lineHeight: 28, fontWeight: '700' },
+  // Web nạp Public Sans cục bộ từ `src/web/global.css`. Native tiếp tục dùng
+  // font hệ thống cho tới khi font được đăng ký qua Android/iOS asset pipeline.
+  fontFamily: (Platform.OS === 'web' ? 'Public Sans' : undefined) as string | undefined,
+  body: { fontSize: 14, lineHeight: 21, fontWeight: '400' },
+  caption: { fontSize: 12, lineHeight: 18, fontWeight: '400' },
+  cardTitle: { fontSize: 16, lineHeight: 22, fontWeight: '700' },
+  metric: { fontSize: 22, lineHeight: 28, fontWeight: '700' },
+  screenTitle: { fontSize: 20, lineHeight: 27, fontWeight: '700' },
 } as const;
 
 /**

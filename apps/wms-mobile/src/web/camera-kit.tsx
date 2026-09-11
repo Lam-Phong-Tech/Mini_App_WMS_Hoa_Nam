@@ -52,6 +52,10 @@ export function Camera({
     typeof scanThrottleDelay === 'number' && scanThrottleDelay > 0
       ? Math.max(80, scanThrottleDelay)
       : 140;
+  // Giữ tốc độ quét mới nhất mà không đóng/mở lại MediaStream chỉ vì component
+  // cha render lại với một cấu hình throttle khác.
+  const scanIntervalRef = useRef(scanIntervalMs);
+  scanIntervalRef.current = scanIntervalMs;
 
   // Callback của BusinessScanScreen thay đổi khi trạng thái quét đổi. Giữ nó
   // trong ref để React không stop/reopen getUserMedia cho mỗi render — đây là
@@ -107,7 +111,7 @@ export function Camera({
         if (!disposed) {
           detectorTimer = window.setTimeout(() => {
             inspect().catch(() => undefined);
-          }, scanIntervalMs);
+          }, scanIntervalRef.current);
         }
       };
 
@@ -154,7 +158,7 @@ export function Camera({
         return;
       }
       const reader = new BrowserMultiFormatReader(undefined, {
-        delayBetweenScanAttempts: scanIntervalMs,
+        delayBetweenScanAttempts: scanIntervalRef.current,
       });
       const controls = await reader.decodeFromVideoElement(
         videoElement,

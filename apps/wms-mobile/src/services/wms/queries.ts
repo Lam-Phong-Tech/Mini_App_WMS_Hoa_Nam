@@ -129,6 +129,11 @@ export function mapCurrentUser(payload: unknown): CurrentUser {
     avatar_url: avatarUrl,
     role,
     permissions,
+    warehouse_scope_ids: Array.isArray(nested.warehouse_scope_ids)
+      ? nested.warehouse_scope_ids.filter(
+          (item): item is string => typeof item === 'string',
+        )
+      : undefined,
   };
 }
 

@@ -20,6 +20,7 @@ export type AppIconName =
   | 'package-plus'
   | 'package-minus'
   | 'shield-check'
+  | 'nfc'
   | 'clock'
   | 'check-circle'
   | 'alert'
@@ -167,6 +168,30 @@ export function AppIcon({
             transform: [{ rotate: '45deg' }],
           })}
           {check(size * 0.26, size * 0.43, size * 0.45)}
+        </>
+      );
+      break;
+    case 'nfc':
+      parts = (
+        <>
+          {bordered({
+            left: size * 0.4,
+            top: size * 0.4,
+            width: size * 0.2,
+            height: size * 0.2,
+            borderRadius: size,
+          })}
+          {[0.12, 0.24].map(offset => (
+            <React.Fragment key={offset}>
+              {bordered({
+                left: offset,
+                top: offset,
+                width: size * (1 - offset * 2),
+                height: size * (1 - offset * 2),
+                borderRadius: size,
+              })}
+            </React.Fragment>
+          ))}
         </>
       );
       break;

@@ -1,12 +1,8 @@
 /**
- * `BottomNav` — thanh điều hướng 5 tab ở đáy màn.
+ * `BottomNav` — thanh điều hướng 4 tab ở đáy màn.
  *
- * 🎨 Nguồn: xuất hiện ở mọi màn gốc trong bộ 47 ảnh (11, 12, 31, 38, 39…).
- * Năm tab, đúng thứ tự: **Trang chủ · Quét mã · Duyệt phiếu · Lịch sử · Cá nhân**.
- *
- * 🔧 **Sửa V-05.** Trong ảnh, nhãn *"Duyệt phiếu"* xuống **2 dòng** trong khi
- * bốn nhãn còn lại 1 dòng, làm các tab lệch chiều cao và icon không thẳng hàng
- * ([04-screen-survey.md §4](../../../../docs/migration/04-screen-survey.md)).
+ * Bốn tab đã chốt: **Trang chủ · Quét mã · Lịch sử · Cá nhân**. Chứng từ mở
+ * từ Trang chủ hoặc Lịch sử; ghi sổ nhập/xuất vẫn thực hiện trên Web WMS.
  *
  * Cách sửa: đặt `minHeight` cố định cho ô tab và căn icon lên trên, nên nhãn dài
  * xuống dòng mà **hàng icon vẫn thẳng**. Cố ý **không** rút gọn chữ thành
@@ -63,11 +59,10 @@ export interface BottomNavItem {
   readonly icon: AppIconName;
 }
 
-/** Năm tab, đúng thứ tự trong bộ ảnh. */
+/** Bốn tab đã chốt cho App. */
 export const BOTTOM_NAV_ITEMS: readonly BottomNavItem[] = [
   { key: 'home', label: 'Trang chủ', icon: 'home' },
   { key: 'scan', label: 'Quét mã', icon: 'scan' },
-  { key: 'approvals', label: 'Duyệt phiếu', icon: 'approvals' },
   { key: 'history', label: 'Lịch sử', icon: 'history' },
   { key: 'profile', label: 'Cá nhân', icon: 'profile' },
 ];

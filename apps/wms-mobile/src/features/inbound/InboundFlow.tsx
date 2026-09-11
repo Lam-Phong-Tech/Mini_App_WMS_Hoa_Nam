@@ -431,7 +431,7 @@ export function InboundFlow({
           ' mã',
       };
     },
-    [draft, resolveCode],
+    [draft, lookupExistingSku, resolveCode],
   );
 
   const dismissPendingScan = useCallback(() => {

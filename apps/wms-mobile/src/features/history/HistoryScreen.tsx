@@ -301,6 +301,9 @@ function quantityLabel(row: HistoryRow): string {
 }
 
 export interface HistoryScreenProps {
+  /** Tab Chứng từ dùng cùng nguồn WMS nhưng tên màn theo board thiết kế. */
+  title?: string;
+  eyebrow?: string;
   onOpen?: (row: HistoryRow) => void;
   fetchInbound?: typeof fetchInboundDocuments;
   fetchOutbound?: typeof fetchOutboundDocuments;
@@ -309,6 +312,8 @@ export interface HistoryScreenProps {
 }
 
 export function HistoryScreen({
+  title = 'Lịch sử chứng từ',
+  eyebrow = 'Theo phiếu',
   onOpen,
   fetchInbound = fetchInboundDocuments,
   fetchOutbound = fetchOutboundDocuments,
@@ -403,7 +408,7 @@ export function HistoryScreen({
   const initialLoading = isLoading && filtered.length === 0;
 
   return (
-    <Page title="Lịch sử chứng từ" eyebrow="Theo phiếu" scroll>
+    <Page title={title} eyebrow={eyebrow} scroll>
       <Input
         label="Tìm kiếm phiếu"
         placeholder="Mã phiếu, tên phiếu hoặc kho"

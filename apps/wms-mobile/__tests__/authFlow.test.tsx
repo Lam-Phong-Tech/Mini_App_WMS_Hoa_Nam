@@ -26,6 +26,7 @@ import {
 import { classifyLoginError, login, logout } from '../src/services/wms/auth';
 import { HomeScreen } from '../src/features/home/HomeScreen';
 import { LoginScreen } from '../src/features/auth/LoginScreen';
+import { SessionConfirmationScreen } from '../src/features/auth/SessionConfirmationScreen';
 import { AppProviders } from '../src/app/App';
 import { getSession, setSession } from '../src/auth/session';
 import { resetServerClock } from '../src/auth/serverClock';
@@ -206,8 +207,12 @@ describe('dịch vụ đăng nhập — luồng chạy THẬT qua ngoại lệ �
 
 async function render(element: React.ReactElement) {
   let tree: ReactTestRenderer.ReactTestRenderer | undefined;
-  await ReactTestRenderer.act(() => {
+  await ReactTestRenderer.act(async () => {
     tree = ReactTestRenderer.create(<AppProviders>{element}</AppProviders>);
+    // Flush một lượt effect async của các màn đọc dữ liệu. Không bỏ qua `act`,
+    // vì làm vậy sẽ che warning khi test màn xác nhận phiên.
+    await Promise.resolve();
+    await Promise.resolve();
   });
   return {
     text: JSON.stringify(tree?.toJSON()),
@@ -219,15 +224,49 @@ async function render(element: React.ReactElement) {
   };
 }
 
-describe('màn Đăng nhập dựng được và bám ảnh 02', () => {
-  it('hiện nhãn, placeholder và chân trang đúng như ảnh', async () => {
+describe('màn Đăng nhập dựng được và bám reference Designer', () => {
+  it('hiện nhận diện Scanner, form và chân trang đúng trạng thái idle', async () => {
     const view = await render(<LoginScreen loginFn={async () => {
       throw new Error('không được gọi');
     }} />);
-    expect(view.text).toContain('WMS HOA NAM');
-    expect(view.text).toContain('Quản lý vận hành kho');
-    expect(view.text).toContain('Sử dụng tài khoản được cấp để tiếp tục.');
+    expect(view.text).toContain('HOA NAM SCANNER');
+    expect(view.text).toContain('WMS · Vận hành chuyên nghiệp');
+    expect(view.text).toContain('Đăng nhập để bắt đầu phiên làm việc');
+    expect(view.text).toContain('Tên đăng nhập');
+    expect(view.text).toContain('Khôi phục tài khoản: Chưa áp dụng');
     expect(view.text).toContain('Đăng nhập');
+    await view.unmount();
+  });
+});
+
+describe('xác nhận phiên — không biến thành thao tác mở ca', () => {
+  it('chỉ hiện dữ liệu BE trả về và thông báo rõ ca làm chưa áp dụng', async () => {
+    const fetchUser = jest.fn(async () => ({
+      name: 'Nguyễn Minh Anh',
+      email: 'minh.anh@hoanam.vn',
+      role: 'Thủ kho',
+      warehouse_scope_ids: ['KHO-TONG-HN'],
+    }));
+    const logoutFn = jest.fn(async () => undefined);
+    const onContinue = jest.fn();
+    const onLoggedOut = jest.fn();
+
+    const view = await render(
+      <SessionConfirmationScreen
+        fetchUser={fetchUser}
+        logoutFn={logoutFn}
+        onContinue={onContinue}
+        onLoggedOut={onLoggedOut}
+      />,
+    );
+
+    expect(view.text).toContain('Chào Nguyễn Minh Anh');
+    expect(view.text).toContain('KHO-TONG-HN');
+    expect(view.text).toContain('Bắt đầu ca làm việc: Chưa áp dụng');
+    expect(view.text).toContain('Tiếp tục vào ứng dụng');
+    expect(fetchUser).toHaveBeenCalledTimes(1);
+    expect(logoutFn).not.toHaveBeenCalled();
+    expect(onContinue).not.toHaveBeenCalled();
     await view.unmount();
   });
 });
