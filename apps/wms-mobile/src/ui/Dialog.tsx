@@ -6,8 +6,10 @@
  * ghi. Không có nghiệp vụ nào bị nhúng vào component dùng chung.
  */
 
-import React from 'react';
+import React, { useCallback, useEffect, useRef } from 'react';
 import {
+  Dimensions,
+  Keyboard,
   KeyboardAvoidingView,
   Modal,
   Platform,
@@ -18,6 +20,7 @@ import {
 } from 'react-native';
 import { useTheme } from '../theme/ThemeProvider';
 import { Text } from './Text';
+import { KeyboardViewportContext, type KeyboardViewportTarget } from './Page';
 
 const styles = StyleSheet.create({
   backdrop: {
@@ -66,6 +69,40 @@ export function Dialog({
 }: DialogProps): React.ReactElement {
   const theme = useTheme();
   const dismiss = dismissible ? onDismiss : () => undefined;
+  const scrollRef = useRef<React.ComponentRef<typeof ScrollView>>(null);
+  const scrollY = useRef(0);
+  const keyboardTop = useRef(Dimensions.get('window').height);
+
+  useEffect(() => {
+    const shown = Keyboard.addListener('keyboardDidShow', event => {
+      keyboardTop.current = event.endCoordinates.screenY;
+    });
+    const hidden = Keyboard.addListener('keyboardDidHide', () => {
+      keyboardTop.current = Dimensions.get('window').height;
+    });
+    return () => {
+      shown.remove();
+      hidden.remove();
+    };
+  }, []);
+
+  const revealFocusedInput = useCallback((input: KeyboardViewportTarget | null) => {
+    if (input === null) return;
+    const reveal = () => {
+      input.measureInWindow((_x, y, _width, height) => {
+        const safeBottom = keyboardTop.current - 20;
+        const coveredByKeyboard = y + height - safeBottom;
+        if (coveredByKeyboard > 0) {
+          scrollRef.current?.scrollTo({
+            y: Math.max(0, scrollY.current + coveredByKeyboard),
+            animated: true,
+          });
+        }
+      });
+    };
+    requestAnimationFrame(reveal);
+    setTimeout(reveal, 280);
+  }, []);
 
   return (
     <Modal
@@ -94,23 +131,30 @@ export function Dialog({
             },
           ]}
         >
-          <KeyboardAvoidingView
-            behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-            style={styles.keyboardContainer}
-          >
-            <ScrollView
-              keyboardShouldPersistTaps="handled"
-              keyboardDismissMode="on-drag"
-              contentContainerStyle={{ gap: theme.spacing.md }}
+          <KeyboardViewportContext.Provider value={revealFocusedInput}>
+            <KeyboardAvoidingView
+              behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+              style={styles.keyboardContainer}
             >
-              <View style={[styles.grabber, { backgroundColor: theme.colors.divider }]} />
-              <Text variant="cardTitle" tone="strong">{title}</Text>
-              {message === undefined ? null : (
-                <Text variant="caption" tone="muted">{message}</Text>
-              )}
-              <View style={styles.body}>{children}</View>
-            </ScrollView>
-          </KeyboardAvoidingView>
+              <ScrollView
+                ref={scrollRef}
+                keyboardShouldPersistTaps="handled"
+                keyboardDismissMode="on-drag"
+                contentContainerStyle={{ gap: theme.spacing.md }}
+                onScroll={event => {
+                  scrollY.current = event.nativeEvent.contentOffset.y;
+                }}
+                scrollEventThrottle={16}
+              >
+                <View style={[styles.grabber, { backgroundColor: theme.colors.divider }]} />
+                <Text variant="cardTitle" tone="strong">{title}</Text>
+                {message === undefined ? null : (
+                  <Text variant="caption" tone="muted">{message}</Text>
+                )}
+                <View style={styles.body}>{children}</View>
+              </ScrollView>
+            </KeyboardAvoidingView>
+          </KeyboardViewportContext.Provider>
         </Pressable>
       </Pressable>
     </Modal>
