@@ -53,10 +53,13 @@ class SecureSessionModule(private val context: ReactApplicationContext) :
       return
     }
     try {
-      val iv = ByteArray(GCM_IV_BYTES)
-      java.security.SecureRandom().nextBytes(iv)
       val cipher = Cipher.getInstance(CIPHER)
-      cipher.init(Cipher.ENCRYPT_MODE, key(), GCMParameterSpec(GCM_TAG_BITS, iv))
+      // Android Keystore generates the GCM nonce. Passing a caller nonce while
+      // `setRandomizedEncryptionRequired(true)` is enabled is rejected by
+      // KeyMint (`NONCE ... CALLER_NONCE`), which previously made Login fail
+      // after the server had already returned valid tokens.
+      cipher.init(Cipher.ENCRYPT_MODE, key())
+      val iv = cipher.iv
       val encrypted = cipher.doFinal(token.toByteArray(StandardCharsets.UTF_8))
       val packed = ByteArray(iv.size + encrypted.size)
       System.arraycopy(iv, 0, packed, 0, iv.size)
