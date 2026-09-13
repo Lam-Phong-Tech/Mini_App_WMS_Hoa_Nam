@@ -18,7 +18,7 @@
  * của chính người dùng chứ không phải dữ liệu khách.
  */
 
-import React, { useState, type ReactNode } from 'react';
+import React, { useContext, useRef, useState, type ReactNode } from 'react';
 import {
   StyleSheet,
   TextInput,
@@ -29,6 +29,7 @@ import {
 } from 'react-native';
 import { useTheme } from '../theme/ThemeProvider';
 import { Text } from './Text';
+import { KeyboardViewportContext } from './Page';
 
 const styles = StyleSheet.create({
   field: {
@@ -77,6 +78,8 @@ export function Input({
   ...rest
 }: InputProps): React.ReactElement {
   const theme = useTheme();
+  const inputRef = useRef<React.ComponentRef<typeof TextInput>>(null);
+  const revealFocusedInput = useContext(KeyboardViewportContext);
   const [focused, setFocused] = useState(false);
   const hasError = errorText !== undefined && errorText.length > 0;
 
@@ -118,6 +121,7 @@ export function Input({
           </View>
         )}
         <TextInput
+          ref={inputRef}
           {...rest}
           editable={editable}
           autoComplete={autoComplete}
@@ -125,6 +129,7 @@ export function Input({
           onFocus={event => {
             setFocused(true);
             onFocus?.(event);
+            revealFocusedInput?.(inputRef.current);
           }}
           onBlur={event => {
             setFocused(false);

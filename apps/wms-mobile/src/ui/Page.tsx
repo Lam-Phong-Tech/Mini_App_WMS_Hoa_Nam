@@ -6,8 +6,23 @@
  * `max-w-md` của Mini App) để trên máy màn rộng chữ không kéo dài quá khổ.
  */
 
-import React, { useCallback, useRef, useState, type ReactNode } from 'react';
-import { Pressable, ScrollView, StatusBar, StyleSheet, View } from 'react-native';
+import React, {
+  createContext,
+  useCallback,
+  useEffect,
+  useRef,
+  useState,
+  type ReactNode,
+} from 'react';
+import {
+  Dimensions,
+  Keyboard,
+  Pressable,
+  ScrollView,
+  StatusBar,
+  StyleSheet,
+  View,
+} from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useTheme } from '../theme/ThemeProvider';
 import { Text } from './Text';
@@ -78,6 +93,21 @@ export interface PageProps {
 }
 
 const PULL_REFRESH_THRESHOLD = 72;
+const KEYBOARD_GAP = 20;
+
+/**
+ * Input dùng context này để Page cuộn ô đang focus lên trên bàn phím. Đặt ở
+ * Page thay vì từng form để Nhập/Xuất/Bảo hành có cùng trải nghiệm Android.
+ */
+export interface KeyboardViewportTarget {
+  measureInWindow(
+    callback: (x: number, y: number, width: number, height: number) => void,
+  ): void;
+}
+
+export const KeyboardViewportContext = createContext<
+  ((input: KeyboardViewportTarget | null) => void) | undefined
+>(undefined);
 
 /** Đọc toạ độ chạm mà không phụ thuộc shape event khác nhau của RN / RN Web. */
 function touchPageY(event: unknown): number | undefined {
@@ -109,7 +139,9 @@ export function Page({
   children,
 }: PageProps): React.ReactElement {
   const theme = useTheme();
+  const scrollRef = useRef<React.ComponentRef<typeof ScrollView>>(null);
   const scrollY = useRef(0);
+  const keyboardTop = useRef(Dimensions.get('window').height);
   const pullStartY = useRef<number | undefined>(undefined);
   const [pullDistance, setPullDistance] = useState(0);
 
@@ -157,6 +189,39 @@ export function Page({
       onPullRefresh();
     }
   }, [onPullRefresh, pullDistance, refreshing]);
+
+  useEffect(() => {
+    const shown = Keyboard.addListener('keyboardDidShow', event => {
+      keyboardTop.current = event.endCoordinates.screenY;
+    });
+    const hidden = Keyboard.addListener('keyboardDidHide', () => {
+      keyboardTop.current = Dimensions.get('window').height;
+    });
+    return () => {
+      shown.remove();
+      hidden.remove();
+    };
+  }, []);
+
+  const revealFocusedInput = useCallback((input: KeyboardViewportTarget | null) => {
+    if (!scroll || input === null) return;
+    // Android thường phát `focus` trước `keyboardDidShow`; đo lại sau animation
+    // để cả ô ở cuối form và nút xác nhận không bị bàn phím che.
+    const reveal = () => {
+      input.measureInWindow((_x, y, _width, height) => {
+        const safeBottom = keyboardTop.current - KEYBOARD_GAP;
+        const coveredByKeyboard = y + height - safeBottom;
+        if (coveredByKeyboard > 0) {
+          scrollRef.current?.scrollTo({
+            y: Math.max(0, scrollY.current + coveredByKeyboard),
+            animated: true,
+          });
+        }
+      });
+    };
+    requestAnimationFrame(reveal);
+    setTimeout(reveal, 280);
+  }, [scroll]);
 
   const header =
     title === undefined ? null : (
@@ -220,37 +285,41 @@ export function Page({
       <StatusBar barStyle="dark-content" />
       {header}
       {scroll ? (
-        <ScrollView
-          keyboardShouldPersistTaps="handled"
-          contentContainerStyle={styles.scrollContent}
-          onScroll={handleScroll}
-          scrollEventThrottle={16}
-          onTouchStart={handleTouchStart}
-          onTouchMove={handleTouchMove}
-          onTouchEnd={finishPull}
-          onTouchCancel={finishPull}
-        >
-          {onPullRefresh === undefined ? null : (
-            <View
-              accessibilityLiveRegion="polite"
-              style={[
-                styles.pullRefresh,
-                pullDistance > 0 || refreshing
-                  ? styles.pullRefreshVisible
-                  : styles.pullRefreshHidden,
-              ]}
-            >
-              <Text variant="caption" tone="muted">
-                {refreshing
-                  ? 'Đang cập nhật…'
-                  : pullDistance >= PULL_REFRESH_THRESHOLD
-                  ? 'Thả để cập nhật'
-                  : 'Kéo xuống để cập nhật'}
-              </Text>
-            </View>
-          )}
-          {body}
-        </ScrollView>
+        <KeyboardViewportContext.Provider value={revealFocusedInput}>
+          <ScrollView
+            ref={scrollRef}
+            keyboardShouldPersistTaps="handled"
+            keyboardDismissMode="on-drag"
+            contentContainerStyle={styles.scrollContent}
+            onScroll={handleScroll}
+            scrollEventThrottle={16}
+            onTouchStart={handleTouchStart}
+            onTouchMove={handleTouchMove}
+            onTouchEnd={finishPull}
+            onTouchCancel={finishPull}
+          >
+            {onPullRefresh === undefined ? null : (
+              <View
+                accessibilityLiveRegion="polite"
+                style={[
+                  styles.pullRefresh,
+                  pullDistance > 0 || refreshing
+                    ? styles.pullRefreshVisible
+                    : styles.pullRefreshHidden,
+                ]}
+              >
+                <Text variant="caption" tone="muted">
+                  {refreshing
+                    ? 'Đang cập nhật…'
+                    : pullDistance >= PULL_REFRESH_THRESHOLD
+                    ? 'Thả để cập nhật'
+                    : 'Kéo xuống để cập nhật'}
+                </Text>
+              </View>
+            )}
+            {body}
+          </ScrollView>
+        </KeyboardViewportContext.Provider>
       ) : (
         body
       )}

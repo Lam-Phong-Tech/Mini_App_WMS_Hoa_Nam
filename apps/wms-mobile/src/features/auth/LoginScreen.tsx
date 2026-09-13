@@ -204,6 +204,7 @@ export function LoginScreen({
   loginFn = login,
 }: LoginScreenProps): React.ReactElement {
   const theme = useTheme();
+  const scrollRef = useRef<React.ComponentRef<typeof ScrollView>>(null);
   const environment = getCurrentEnvironment();
   const [form, setForm] = useState<LoginFormState>(initialLoginForm);
   const [revealed, setRevealed] = useState(false);
@@ -246,6 +247,24 @@ export function LoginScreen({
     }
   }, [form, loginFn, onSuccess]);
 
+  /**
+   * `adjustResize` chỉ thu chiều cao Activity; không tự đưa ô đang focus vào
+   * vùng còn thấy. Dùng chính ScrollResponder của RN để email/mật khẩu luôn
+   * nằm trên Gboard, kể cả khi form dài hơn màn Samsung/PDA.
+   */
+  const revealFocusedField = useCallback(
+    (target: number) => {
+      requestAnimationFrame(() => {
+        scrollRef.current?.scrollResponderScrollNativeHandleToKeyboard(
+          target,
+          20,
+          true,
+        );
+      });
+    },
+    [],
+  );
+
   return (
     <View style={styles.root}>
     <Image
@@ -257,12 +276,14 @@ export function LoginScreen({
     />
     <SafeAreaView edges={['top', 'bottom']} style={styles.shade}>
       <KeyboardAvoidingView
-        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         style={styles.keyboard}
       >
         <ScrollView
+          ref={scrollRef}
           contentContainerStyle={styles.scrollContent}
           keyboardShouldPersistTaps="handled"
+          keyboardDismissMode="on-drag"
         >
       <View style={[styles.brand, { gap: theme.spacing.md }]}>
         <View
@@ -316,6 +337,7 @@ export function LoginScreen({
           // Bàn phím hiện nút "Tiếp" thay vì "Xong" — D-10 của app cũ là thiếu
           // đúng thuộc tính này.
           returnKeyType="next"
+          onFocus={event => revealFocusedField(event.nativeEvent.target)}
           leftAdornment={<AppIcon name="profile" size={21} color="#5b7c91" />}
         />
 
@@ -342,6 +364,7 @@ export function LoginScreen({
           // Enter ở ô cuối gửi form — D-09 của app cũ là form không phải <form>
           // thật nên Enter chỉ chạy ở ô mật khẩu. Ở RN ta nối thẳng vào submit.
           returnKeyType="go"
+          onFocus={event => revealFocusedField(event.nativeEvent.target)}
           onSubmitEditing={handleSubmit}
           leftAdornment={<AppIcon name="shield-check" size={20} color="#5b7c91" />}
           rightAdornment={

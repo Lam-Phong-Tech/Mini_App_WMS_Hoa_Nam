@@ -28,6 +28,8 @@ build/
 .idea
 .gradle
 .gradle-tmp/
+# Ảnh debug thiết bị có thể chứa phiên/tài khoản thực; chỉ giữ cục bộ.
+docs/uiux-scanner/evidence/05/samsung-*.png
 local.properties
 *.iml
 *.hprof
