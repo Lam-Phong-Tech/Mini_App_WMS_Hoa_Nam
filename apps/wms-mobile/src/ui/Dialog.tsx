@@ -7,7 +7,15 @@
  */
 
 import React from 'react';
-import { Modal, Pressable, StyleSheet, View } from 'react-native';
+import {
+  KeyboardAvoidingView,
+  Modal,
+  Platform,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  View,
+} from 'react-native';
 import { useTheme } from '../theme/ThemeProvider';
 import { Text } from './Text';
 
@@ -22,6 +30,10 @@ const styles = StyleSheet.create({
   panel: {
     width: '100%',
     maxWidth: 360,
+    maxHeight: '92%',
+  },
+  keyboardContainer: {
+    flexShrink: 1,
   },
   grabber: {
     alignSelf: 'center',
@@ -82,12 +94,23 @@ export function Dialog({
             },
           ]}
         >
-          <View style={[styles.grabber, { backgroundColor: theme.colors.divider }]} />
-          <Text variant="cardTitle" tone="strong">{title}</Text>
-          {message === undefined ? null : (
-            <Text variant="caption" tone="muted">{message}</Text>
-          )}
-          <View style={styles.body}>{children}</View>
+          <KeyboardAvoidingView
+            behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+            style={styles.keyboardContainer}
+          >
+            <ScrollView
+              keyboardShouldPersistTaps="handled"
+              keyboardDismissMode="on-drag"
+              contentContainerStyle={{ gap: theme.spacing.md }}
+            >
+              <View style={[styles.grabber, { backgroundColor: theme.colors.divider }]} />
+              <Text variant="cardTitle" tone="strong">{title}</Text>
+              {message === undefined ? null : (
+                <Text variant="caption" tone="muted">{message}</Text>
+              )}
+              <View style={styles.body}>{children}</View>
+            </ScrollView>
+          </KeyboardAvoidingView>
         </Pressable>
       </Pressable>
     </Modal>
