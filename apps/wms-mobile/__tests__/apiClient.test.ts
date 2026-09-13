@@ -262,6 +262,7 @@ describe('phiên đăng nhập', () => {
   });
 
   it.each([
+    '/api/v1/auth/login',
     '/api/v1/auth/refresh',
     '/api/v1/auth/logout',
   ])('%s gửi refresh token trong JSON body, không dùng Bearer', async path => {
