@@ -7,6 +7,7 @@ import com.facebook.react.ReactHost
 import com.facebook.react.ReactNativeApplicationEntryPoint.loadReactNative
 import com.facebook.react.defaults.DefaultReactHost.getDefaultReactHost
 import vn.info.lptech.wmshoanam.nfc.NfcPackage
+import vn.info.lptech.wmshoanam.security.SecureSessionPackage
 
 class MainApplication : Application(), ReactApplication {
 
@@ -17,6 +18,8 @@ class MainApplication : Application(), ReactApplication {
         PackageList(this).packages.apply {
           // NFC dùng Android API trực tiếp, không có package npm để autolink.
           add(NfcPackage())
+          // Refresh token tách khỏi MMKV, mã hoá bằng Android Keystore.
+          add(SecureSessionPackage())
         },
     )
   }

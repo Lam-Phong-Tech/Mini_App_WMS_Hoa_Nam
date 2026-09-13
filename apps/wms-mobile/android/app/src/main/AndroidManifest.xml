@@ -12,8 +12,11 @@
     -->
     <uses-permission android:name="android.permission.CAMERA" />
 
-    <!-- Không xin runtime permission: NFC Reader Mode chỉ cần khai khả năng.
-         `required=false` để PDA không có NFC vẫn cài và dùng các luồng kho khác. -->
+    <!-- NFC là quyền normal (không hiện runtime prompt) nhưng bắt buộc phải
+         khai báo để NfcActivityManager được phép đăng ký Reader Mode khi
+         Activity resume. `required=false` để PDA không có NFC vẫn cài và
+         dùng các luồng kho khác. -->
+    <uses-permission android:name="android.permission.NFC" />
     <uses-feature android:name="android.hardware.nfc" android:required="false" />
 
     <!--

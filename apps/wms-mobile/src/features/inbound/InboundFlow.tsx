@@ -24,11 +24,13 @@
  * Mã chỉ được thêm sau `inbound/resolve-code`, cùng quy tắc với Mini App web.
  */
 
-import React, { useCallback, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
+import { StyleSheet, View } from 'react-native';
 import { serverNow } from '../../auth/serverClock';
 import { AppError, toAppError } from '../../errors/AppError';
 import { getDataLayer } from '../../sync/bootstrap';
 import { Button } from '../../ui/Button';
+import { Dialog } from '../../ui/Dialog';
 import { Input } from '../../ui/Input';
 import { Sheet } from '../../ui/Sheet';
 import { BusinessScanScreen } from '../scan/BusinessScanScreen';
@@ -67,6 +69,16 @@ import {
   findExistingInboundSku,
   type ExistingInboundSku,
 } from './existingSkuLookup';
+import {
+  cancelDraft,
+  getActiveDraft,
+  removeDraft,
+  saveDraft,
+} from '../../sync/draftStore';
+
+const styles = StyleSheet.create({
+  dialogActions: { gap: 8 },
+});
 
 export interface InboundFlowProps {
   onExit: () => void;
@@ -223,7 +235,15 @@ export function InboundFlow({
   resolveCode = resolveInboundCode,
   lookupExistingSku = findExistingInboundSku,
 }: InboundFlowProps): React.ReactElement {
-  const [draft, setDraft] = useState<InboundDraft>(initialInboundDraft);
+  const [resumeCandidate] = useState(() => getActiveDraft<InboundDraft>('inbound'));
+  const draftIdRef = useRef(
+    resumeCandidate?.id ?? 'draft-inbound-' + String(Date.now()),
+  );
+  const [draft, setDraft] = useState<InboundDraft>(
+    () => resumeCandidate?.payload ?? initialInboundDraft,
+  );
+  const [resumeOpen, setResumeOpen] = useState(resumeCandidate !== undefined);
+  const [exitOpen, setExitOpen] = useState(false);
   const [recording, setRecording] = useState(false);
   // State chỉ cập nhật sau render; ref khóa ngay trong cùng event loop để một
   // cú chạm đúp không tạo hai outbox record/cùng lô gửi lên WMS.
@@ -232,6 +252,33 @@ export function InboundFlow({
   const [pendingScan, setPendingScan] = useState<PendingInboundScan>();
   const [boxQuantity, setBoxQuantity] = useState('');
   const [boxQuantityError, setBoxQuantityError] = useState<string>();
+
+  const hasDraftContent =
+    draft.name.trim() !== '' || draft.codes.length > 0 || draft.step !== 0;
+
+  useEffect(() => {
+    if (result !== undefined || !hasDraftContent) return;
+    saveDraft('inbound', draftIdRef.current, draft);
+  }, [draft, hasDraftContent, result]);
+
+  const requestExit = useCallback(() => {
+    if (hasDraftContent) setExitOpen(true);
+    else onExit();
+  }, [hasDraftContent, onExit]);
+
+  const saveAndExit = useCallback(() => {
+    saveDraft('inbound', draftIdRef.current, draft);
+    setExitOpen(false);
+    setResumeOpen(false);
+    onExit();
+  }, [draft, onExit]);
+
+  const cancelAndExit = useCallback(() => {
+    cancelDraft('inbound', draftIdRef.current);
+    setExitOpen(false);
+    setResumeOpen(false);
+    onExit();
+  }, [onExit]);
 
   const handleScan = useCallback(
     async (raw: string, source: ScanSource): Promise<ScanFeedback> => {
@@ -522,6 +569,7 @@ export function InboundFlow({
 
     try {
       const sync = await layer.syncEngine.syncOne(record.id);
+      if (sync.state === 'synced') removeDraft('inbound', draftIdRef.current);
       setResult({
         name: draft.name,
         quantity: summary.totalScanned,
@@ -554,9 +602,42 @@ export function InboundFlow({
   }, [dataLayer, draft]);
 
   const restart = useCallback(() => {
+    draftIdRef.current = 'draft-inbound-' + String(Date.now());
     setDraft(initialInboundDraft);
     setResult(undefined);
+    setResumeOpen(false);
   }, []);
+
+  const dialogs = (
+    <>
+      <Dialog
+        visible={resumeOpen}
+        dismissible={false}
+        title="Bạn đang có phiếu chưa hoàn tất"
+        message="Dữ liệu đã quét được giữ lại trên thiết bị trong 1 tuần. Bạn có thể tiếp tục, lưu nháp để thoát hoặc hủy phiếu."
+        onDismiss={() => undefined}
+      >
+        <View style={styles.dialogActions}>
+          <Button label="Tiếp tục phiếu" onPress={() => setResumeOpen(false)} />
+          <Button label="Lưu nháp và thoát" variant="secondary" onPress={saveAndExit} />
+          <Button label="Bỏ phiếu" variant="danger" onPress={cancelAndExit} />
+          <Button label="Hủy" variant="secondary" onPress={() => setResumeOpen(false)} />
+        </View>
+      </Dialog>
+      <Dialog
+        visible={exitOpen}
+        title="Phiếu chưa hoàn tất"
+        message="Bạn muốn lưu phiếu nháp để tiếp tục trong 1 tuần, hay chuyển phiếu sang trạng thái đã hủy?"
+        onDismiss={() => setExitOpen(false)}
+      >
+        <View style={styles.dialogActions}>
+          <Button label="Lưu nháp và thoát" onPress={saveAndExit} />
+          <Button label="Bỏ phiếu" variant="danger" onPress={cancelAndExit} />
+          <Button label="Tiếp tục soạn" variant="secondary" onPress={() => setExitOpen(false)} />
+        </View>
+      </Dialog>
+    </>
+  );
 
   if (result !== undefined) {
     return (
@@ -575,12 +656,15 @@ export function InboundFlow({
   switch (draft.step) {
     case 0:
       return (
-        <InboundCreateScreen
-          draft={draft}
-          onChange={setDraft}
-          onBack={onExit}
-          onContinue={() => setDraft(current => continueToScan(current))}
-        />
+        <>
+          <InboundCreateScreen
+            draft={draft}
+            onChange={setDraft}
+            onBack={requestExit}
+            onContinue={() => setDraft(current => continueToScan(current))}
+          />
+          {dialogs}
+        </>
       );
 
     case 1:
@@ -618,6 +702,7 @@ export function InboundFlow({
               onPress={dismissPendingScan}
             />
           </Sheet>
+          {dialogs}
 
           <Sheet
             visible={pendingScan?.type === 'component-box'}
@@ -662,6 +747,7 @@ export function InboundFlow({
 
     default:
       return (
+        <>
         <InboundReviewScreen
           draft={draft}
           onRemoveNewestSku={sku =>
@@ -672,6 +758,8 @@ export function InboundFlow({
           onRecord={handleRecord}
           onBackToScan={() => setDraft(current => ({ ...current, step: 1 }))}
         />
+        {dialogs}
+        </>
       );
   }
 }

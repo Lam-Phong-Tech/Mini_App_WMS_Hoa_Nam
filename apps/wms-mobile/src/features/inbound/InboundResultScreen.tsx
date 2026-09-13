@@ -3,10 +3,10 @@
  *
  * 🎨 Nguồn: ảnh **23, 24**.
  *
- * Bố cục: vòng tròn ✓ xanh → bảng tóm tắt 4 hàng → banner *"Chưa tăng tồn kho"*
+ * Bố cục: vòng tròn ✓ xanh → bảng tóm tắt 4 hàng → banner *"Phiếu đã gửi, chưa ghi sổ"*
  * → hai nút *TRANG CHỦ* / *NHẬP KHO TIẾP*.
  *
- * ⚠️ Trạng thái trong bảng là **"Chờ duyệt nhập kho"**, không phải "Hoàn tất".
+ * ⚠️ Trạng thái trong bảng là **"Chờ xử lý trên Web"**, không phải "Hoàn tất".
  * Ảnh 23 ghi đúng như vậy, và banner ở ảnh 24 giải thích vì sao: phiếu mới chỉ
  * được tạo, tồn kho chưa tăng. Đổi chữ này thành "Hoàn tất" là nói dối thủ kho
  * rằng hàng đã vào kho.
@@ -96,9 +96,9 @@ export function InboundResultScreen({
       circle: theme.colors.successSoft,
       color: theme.colors.success,
       icon: 'check-circle' as const,
-      title: 'Đã gửi duyệt phiếu nhập',
-      body: 'Phiếu đã được lưu trên backend và chuyển sang chờ duyệt.',
-      status: 'Chờ duyệt nhập kho',
+      title: 'Đã gửi phiếu lên Web',
+      body: 'Phiếu đã gửi thành công và đang chờ xử lý trên Web.',
+      status: 'Chờ xử lý trên Web',
       bannerTone: 'success' as const,
       bannerTitle: undefined,
     },
@@ -106,9 +106,9 @@ export function InboundResultScreen({
       circle: theme.colors.warningSoft,
       color: theme.colors.warning,
       icon: 'clock' as const,
-      title: 'Đã lưu vào hàng đợi trên máy',
-      body: 'Phiếu chưa gửi được lên WMS. Dữ liệu đã quét vẫn còn nguyên trên máy.',
-      status: 'Chờ gửi lên WMS',
+      title: 'Chưa gửi được phiếu lên Web',
+      body: 'Phiếu vẫn được giữ dưới dạng nháp trên máy để gửi lại.',
+      status: 'Nháp — chờ gửi lên Web',
       bannerTone: 'warning' as const,
       bannerTitle: 'Chưa gửi được lên WMS',
     },
@@ -116,7 +116,7 @@ export function InboundResultScreen({
       circle: theme.colors.dangerSoft,
       color: theme.colors.danger,
       icon: 'alert' as const,
-      title: 'WMS từ chối phiếu nhập',
+      title: 'Web từ chối phiếu nhập',
       body: 'Phiếu chưa được tạo trên WMS. Sửa dữ liệu theo lý do bên dưới trước khi gửi lại.',
       status: 'Bị từ chối — chưa tạo phiếu',
       bannerTone: 'danger' as const,
@@ -126,8 +126,8 @@ export function InboundResultScreen({
       circle: theme.colors.warningSoft,
       color: theme.colors.warning,
       icon: 'alert' as const,
-      title: 'Cần đối chiếu phiếu trên WMS',
-      body: 'Request đã rời ứng dụng nhưng chưa xác định WMS đã ghi nhận hay chưa.',
+      title: 'Cần đối chiếu phiếu trên Web',
+      body: 'Yêu cầu đã rời ứng dụng nhưng chưa xác định Web đã ghi nhận hay chưa.',
       status: 'Cần đối chiếu trước khi gửi lại',
       bannerTone: 'warning' as const,
       bannerTitle: 'Kết quả chưa xác định',
@@ -135,7 +135,7 @@ export function InboundResultScreen({
   }[outcome];
 
   return (
-    <Page title="Kết quả gửi duyệt nhập" subtitle="IN-04" scroll>
+    <Page title="Kết quả gửi phiếu nhập" subtitle="IN-04" scroll>
       <Stepper steps={INBOUND_STEPS} current={3} />
 
       <Box card padding="xl" gap="md">
@@ -187,7 +187,7 @@ export function InboundResultScreen({
 
       <Banner
         tone="info"
-        title={MESSAGE_NOT_POSTED_TITLE}
+        title={outcome === 'posted' ? 'Phiếu đã gửi, chưa ghi sổ' : MESSAGE_NOT_POSTED_TITLE}
         message={MESSAGE_NOT_POSTED_BODY}
       />
 

@@ -1,0 +1,79 @@
+{
+  "schema_version": 1,
+  "prompt_id": "04",
+  "status": "PASS",
+  "lifecycle": [
+    { "status": "NOT_STARTED", "at": "2026-09-12T00:20:00+07:00" },
+    { "status": "RUNNING", "at": "2026-09-12T00:21:00+07:00", "reason": "Prerequisite gates and board/source preflight passed." },
+    { "status": "BLOCKED", "at": "2026-09-12T00:35:00+07:00", "reason": "GSAP package/version/call-site approval and physical camera acceptance are not available." },
+    { "status": "RUNNING", "at": "2026-09-12T04:05:00+07:00", "reason": "User asked to resolve the remaining motion blocker; GSAP is isolated to the approved Web scan-beam call-site." },
+    { "status": "PASS", "at": "2026-09-12T04:20:00+07:00", "reason": "GSAP 3.13.0 Web-only scan beam and physical Android camera evidence are complete; all Prompt 04 checks pass." }
+  ],
+  "agent": "Codex",
+  "baseline_revision": { "app": "7f4d4006608009c400a4d6652200db030677db86", "designer": "90b0032b970e4f40cf4ccc8a95407577f1ab720a" },
+  "input_revision": { "app_head": "635c9e090a61f2bec69d0c01547ca2fb5951eacf", "gate_03_status": "PASS", "gate_03_sha256": "d5e609b981b6d500f5416f5e833e0025159746cb2e3a5d8d818805aeb466dfee" },
+  "dependency_gates": [
+    { "prompt_id": "00", "status": "PASS", "sha256": "5d1c5b42d3f5d33579289b97e2411b3f7173918251cfd7c9528b5c427a968850" },
+    { "prompt_id": "01", "status": "PASS", "sha256": "6fe31ba630552cab5210e4d36ac9e766c6dac2591025b32e0ddc6f36b4bfa846" },
+    { "prompt_id": "02", "status": "PASS", "sha256": "7e967a94fbd2c76ae1d9c59a29c06c5fe7061661780434fc501f998f7e0e8b73" },
+    { "prompt_id": "03", "status": "PASS", "sha256": "d5e609b981b6d500f5416f5e833e0025159746cb2e3a5d8d818805aeb466dfee" }
+  ],
+  "scope": {
+    "included": ["Inbound create/scan/review/result source audit", "real resolve/record contract", "draft/outbox behavior", "board 04 mapping"],
+    "excluded": ["Post Receipt", "backend/schema changes", "physical NFC acceptance"],
+    "scope_revision": "User follow-up authorised resolving B04-01 with a pinned Web-only GSAP call-site; HANDOFF labels and Prompt 03 draft decisions remain authoritative."
+  },
+  "changed_files": [
+    "src/features/inbound/InboundReviewScreen.tsx",
+    "src/features/inbound/InboundResultScreen.tsx",
+    "src/features/inbound/inboundDraft.ts",
+    "src/ui/AppIcon.tsx",
+    "src/features/scan/ScanBeam.tsx",
+    "src/features/scan/ScanBeam.web.tsx",
+    "package.json",
+    "package-lock.json",
+    "docs/uiux-scanner/evidence/04/motion-runtime.md",
+    "__tests__/inboundFlow.test.tsx",
+    "docs/uiux-scanner/evidence/04/state-matrix.md",
+    "docs/uiux-scanner/evidence/04/changes.md",
+    "docs/uiux-scanner/evidence/04/checks.md",
+    "docs/uiux-scanner/evidence/04/blockers.md",
+    "docs/uiux-scanner/evidence/04/gate.json"
+  ],
+  "output_revision": {
+    "kind": "uncommitted source and evidence",
+    "content_hashes": {
+      "inbound_flow": "f5cf045fbf8fd6de622dc3255eb63a2575a81fbeede3df1205828b9072fcc069",
+      "inbound_create": "c003d219952b1210e6f5f83b1abbc551e490938b7b41025aacfc6127a1dc7a35",
+      "inbound_review": "2c9c1c167e58f5ed527ebe756f4dc907273e1b9d9edca6c3ccb306c8f5090287",
+      "inbound_result": "0fb0538a6592d0f299b16822c8e38bf4e65207a99312ccbed9208c60e238ec57",
+      "inbound_draft": "00ec03d9ada6fb3082b0741f85cecbd83c0fc2f13d4a1d49a4cdd13a24f23f17",
+      "inbound_tests": "78bbfdeda55789ed7af10a74777a0584f7d6cf0cc3d95e2d83aa14179fab654a"
+      ,"scan_beam_native": "3DA454E4C8AB6DEB0B6843962DD1D7823D4AACCABC26880FBF4341704D5ADC5D"
+      ,"scan_beam_web": "636EC37C3BDDDA7370394CEA78FD50529CE2DC63038B2DA96897F08FC9576743"
+      ,"package_json": "2F130AB057C20BD1AB8D392CEBAD5A8DE05AA37B6B057F673B4485A58DDDAFEF"
+      ,"package_lock": "93AA5E4CD7F1C060A8AFAF4B652F8A0DB298B6485BC1611C0A031F41B8F1CA69"
+    }
+  },
+  "checks": [
+    { "id": "prerequisite-gates", "status": "PASS", "evidence": "Gates 00–03 PASS; Gate 03 SHA recorded above." },
+    { "id": "board-inspection", "status": "PASS", "evidence": "Board 04 image inspected directly at 1536×1024; four panels mapped without assuming linearity." },
+    { "id": "inbound-contract-flow", "status": "PASS", "evidence": "Existing resolve-code, parser, SKU lookup, box quantity, duplicate and stock-state guards read and covered by InboundFlow tests." },
+    { "id": "review-result-labels", "status": "PASS", "evidence": "Result now says Gửi phiếu lên Web / Chờ xử lý trên Web / Phiếu đã gửi, chưa ghi sổ; review CTA is Gửi phiếu lên Web." },
+    { "id": "outbox-idempotency", "status": "PASS", "evidence": "Existing inboundSender/outbox preserves one idempotency key and keeps pending/failed/unknown data." },
+    { "id": "typecheck", "status": "PASS", "command": "npm run typecheck", "exit_code": 0 },
+    { "id": "lint", "status": "PASS", "command": "npm run lint", "exit_code": 0 },
+    { "id": "inbound-tests", "status": "PASS", "command": "npm test -- --runInBand __tests__/inboundFlow.test.tsx --silent", "exit_code": 0, "detail": "56 tests" },
+    { "id": "web-build", "status": "PASS", "command": "npm run build:web", "exit_code": 0, "detail": "Vite chunk-size advisory only" },
+    { "id": "gsap-scan-line", "status": "PASS", "evidence": "See motion-runtime.md: GSAP 3.13.0 exact pin; Web-only ScanBeam.web.tsx at BusinessScanScreen, native no-op adapter, reduced-motion guard and tween cleanup. CUA captures 1.2s apart show movement; Vite build passed." },
+    { "id": "android-camera", "status": "PASS", "evidence": "Ubuntu-built ARM64 APK installed on device fbb9e686 (2206122SC); CAMERA granted; BusinessScan CameraKit client ACTIVE with live preview and no fatal/LogBox error. Screenshot: android-camera-20260912.png." }
+  ],
+  "unresolved_blockers": [],
+  "approvals": [
+    { "source": "user/Prompt 04 HANDOFF rule", "excerpt": "nhãn kết quả phải theo HANDOFF mới: Gửi phiếu lên Web, Chờ xử lý trên Web, Phiếu đã gửi, chưa ghi sổ.", "effect": "Applied result/review labels." },
+    { "source": "Prompt 00 D01 and motion-spec", "excerpt": "package/call-site motion phải được chốt trước khi cài thư viện.", "effect": "GSAP was installed only after the user follow-up authorised resolving B04-01; package and call-site are pinned in this gate." },
+    { "source": "user follow-up 2026-09-12", "excerpt": "xử lý đi", "effect": "Authorised resolving the remaining Prompt 04 motion blocker with a Web-only GSAP scan beam; Android keeps the no-op RN adapter." }
+  ],
+  "next_stage_allowed": true,
+  "next_stage": "Prompt 05 may be opened by an explicit user assignment."
+}

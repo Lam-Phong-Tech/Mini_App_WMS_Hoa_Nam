@@ -5,10 +5,10 @@
  * ca làm. Vì vậy chỉ `GET /auth/me` và logout hiện hữu được gọi ở màn này.
  */
 
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import {
   ActivityIndicator,
-  ImageBackground,
+  Image,
   ScrollView,
   StyleSheet,
   View,
@@ -30,6 +30,7 @@ import { scannerAssets } from '../../theme/scannerAssets';
 
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: '#073b52' },
+  backgroundImage: { position: 'absolute', top: 0, right: 0, bottom: 0, left: 0 },
   shade: { flex: 1, backgroundColor: 'rgba(3, 40, 58, 0.68)' },
   content: {
     flexGrow: 1,
@@ -86,6 +87,8 @@ function scopeLabel(user: CurrentUser | undefined): string {
 export interface SessionConfirmationScreenProps {
   onContinue: () => void;
   onLoggedOut: () => void;
+  /** Đồng bộ danh tính đã xác nhận vào phiên ứng dụng. */
+  onIdentityResolved?: (user: CurrentUser) => void;
   fetchUser?: typeof fetchCurrentUser;
   logoutFn?: typeof logout;
 }
@@ -93,6 +96,7 @@ export interface SessionConfirmationScreenProps {
 export function SessionConfirmationScreen({
   onContinue,
   onLoggedOut,
+  onIdentityResolved,
   fetchUser = fetchCurrentUser,
   logoutFn = logout,
 }: SessionConfirmationScreenProps): React.ReactElement {
@@ -102,21 +106,35 @@ export function SessionConfirmationScreen({
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<AppError | undefined>();
   const [loggingOut, setLoggingOut] = useState(false);
+  const requestSequence = useRef(0);
+  const mounted = useRef(true);
 
   const load = useCallback(async () => {
+    const requestId = ++requestSequence.current;
     setLoading(true);
     setError(undefined);
     try {
-      setUser(await fetchUser());
+      const resolvedUser = await fetchUser();
+      if (!mounted.current || requestId !== requestSequence.current) return;
+      setUser(resolvedUser);
+      onIdentityResolved?.(resolvedUser);
     } catch (cause) {
+      if (!mounted.current || requestId !== requestSequence.current) return;
       setError(toAppError(cause));
     } finally {
-      setLoading(false);
+      if (mounted.current && requestId === requestSequence.current) {
+        setLoading(false);
+      }
     }
-  }, [fetchUser]);
+  }, [fetchUser, onIdentityResolved]);
 
   useEffect(() => {
+    mounted.current = true;
     load().catch(() => undefined);
+    return () => {
+      mounted.current = false;
+      requestSequence.current += 1;
+    };
   }, [load]);
 
   const handleLogout = useCallback(async () => {
@@ -129,10 +147,18 @@ export function SessionConfirmationScreen({
     }
   }, [loggingOut, logoutFn, onLoggedOut]);
 
-  const name = user?.name ?? getSession()?.userId ?? 'Tài khoản WMS';
+  const session = getSession();
+  const name = user?.name ?? session?.userName ?? session?.userId ?? 'Tài khoản WMS';
 
   return (
-    <ImageBackground source={scannerAssets.staffWarehouse} style={styles.root}>
+    <View style={styles.root}>
+    <Image
+      source={scannerAssets.staffWarehouse}
+      style={styles.backgroundImage}
+      resizeMode="cover"
+      accessible={false}
+      pointerEvents="none"
+    />
     <SafeAreaView edges={['top', 'bottom']} style={styles.shade}>
       <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
         <View style={[styles.brand, { gap: theme.spacing.md }]}>
@@ -202,6 +228,6 @@ export function SessionConfirmationScreen({
         </Text>
       </ScrollView>
     </SafeAreaView>
-    </ImageBackground>
+    </View>
   );
 }

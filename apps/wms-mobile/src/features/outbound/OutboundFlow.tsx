@@ -15,7 +15,8 @@
  * tự Post Issue hay làm giảm tồn kho.
  */
 
-import React, { useCallback, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
+import { StyleSheet, View } from 'react-native';
 import { serverNow } from '../../auth/serverClock';
 import {
   isEligibleForOutbound,
@@ -30,6 +31,8 @@ import { getDataLayer } from '../../sync/bootstrap';
 import { BusinessScanScreen } from '../scan/BusinessScanScreen';
 import type { ScanFeedback } from '../scan/BusinessScanScreen';
 import { OutboundCreateScreen } from './OutboundCreateScreen';
+import { Dialog } from '../../ui/Dialog';
+import { Button } from '../../ui/Button';
 import { OutboundResultScreen } from './OutboundResultScreen';
 import { OutboundReviewScreen } from './OutboundReviewScreen';
 import { NfcAssignmentScreen } from '../nfc/NfcAssignmentScreen';
@@ -48,6 +51,16 @@ import {
   type OutboundDraft,
   updateForm,
 } from './outboundDraft';
+import {
+  cancelDraft,
+  getActiveDraft,
+  removeDraft,
+  saveDraft,
+} from '../../sync/draftStore';
+
+const styles = StyleSheet.create({
+  dialogActions: { gap: 8 },
+});
 
 export interface OutboundFlowProps {
   onExit: () => void;
@@ -57,7 +70,7 @@ export interface OutboundFlowProps {
 }
 
 interface RecordOutcome {
-  readonly outcome: 'posted' | 'queued';
+  readonly outcome: OutboundResultOutcome;
   readonly reason?: string;
   readonly documentRef: string;
   readonly quantity: number;
@@ -65,12 +78,49 @@ interface RecordOutcome {
   readonly recipientName: string;
 }
 
+/** Trạng thái hiển thị giữ nguyên từng kết quả outbox, không gộp lỗi. */
+export type OutboundResultOutcome =
+  | 'posted'
+  | 'queued'
+  | 'failed'
+  | 'conflict'
+  | 'unknown';
+
+export function resultOutcomeForState(
+  state: Awaited<ReturnType<ReturnType<typeof getDataLayer>['syncEngine']['syncOne']>>['state'],
+): OutboundResultOutcome {
+  switch (state) {
+    case 'synced':
+      return 'posted';
+    case 'pending':
+      return 'queued';
+    case 'failed':
+      return 'failed';
+    case 'conflict':
+      return 'conflict';
+    case 'unknown':
+      return 'unknown';
+    default:
+      // `syncing` only appears for a concurrent call; the UI already prevents
+      // that path, but an explicit unknown result is safer than “queued”.
+      return 'unknown';
+  }
+}
+
 export function OutboundFlow({
   onExit,
   dataLayer,
   resolveCode = resolveOutboundCode,
 }: OutboundFlowProps): React.ReactElement {
-  const [draft, setDraft] = useState<OutboundDraft>(initialOutboundDraft);
+  const [resumeCandidate] = useState(() => getActiveDraft<OutboundDraft>('outbound'));
+  const draftIdRef = useRef(
+    resumeCandidate?.id ?? 'draft-outbound-' + String(Date.now()),
+  );
+  const [draft, setDraft] = useState<OutboundDraft>(
+    () => resumeCandidate?.payload ?? initialOutboundDraft,
+  );
+  const [resumeOpen, setResumeOpen] = useState(resumeCandidate !== undefined);
+  const [exitOpen, setExitOpen] = useState(false);
   const [recording, setRecording] = useState(false);
   // Chặn ngay trong event loop; chỉ dùng state `recording` thì hai lần chạm
   // sát nhau vẫn có thể cùng tạo hai phiếu trước khi React kịp render lại.
@@ -78,6 +128,36 @@ export function OutboundFlow({
   const [result, setResult] = useState<RecordOutcome | undefined>();
   // Rời màn kiểm tra sang gán NFC nhưng giữ nguyên phiếu nháp/mã đã quét.
   const [nfcCode, setNfcCode] = useState<string | undefined>();
+
+  const hasDraftContent =
+    draft.form.name.trim() !== '' ||
+    draft.form.recipientName.trim() !== '' ||
+    draft.codes.length > 0 ||
+    draft.step !== 0;
+
+  useEffect(() => {
+    if (result !== undefined || !hasDraftContent) return;
+    saveDraft('outbound', draftIdRef.current, draft);
+  }, [draft, hasDraftContent, result]);
+
+  const requestExit = useCallback(() => {
+    if (hasDraftContent) setExitOpen(true);
+    else onExit();
+  }, [hasDraftContent, onExit]);
+
+  const saveAndExit = useCallback(() => {
+    saveDraft('outbound', draftIdRef.current, draft);
+    setExitOpen(false);
+    setResumeOpen(false);
+    onExit();
+  }, [draft, onExit]);
+
+  const cancelAndExit = useCallback(() => {
+    cancelDraft('outbound', draftIdRef.current);
+    setExitOpen(false);
+    setResumeOpen(false);
+    onExit();
+  }, [onExit]);
 
   /**
    * Khớp `ScannerPage.processOutboundLocalCode` của Mini App: chờ
@@ -178,20 +258,21 @@ export function OutboundFlow({
 
     try {
       const sync = await layer.syncEngine.syncOne(record.id);
+      if (sync.state === 'synced') removeDraft('outbound', draftIdRef.current);
       setResult({
         ...base,
         documentRef:
           sync.state === 'synced'
             ? recordedOutboundReference(sync.response, record.id)
             : record.id,
-        outcome: sync.state === 'synced' ? 'posted' : 'queued',
+        outcome: resultOutcomeForState(sync.state),
         reason: sync.reason,
       });
     } catch (error) {
       setResult({
         ...base,
         documentRef: record.id,
-        outcome: 'queued',
+        outcome: 'unknown',
         reason: toAppError(error).message,
       });
     } finally {
@@ -201,9 +282,42 @@ export function OutboundFlow({
   }, [dataLayer, draft]);
 
   const restart = useCallback(() => {
+    draftIdRef.current = 'draft-outbound-' + String(Date.now());
     setDraft(initialOutboundDraft);
     setResult(undefined);
+    setResumeOpen(false);
   }, []);
+
+  const dialogs = (
+    <>
+      <Dialog
+        visible={resumeOpen}
+        dismissible={false}
+        title="Bạn đang có phiếu chưa hoàn tất"
+        message="Dữ liệu đã nhập được giữ lại trên thiết bị trong 1 tuần. Bạn có thể tiếp tục, lưu nháp để thoát hoặc hủy phiếu."
+        onDismiss={() => undefined}
+      >
+        <View style={styles.dialogActions}>
+          <Button label="Tiếp tục phiếu" onPress={() => setResumeOpen(false)} />
+          <Button label="Lưu nháp và thoát" variant="secondary" onPress={saveAndExit} />
+          <Button label="Bỏ phiếu" variant="danger" onPress={cancelAndExit} />
+          <Button label="Hủy" variant="secondary" onPress={() => setResumeOpen(false)} />
+        </View>
+      </Dialog>
+      <Dialog
+        visible={exitOpen}
+        title="Phiếu chưa hoàn tất"
+        message="Bạn muốn lưu phiếu nháp để tiếp tục trong 1 tuần, hay chuyển phiếu sang trạng thái đã hủy?"
+        onDismiss={() => setExitOpen(false)}
+      >
+        <View style={styles.dialogActions}>
+          <Button label="Lưu nháp và thoát" onPress={saveAndExit} />
+          <Button label="Bỏ phiếu" variant="danger" onPress={cancelAndExit} />
+          <Button label="Tiếp tục soạn" variant="secondary" onPress={() => setExitOpen(false)} />
+        </View>
+      </Dialog>
+    </>
+  );
 
   if (result !== undefined) {
     return (
@@ -232,10 +346,11 @@ export function OutboundFlow({
   switch (draft.step) {
     case 0:
       return (
+        <>
         <OutboundCreateScreen
           draft={draft}
           onChange={setDraft}
-          onBack={onExit}
+          onBack={requestExit}
           onStart={() =>
             setDraft(current => {
               const started = startScanning(current);
@@ -249,6 +364,8 @@ export function OutboundFlow({
             })
           }
         />
+        {dialogs}
+        </>
       );
 
     case 1:
@@ -269,7 +386,8 @@ export function OutboundFlow({
       );
 
     default:
-      return (
+        return (
+        <>
         <OutboundReviewScreen
           draft={draft}
           onRemoveCode={key =>
@@ -281,6 +399,8 @@ export function OutboundFlow({
           onBackToScan={() => setDraft(current => ({ ...current, step: 1 }))}
           onAssignNfc={rawCode => setNfcCode(rawCode)}
         />
+        {dialogs}
+        </>
       );
   }
 }

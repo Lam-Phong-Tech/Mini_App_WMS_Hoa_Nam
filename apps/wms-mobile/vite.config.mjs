@@ -44,6 +44,16 @@ export default defineConfig({
       '.json',
     ],
   },
+  // React Native được thay hoàn toàn bởi react-native-web ở target web. Nếu
+  // Vite tối ưu trực tiếp package native, esbuild sẽ gặp Flow syntax trong
+  // source nội bộ của React Native trước khi alias có hiệu lực.
+  optimizeDeps: {
+    // `react-native-safe-area-context` publishes platform siblings such as
+    // `NativeSafeAreaProvider.web.js`. Esbuild dependency prebundling ignores
+    // the configured `.web.*` extension priority, so let Vite resolve this
+    // package on demand together with the React Native alias instead.
+    exclude: ['react-native', 'react-native-safe-area-context'],
+  },
   server: {
     host: '127.0.0.1',
     port: 5175,

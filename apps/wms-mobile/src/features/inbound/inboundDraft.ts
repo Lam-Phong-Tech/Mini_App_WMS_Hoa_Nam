@@ -530,7 +530,7 @@ export const MESSAGE_NO_CODE_BODY =
 /** Nguyên văn banner giải thích ở ảnh 20. */
 export const MESSAGE_POST_ONLY_TITLE = 'Chỉ Post Receipt mới tăng tồn';
 export const MESSAGE_POST_ONLY_BODY =
-  'Danh sách dưới đây đang là dữ liệu quét tạm. Bấm Ghi nhận nhập để tạo phiếu WMS, lưu evidence và chuyển sang chờ duyệt.';
+  'Danh sách dưới đây đang là dữ liệu quét tạm. Bấm Gửi phiếu lên Web để tạo phiếu WMS, lưu evidence và chuyển sang chờ xử lý trên Web.';
 
 /** Nguyên văn banner ở ảnh 24, sau khi ghi nhận. */
 export const MESSAGE_NOT_POSTED_TITLE = 'Chưa tăng tồn kho';

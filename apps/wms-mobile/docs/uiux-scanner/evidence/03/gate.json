@@ -1,0 +1,62 @@
+{
+  "schema_version": 1,
+  "prompt_id": "03",
+  "status": "PASS",
+  "started_at": "2026-09-11T23:15:00+07:00",
+  "completed_at": "2026-09-12T00:10:00+07:00",
+  "agent": "Codex",
+  "baseline_revision": { "app": "7f4d4006608009c400a4d6652200db030677db86", "designer": "90b0032b970e4f40cf4ccc8a95407577f1ab720a" },
+  "input_revision": { "app_head": "635c9e090a61f2bec69d0c01547ca2fb5951eacf", "gate_02_status": "PASS", "gate_02_sha256": "7e967a94fbd2c76ae1d9c59a29c06c5fe7061661780434fc501f998f7e0e8b73" },
+  "output_revision": {
+    "kind": "uncommitted source and evidence",
+    "content_hashes": {
+      "dialog": "8b62057ef9f0138899545dae4b2f9d40faf5088dc9a282ae0faa0f60260c7f74",
+      "draft_store": "1eebae2267c355426a6795ff439b48284ec884aab67a6d80e3df2402095fc479",
+      "scan_picker": "523ce947724fa2def3b38be8cefe5c927879d08ce1e5cbb3601940215111b558",
+      "app_shell": "ab2b82d5287743d8a8970cbea610647e23af79531ae39741c51392bdb78ee18c",
+      "inbound_flow": "f5cf045fbf8fd6de622dc3255eb63a2575a81fbeede3df1205828b9072fcc069",
+      "outbound_flow": "a38ac940f4497c4cbc41c769e0f24eaff696e6d9d28a6c1f9ad960e2dde04b01",
+      "inbound_create": "c003d219952b1210e6f5f83b1abbc551e490938b7b41025aacfc6127a1dc7a35",
+      "outbound_create": "35a23705ba5bc349cc61ae4bdaf09fc710904d848ad5afa2e81cb01944c63483",
+      "draft_tests": "5f211b92fa1dc20bed8a1732f2dad9a80e0a39a21e8a9736e49c50ca334af648"
+    }
+  },
+  "dependency_gates": [
+    { "prompt_id": "00", "status": "PASS", "sha256": "5d1c5b42d3f5d33579289b97e2411b3f7173918251cfd7c9528b5c427a968850" },
+    { "prompt_id": "01", "status": "PASS", "sha256": "6fe31ba630552cab5210e4d36ac9e766c6dac2591025b32e0ddc6f36b4bfa846" },
+    { "prompt_id": "02", "status": "PASS", "sha256": "7e967a94fbd2c76ae1d9c59a29c06c5fe7061661780434fc501f998f7e0e8b73" }
+  ],
+  "scope": {
+    "included": ["fixed dialog presentation", "scan task picker", "inbound/outbound local draft resume/save/cancel", "7-day draft expiry", "informational paused-warehouse state"],
+    "excluded": ["new BE draft endpoint", "warehouse contact action", "stock mutation changes", "camera/NFC hardware acceptance", "new motion package"],
+    "scope_revision": "User confirmed local DRAFT for one week, CANCELLED instead of delete, informational admin-contact message, and simple exit UX."
+  },
+  "changed_files": [
+    "src/ui/Dialog.tsx", "src/sync/draftStore.ts", "src/features/scan/ScanTaskPickerScreen.tsx", "src/app/AppShell.tsx",
+    "src/features/inbound/InboundFlow.tsx", "src/features/outbound/OutboundFlow.tsx", "src/features/inbound/InboundCreateScreen.tsx",
+    "src/features/outbound/OutboundCreateScreen.tsx", "__tests__/draftStore.test.ts",
+    "docs/uiux-scanner/evidence/03/state-matrix.md", "docs/uiux-scanner/evidence/03/checks.md",
+    "docs/uiux-scanner/evidence/03/blockers.md", "docs/uiux-scanner/evidence/03/gate.json"
+  ],
+  "checks": [
+    { "id": "prerequisite-gates", "status": "PASS", "evidence": "Gates 00–02 all PASS; Gate 02 hash checked before Prompt 03 edits." },
+    { "id": "board-inspection", "status": "PASS", "evidence": "Board 03 image inspected directly; four dialog panels legible." },
+    { "id": "scan-task-picker", "status": "PASS", "evidence": "Tab Quét mã opened picker; selecting Bảo hành opened the real warranty list." },
+    { "id": "draft-save-resume", "status": "PASS", "evidence": "Inbound and Outbound drafts persist locally, reopen with Continue dialog and expire after 7 days." },
+    { "id": "draft-cancel", "status": "PASS", "evidence": "Bỏ phiếu writes status CANCELLED and leaves the record in local storage; it is not deleted." },
+    { "id": "paused-notice", "status": "PASS", "evidence": "Create screens show informational Kho tạm dừng only when the successful active-warehouse read has no active result; no contact action is rendered." },
+    { "id": "typecheck", "status": "PASS", "command": "npm run typecheck", "exit_code": 0 },
+    { "id": "lint", "status": "PASS", "command": "npm run lint", "exit_code": 0 },
+    { "id": "tests", "status": "PASS", "command": "npm test -- --runInBand __tests__/draftStore.test.ts __tests__/inboundFlow.test.tsx __tests__/outboundFlow.test.tsx __tests__/authFlow.test.tsx __tests__/App.test.tsx --silent", "exit_code": 0, "detail": "5 suites / 154 tests" },
+    { "id": "web-build", "status": "PASS", "command": "npm run build:web", "exit_code": 0, "detail": "Vite chunk-size advisory only" }
+  ],
+  "unresolved_blockers": [],
+  "approvals": [
+    { "source": "user message in this thread", "excerpt": "phiếu dở có lưu phiếu ở trạng thái nháp... thời hạn nháp: 1 tuần", "effect": "Enables local durable DRAFT and one-week expiry." },
+    { "source": "user message in this thread", "excerpt": "chức năng hủy phiếu (trạng thái phiếu là đã hủy, ko xóa khỏi hệ thống)", "effect": "Cancel uses CANCELLED status and retains the record." },
+    { "source": "user message in this thread", "excerpt": "Liên hệ quản trị là thông báo cần liên hệ với quản trị, ko cần có chức năng trong hệ thống", "effect": "Paused dialog is informational only." },
+    { "source": "user message in this thread", "excerpt": "nghiệp vụ chính ... vẫn thoát được do có thể cho phiếu dạng nháp; ... đơn giản, dễ dùng", "effect": "Exit confirmation offers save/cancel/continue with simple close rules." }
+  ],
+  "next_stage_allowed": true,
+  "next_stage": "Prompt 03 is PASS. Prompt 04 may start only when the user assigns it."
+}

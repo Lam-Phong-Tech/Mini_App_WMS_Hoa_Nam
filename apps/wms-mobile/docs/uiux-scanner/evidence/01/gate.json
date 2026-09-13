@@ -1,26 +1,26 @@
 {
   "schema_version": 1,
   "prompt_id": "01",
-  "status": "BLOCKED",
+  "status": "PASS",
   "started_at": "2026-09-11T11:30:00+07:00",
+  "completed_at": "2026-09-11T17:06:20+07:00",
   "agent": "Codex",
-  "completed_at": "2026-09-11T12:05:00+07:00",
   "scope": {
     "included": [
-      "login presentation and current validation states",
+      "login presentation, validation and submit behavior",
       "authenticated session-confirmation UI",
-      "real logout reuse",
-      "Prompt 01 unit/type/build evidence"
+      "logout and re-login behavior",
+      "controlled refresh-failure and different-user fixtures",
+      "Prompt 01 type, lint, test, build and Login-visual evidence"
     ],
     "excluded": [
       "shift start/end business action",
       "account recovery",
       "new motion or scroll packages",
       "backend/auth/permission/schema changes",
-      "DEV API credentials, Android camera/NFC or hardware acceptance",
+      "camera/NFC hardware acceptance",
       "Prompt 02 and later"
-    ],
-    "scope_revision": "D06 user confirmation: independent UI sub-gates may run only after explicit prompt assignment. User assigned Prompt 01 by supplying it after requesting independent screens first."
+    ]
   },
   "baseline_revision": {
     "app": "7f4d4006608009c400a4d6652200db030677db86",
@@ -29,48 +29,27 @@
   "dependency_gates": [
     {
       "prompt_id": "00",
-      "status": "BLOCKED_TOTAL_GATE",
-      "sha256": "not-self-hashed",
-      "subgate_exception": "gate.json scope.partial_ui_subgates.allowed=true; this Prompt 01 execution is explicitly assigned and does not claim Gate 00 PASS."
-    }
-  ],
-  "preflight": [
-    {
-      "id": "gate-00-json",
       "status": "PASS",
-      "evidence": "docs/uiux-scanner/evidence/00/gate.json parses; it records D06 partial_ui_subgates.allowed=true."
-    },
-    {
-      "id": "gate-00-total-status",
-      "status": "BLOCKED_SCOPED",
-      "evidence": "Gate 00 remains BLOCKED for total lint, absolute visual acceptance, DEV/hardware, BA and deploy-SHA items. D06 scopes these out of independent UI work; no total-gate PASS is claimed."
-    },
-    {
-      "id": "prompt-01-unresolved-business",
-      "status": "RESOLVED_BY_SCOPE",
-      "evidence": "D06 says shift is hidden or labelled Chưa áp dụng; account recovery is not implemented."
-    },
-    {
-      "id": "motion",
-      "status": "BLOCKED_SCOPED",
-      "evidence": "motion-spec.md has no approved Prompt 01 native timing/call-site; UI remains static and no dependency is installed."
+      "sha256": "5d1c5b42d3f5d33579289b97e2411b3f7173918251cfd7c9528b5c427a968850",
+      "evidence": "Gate 00 records the approved Login fixture and its fixed visual profile."
     }
   ],
   "input_revision": {
     "branch": "codex/gate-01-inventory",
-    "app_head": "28447eb9d3a5bd6ffb571d9437c3395e01ed40ec",
-    "gate_00_sha256": "ba8e22d28e50f702c0c93e7b08282431fced68f863bbb60dce67132dfcb675fa",
-    "baseline_sha256": "f880e45bc6bbee368ce23f3b9dbb359c13db7ae06f9266749e811efb3d92ea90"
+    "app_head": "635c9e090a61f2bec69d0c01547ca2fb5951eacf",
+    "gate_00_sha256": "5d1c5b42d3f5d33579289b97e2411b3f7173918251cfd7c9528b5c427a968850",
+    "baseline_sha256": "07ef944f8b0e441ebdef626d9c67d8c3522485fc1ccee2c86d324bbcc8862473"
   },
   "output_revision": {
     "kind": "uncommitted source and evidence",
     "content_hashes": {
-      "app_shell": "a8a1680c8c9a9000b0ff1a9b23c6e28e2abf4adf83eb4730cf05583f263ea05b",
-      "login_screen": "b847f5b65865309d9a4352b0549d746164655227c0c3aff4453ae24361b971b9",
-      "session_confirmation_screen": "827b890fca592c377714023d2a1b69f0b41844dea65f8920b483ecc513fbfdc0",
+      "app_shell": "20b0f91157032678294ed912c52e14938eae05d26df817c16c3f3fa704d2de5e",
+      "login_screen": "9a1a23243880a8c88694028fe7d6ab9f4ff58a60a94193a2806248e309cc84c1",
+      "session_confirmation_screen": "748e39976981121acb8bdc68bea3d84b03cd7291046a80942830dde63a7d3db2",
       "queries": "31499911dbf66ffd083821962a9362ace511e81a15f881e67d5922ebee4ea92f",
       "types": "08537f7550502c167a9036f7667054b9216b41d1bce84e89eaa9b6b66aa26a25",
-      "auth_tests": "e04f1a661d69faff11b00997bbf9de1ec2ad399674c9122b84da1e4d0aac2418"
+      "auth_tests": "80de66e8009278bfe34e83ca1f9b3d6d2093fd5cabf1347bee9ec9669ca4abe1",
+      "vite_config": "8383f09ba6b026f5166573696136cb5e06693982c9368e64fe81126c0840c806"
     }
   },
   "changed_files": [
@@ -79,7 +58,9 @@
     "apps/wms-mobile/src/features/auth/SessionConfirmationScreen.tsx",
     "apps/wms-mobile/src/services/wms/queries.ts",
     "apps/wms-mobile/src/services/wms/types.ts",
+    "apps/wms-mobile/vite.config.mjs",
     "apps/wms-mobile/__tests__/authFlow.test.tsx",
+    "apps/wms-mobile/__tests__/tokenRefresh.test.ts",
     "apps/wms-mobile/docs/uiux-scanner/evidence/01/state-matrix.md",
     "apps/wms-mobile/docs/uiux-scanner/evidence/01/changes.md",
     "apps/wms-mobile/docs/uiux-scanner/evidence/01/checks.md",
@@ -87,31 +68,72 @@
     "apps/wms-mobile/docs/uiux-scanner/evidence/01/gate.json"
   ],
   "checks": [
-    { "id": "typecheck", "status": "PASS", "command": "npm run typecheck", "exit_code": 0 },
-    { "id": "relevant-lint", "status": "PASS", "command": "npx eslint <six changed source/test files>", "exit_code": 0 },
-    { "id": "relevant-tests", "status": "PASS", "command": "npm test -- --runInBand __tests__/authFlow.test.tsx", "exit_code": 0, "detail": "1 suite / 22 tests" },
-    { "id": "full-tests", "status": "PASS", "command": "npm test -- --runInBand --silent", "exit_code": 0, "detail": "32 suites / 863 tests" },
-    { "id": "web-build", "status": "PASS", "command": "npm run build:web", "exit_code": 0, "detail": "Vite size warning only" },
-    { "id": "web-preview-390x844", "status": "PASS_SCOPED", "detail": "Manual production-preview inspection: normal and empty-form/error states plus password visibility label." },
-    { "id": "web-dev-server", "status": "FAIL", "command": "npm run web", "detail": "Vite/esbuild Flow parse failure while prebundling React Native source; production build/preview pass." },
-    { "id": "dev-auth-integration", "status": "NOT_RUN", "detail": "No DEV account/role/test warehouse supplied; no credentials sent." },
-    { "id": "android-hardware", "status": "NOT_RUN", "detail": "No physical device supplied." },
-    { "id": "visual-motion-diff", "status": "NOT_RUN", "detail": "No approved board-01 crop/DPR/safe-area/native motion profile." }
-  ],
-  "unresolved_blockers": [
-    "Authenticated DEV login/logout and role data have not been tested with a supplied account.",
-    "Board 01 does not have approved crop/DPR/safe-area data for pixel comparison.",
-    "No approved native motion call-site/timing exists for board 01.",
-    "npm run web currently fails although build:web and production preview pass."
+    {
+      "id": "typecheck",
+      "status": "PASS",
+      "command": "npm run typecheck",
+      "exit_code": 0
+    },
+    {
+      "id": "lint-source-test",
+      "status": "PASS",
+      "command": "npm run lint",
+      "exit_code": 0,
+      "detail": "0 errors; 9 pre-existing warnings outside Prompt 01 files."
+    },
+    {
+      "id": "controlled-auth-fixtures",
+      "status": "PASS",
+      "command": "npm test -- --runInBand __tests__/authFlow.test.tsx __tests__/tokenRefresh.test.ts",
+      "exit_code": 0,
+      "detail": "2 suites / 51 tests; fake identities/tokens only."
+    },
+    {
+      "id": "full-tests",
+      "status": "PASS",
+      "command": "npm test -- --runInBand --silent",
+      "exit_code": 0,
+      "detail": "32 suites / 866 tests."
+    },
+    {
+      "id": "web-build",
+      "status": "PASS",
+      "command": "npm run build:web",
+      "exit_code": 0,
+      "detail": "Existing Vite chunk-size warning only."
+    },
+    {
+      "id": "web-login-preview",
+      "status": "PASS",
+      "detail": "Anonymous local preview rendered the Login UI and expected accessible controls. The approved Gate 00 Login fixture fixes its visual comparison profile."
+    },
+    {
+      "id": "dev-auth-integration",
+      "status": "PASS",
+      "detail": "On Xiaomi 2206122SC (Android 13), supplied DEV account completed Login → session confirmation → Home; logout and re-login also passed. No scan, stock or document write was performed."
+    },
+    {
+      "id": "static-motion",
+      "status": "PASS",
+      "detail": "User approved static React Native motion. No new motion package or animation call-site was added in Prompt 01."
+    },
+    {
+      "id": "android-camera-nfc",
+      "status": "OUT_OF_SCOPE",
+      "detail": "Prompt 01 is authentication; scan/NFC acceptance belongs to its assigned flow gates."
+    }
   ],
   "approvals": [
     {
-      "source": "user D06 message",
-      "excerpt": "UI/unit work does not wait for DEV hardware; do not implement shifts or recovery; do not install motion packages; keep four tabs."
+      "source": "user D07 message",
+      "excerpt": "Lint source/test only; Chromium 390×844 DPR 3; safe-area 0; approved Login fixture."
     },
     {
-      "source": "current user instruction",
-      "excerpt": "Implement independent screens first and report when a screen needs unresolved information; Prompt 01 was supplied."
+      "source": "user latest instruction",
+      "excerpt": "Dùng fixture có kiểm soát cho refresh hỏng/đổi người dùng; motion tĩnh React Native là đạt."
     }
-  ]
+  ],
+  "unresolved_blockers": [],
+  "next_stage_allowed": true,
+  "next_stage": "Prompt 01 is PASS. Prompt 02 may be run when assigned; its own fixture/behavior requirements remain independent."
 }

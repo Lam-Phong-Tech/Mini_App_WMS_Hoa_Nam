@@ -46,6 +46,19 @@ const styles = StyleSheet.create({
   headerBody: {
     flex: 1,
   },
+  pullRefresh: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    // Text trong View cao 0 vẫn có thể vẽ tràn trên RN Web.
+    // Cắt nó để nhãn chỉ xuất hiện trong lúc kéo/đang tải.
+    overflow: 'hidden',
+  },
+  pullRefreshVisible: {
+    height: 30,
+  },
+  pullRefreshHidden: {
+    height: 0,
+  },
 });
 
 export interface PageProps {
@@ -220,14 +233,12 @@ export function Page({
           {onPullRefresh === undefined ? null : (
             <View
               accessibilityLiveRegion="polite"
-              style={{
-                height: pullDistance > 0 || refreshing ? 30 : 0,
-                alignItems: 'center',
-                justifyContent: 'center',
-                // Text trong View cao 0 vẫn có thể vẽ tràn trên RN Web.
-                // Cắt nó để nhãn chỉ xuất hiện trong lúc kéo/đang tải.
-                overflow: 'hidden',
-              }}
+              style={[
+                styles.pullRefresh,
+                pullDistance > 0 || refreshing
+                  ? styles.pullRefreshVisible
+                  : styles.pullRefreshHidden,
+              ]}
             >
               <Text variant="caption" tone="muted">
                 {refreshing

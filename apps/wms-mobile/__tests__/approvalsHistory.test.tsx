@@ -71,8 +71,11 @@ function collectText(node: unknown, out: string[] = []): string[] {
 
 async function render(element: React.ReactElement) {
   let tree: ReactTestRenderer.ReactTestRenderer | undefined;
-  await ReactTestRenderer.act(() => {
+  await ReactTestRenderer.act(async () => {
     tree = ReactTestRenderer.create(<AppProviders>{element}</AppProviders>);
+    // Flush effect tự nạp của Duyệt phiếu/Lịch sử trong cùng transaction test,
+    // tránh state update trễ bị coi là cập nhật ngoài `act`.
+    await Promise.resolve();
   });
   return {
     text: collectText(tree?.toJSON()).join(' | '),

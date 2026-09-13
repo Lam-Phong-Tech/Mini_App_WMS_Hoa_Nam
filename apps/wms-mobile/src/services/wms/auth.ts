@@ -21,9 +21,11 @@ import { serverNow, recordServerTime, readServerTimestamp } from '../../auth/ser
 import {
   clearRefreshInFlight,
   clearSession,
-  setSession,
+  persistSession,
+  getSession,
   type Session,
 } from '../../auth/session';
+import { clearSecureRefreshToken } from '../../auth/secureRefreshToken';
 import { parseRefreshPayload, sessionFromRefresh } from '../../auth/tokenRefresh';
 
 export const LOGIN_PATH = '/api/v1/auth/login';
@@ -75,7 +77,8 @@ export async function login(
   // Xoá dấu gia hạn dở dang của phiên TRƯỚC: đăng nhập mới làm nó vô nghĩa, và
   // để sót lại sẽ khiến lần mở app sau ép đăng nhập lại một cách vô lý.
   clearRefreshInFlight();
-  setSession(session);
+  // Refresh token đi vào Android Keystore trước; MMKV không giữ credential dài hạn.
+  await persistSession(session);
   return session;
 }
 
@@ -89,10 +92,20 @@ export async function login(
  */
 export async function logout(deps: LoginDeps = {}): Promise<void> {
   const post = deps.post ?? defaultPost;
+  // Auth server đang dùng body transport cho refresh/logout. Lấy token trước
+  // khi xoá local session, không dùng Authorization cho endpoint này.
+  const refreshToken = getSession()?.refreshToken;
   clearSession();
   clearRefreshInFlight();
   try {
-    await post(LOGOUT_PATH, {});
+    await clearSecureRefreshToken();
+  } catch {
+    // Local UI đã logout; lỗi xoá Keystore không được giữ nhân viên ở lại app.
+  }
+  try {
+    await post(LOGOUT_PATH, {
+      ...(refreshToken === undefined ? {} : { refresh_token: refreshToken }),
+    });
   } catch {
     // Nuốt lỗi có chủ đích: phiên cục bộ đã xoá xong ở trên. Máy chủ sẽ tự hết
     // hạn token theo TTL. Báo lỗi ở đây chỉ làm người dùng tưởng chưa đăng xuất.

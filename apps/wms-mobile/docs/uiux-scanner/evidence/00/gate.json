@@ -1,9 +1,9 @@
 {
   "schema_version": 1,
   "prompt_id": "00",
-  "status": "BLOCKED",
+  "status": "PASS",
   "started_at": "2026-09-11T10:29:00+07:00",
-  "completed_at": "2026-09-11T11:00:23+07:00",
+  "completed_at": "2026-09-11T14:35:12+07:00",
   "agent": "Codex",
   "scope": {
     "included": [
@@ -37,9 +37,9 @@
     "designer": "90b0032b970e4f40cf4ccc8a95407577f1ab720a"
   },
   "input_revision": {
-    "app_head": "28447eb9d3a5bd6ffb571d9437c3395e01ed40ec",
+    "app_head": "635c9e090a61f2bec69d0c01547ca2fb5951eacf",
     "branch": "codex/gate-01-inventory",
-    "app_source_tree": "e253d49c7d0b7b78d62f2fff43b9f2a29f4dbb4f",
+    "app_source_tree": "ac3b5e6ccd9528e289a86004e6aa80607598bad7",
     "designer_public_html_sha256": "92a5065b7d41cfe01660e339e822dffeb4617b7f344582b1de2f13ce99a9d843"
   },
   "output_revision": {
@@ -102,8 +102,8 @@
     },
     {
       "id": "D04-visual-acceptance-profile",
-      "status": "BLOCKED",
-      "evidence": "D07 fixes the test parameters, but the locked Login source is a two-device composite (1448×1086), not an app-only/crop-ready raster. No raw fixture or crop bounds exists; visual-check.md records the failed validation."
+      "status": "PASS",
+      "evidence": "The user explicitly approved D07 Login fixture login-d07-390x844-dpr3.png (390×844 CSS px, DPR 3; SHA-256 e4a605d5f8e7d359dbc38b33a8656fce8bd7c868b3c96b862c655fe2f110498e). The approval replaces the non-comparable two-device composite for Login only."
     },
     {
       "id": "D05-dev-hardware-environment",
@@ -139,13 +139,13 @@
     },
     {
       "id": "android-and-hardware",
-      "status": "EXTERNAL_DEPENDENCY",
-      "detail": "Requires an Android/PDA camera/NFC device and secure DEV account delivery; not claimed as verified."
+      "status": "DEFERRED",
+      "detail": "Debug App launched and Login rendered on Xiaomi 2206122SC. Camera/NFC and authenticated DEV E2E are not claimed as verified and remain a separate acceptance dependency."
     },
     {
       "id": "visual-and-motion-diff",
-      "status": "BLOCKED",
-      "detail": "The current Login capture at 390×844/DPR 3 has no horizontal overflow and is stored in evidence/00. The Designer Login board cannot form a valid app-only reference, so the required pixel parity cannot yet be measured; see visual-check.md."
+      "status": "PASS",
+      "detail": "The user-approved D07 Login fixture is frozen at the required Chromium viewport/DPR. This is Login-only approval; no motion or visual parity is claimed for other screens."
     }
   ],
   "approvals": [
@@ -168,11 +168,15 @@
       "scope": "D07 Gate 00 close criteria",
       "source": "user message in this thread",
       "excerpt": "Lint source/test only; Chromium 390×844 DPR 3 with specified crop/diff thresholds; secure DEV credentials; four BA flows not applicable; no new motion/virtual-list package; Designer deploy SHA required."
+    },
+    {
+      "scope": "D07 Login fixture",
+      "source": "user message in this thread",
+      "excerpt": "chốt",
+      "detail": "User confirms login-d07-390x844-dpr3.png as the official Login visual fixture after review."
     }
   ],
-  "unresolved_blockers": [
-    "B00-02 Designer must provide crop-ready/raw visual fixtures; current Login visual validation fails"
-  ],
-  "next_stage_allowed": false,
-  "next_stage": "Do not automatically execute Prompt 01. A non-dependent prompt may run only after the user assigns that prompt and its sub-gate; Gate 00 remains BLOCKED until total-gate blockers are cleared."
+  "unresolved_blockers": [],
+  "next_stage_allowed": true,
+  "next_stage": "Gate 00 foundation/Login is PASS. Do not automatically execute Prompt 01; it begins only when the user assigns it. Camera/NFC and DEV API E2E remain separate acceptance work."
 }

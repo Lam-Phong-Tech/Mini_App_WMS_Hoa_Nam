@@ -96,6 +96,23 @@ describe('đọc phản hồi gia hạn', () => {
     expect(session.issuedAtMs).toBe(T0);
     expect(session.expiresAtMs).toBe(T0 + TTL_MS);
   });
+
+  it('gia hạn giữ tên và avatar đã xác nhận, không làm Home quay về "Chào bạn"', () => {
+    const session = sessionFromRefresh(
+      { access_token: 'a-moi', refresh_token: 'r-moi', expires_in: TTL_SEC },
+      T0,
+      {
+        accessToken: 'a-cu',
+        refreshToken: 'r-cu',
+        userId: 'user-1',
+        userName: 'Nguyễn Minh Anh',
+        avatarUrl: 'https://example.test/avatar.png',
+      },
+    );
+    expect(session.userId).toBe('user-1');
+    expect(session.userName).toBe('Nguyễn Minh Anh');
+    expect(session.avatarUrl).toBe('https://example.test/avatar.png');
+  });
 });
 
 // ---------------------------------------------------------------------------

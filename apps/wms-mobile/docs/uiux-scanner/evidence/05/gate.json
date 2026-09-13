@@ -1,0 +1,76 @@
+{
+  "schema_version": 1,
+  "prompt_id": "05",
+  "status": "BLOCKED",
+  "lifecycle": [
+    { "status": "NOT_STARTED", "at": "2026-09-12T08:55:00+07:00" },
+    { "status": "RUNNING", "at": "2026-09-12T09:00:00+07:00", "reason": "Gates 00–04 and source preflight passed." },
+    { "status": "BLOCKED", "at": "2026-09-12T09:20:00+07:00", "reason": "Local checks pass; DEV write and board visual evidence are not run." }
+  ],
+  "agent": "Codex",
+  "baseline_revision": {
+    "app": "7f4d4006608009c400a4d6652200db030677db86",
+    "designer": "90b0032b970e4f40cf4ccc8a95407577f1ab720a"
+  },
+  "input_revision": {
+    "app_head": "635c9e090a61f2bec69d0c01547ca2fb5951eacf",
+    "gate_04_status": "PASS",
+    "gate_04_sha256": "fbd1e247d1f01110303a9a5362623b80a05db55662f751132ce0effe0ac0b8a9"
+  },
+  "output_revision": {
+    "kind": "uncommitted source and evidence",
+    "content_hashes": {
+      "outbound_flow": "b1bd5e8851df8b37ffb66f1d5ee57b70cceaf1bc311243b33cd9cfdb8ff6b06f",
+      "outbound_result": "710cc4dcda81041845de14162da63fec9450d0ebc8a63bc0e6662ffb537360b7",
+      "outbound_tests": "3aa082e3113b833cff5bc07e3911eab4bb7b3e770fc14b4a946414a6ae3c5871"
+    }
+  },
+  "dependency_gates": [
+    { "prompt_id": "00", "status": "PASS" },
+    { "prompt_id": "01", "status": "PASS" },
+    { "prompt_id": "02", "status": "PASS" },
+    { "prompt_id": "03", "status": "PASS" },
+    { "prompt_id": "04", "status": "PASS", "sha256": "fbd1e247d1f01110303a9a5362623b80a05db55662f751132ce0effe0ac0b8a9" }
+  ],
+  "scope": {
+    "included": ["outbound form/scan/review/result", "outbox result semantics", "draft resume/cancel reuse"],
+    "excluded": ["BE/API changes", "Post Issue stock mutation", "new motion package"],
+    "scope_revision": "Continue direct App record flow; Web performs approval/Post Issue and stock reduction."
+  },
+  "changed_files": [
+    "apps/wms-mobile/src/features/outbound/OutboundFlow.tsx",
+    "apps/wms-mobile/src/features/outbound/OutboundResultScreen.tsx",
+    "apps/wms-mobile/__tests__/outboundFlow.test.tsx",
+    "apps/wms-mobile/docs/uiux-scanner/evidence/05/state-matrix.md",
+    "apps/wms-mobile/docs/uiux-scanner/evidence/05/changes.md",
+    "apps/wms-mobile/docs/uiux-scanner/evidence/05/checks.md",
+    "apps/wms-mobile/docs/uiux-scanner/evidence/05/blockers.md",
+    "apps/wms-mobile/docs/uiux-scanner/evidence/05/gate.json",
+    "apps/wms-mobile/docs/uiux-scanner/evidence/05/android-metro-launch.png",
+    "apps/wms-mobile/docs/uiux-scanner/evidence/05/android-outbound-create.png"
+  ],
+  "checks": [
+    { "id": "prerequisite-gates", "status": "PASS", "evidence": "Gates 00–04 are PASS and Gate 04 hash is recorded." },
+    { "id": "typecheck", "status": "PASS", "command": "npm run typecheck", "exit_code": 0 },
+    { "id": "lint", "status": "PASS", "command": "npm run lint", "exit_code": 0 },
+    { "id": "full-tests", "status": "PASS", "command": "npm test -- --runInBand", "exit_code": 0, "detail": "33 suites / 874 tests" },
+    { "id": "web-build", "status": "PASS", "command": "npm run build:web", "exit_code": 0 },
+    { "id": "web-smoke", "status": "PASS", "evidence": "Local browser form validation, dependent province/ward selectors, create-to-scan transition and camera fallback were exercised." },
+    { "id": "android-launch", "status": "PASS", "evidence": "Debug APK installed on Xiaomi 2206122SC (fbb9e686); Metro over adb reverse loaded Home. Screenshot: android-metro-launch.png." },
+    { "id": "android-outbound-entry", "status": "PASS", "evidence": "Home → Xuất kho opened the real outbound information form on device. Screenshot: android-outbound-create.png." },
+    { "id": "outbox-outcomes", "status": "PASS", "evidence": "Regression covers posted/queued/failed/conflict/unknown separately." },
+    { "id": "dev-outbound-e2e", "status": "NOT_RUN", "evidence": "No real DEV record/Post Issue write was performed." },
+    { "id": "visual-diff", "status": "NOT_RUN", "evidence": "No same-fixture board capture/diff saved." },
+    { "id": "physical-outbound-camera", "status": "NOT_RUN", "evidence": "Gate 04 scanner camera evidence is not an outbound E2E result." }
+  ],
+  "approvals": [
+    { "source": "Prompt 05 user constraints", "excerpt": "Xuất kho chính chỉ ghi nhận và chờ xử lý Web; không gọi Post Issue trên App.", "effect": "No stock mutation was executed." }
+  ],
+  "unresolved_blockers": [
+    "DEV outbound record/Post Issue E2E with authorized test data",
+    "390×844 DPR3 board visual capture and quantitative diff",
+    "Optional physical outbound scan acceptance"
+  ],
+  "next_stage_allowed": false,
+  "next_stage": "Close blockers with authorized DEV/visual evidence, then re-evaluate Gate 05."
+}

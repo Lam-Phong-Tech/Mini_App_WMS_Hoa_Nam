@@ -159,7 +159,9 @@ function asDocument(value: unknown): ComponentIssueDocument | undefined {
   } as ComponentIssueDocument;
 }
 
-function documentId(document: ComponentIssueDocument | undefined): string | undefined {
+function componentIssueDocumentId(
+  document: ComponentIssueDocument | undefined,
+): string | undefined {
   return text(document?.id) ?? text(document?.component_issue_document_id);
 }
 
@@ -384,7 +386,7 @@ export async function createComponentIssueDocument(
     client,
   );
   const result = asDocument(write.data);
-  if (documentId(result) === undefined) {
+  if (componentIssueDocumentId(result) === undefined) {
     throw new AppError({
       kind: 'parse',
       message: 'WMS đã tạo phiếu nhưng phản hồi không có id phiếu.',
@@ -512,7 +514,7 @@ export async function issueWarrantyComponents(
   if (id === undefined || id === '') {
     options.onProgress?.({ stage: 'creating', completedCodeKeys: [] });
     created = await createComponentIssueDocument(input, options, client);
-    id = documentId(created);
+    id = componentIssueDocumentId(created);
   }
   if (id === undefined) {
     throw new AppError({ kind: 'parse', message: 'Không nhận được id phiếu linh kiện.' });

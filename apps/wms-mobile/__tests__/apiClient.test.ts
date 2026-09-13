@@ -7,6 +7,7 @@ import {
   assertNoForbiddenHeaders,
   buildUrl,
   createApiClient,
+  WMS_TOKEN_TRANSPORT_HEADER,
 } from '../src/api/client';
 import {
   allowsIfMatch,
@@ -258,6 +259,30 @@ describe('phiên đăng nhập', () => {
     expect(
       (init.headers as Record<string, string>).Authorization,
     ).toBeUndefined();
+  });
+
+  it.each([
+    '/api/v1/auth/refresh',
+    '/api/v1/auth/logout',
+  ])('%s gửi refresh token trong JSON body, không dùng Bearer', async path => {
+    const fetchSpy = jest.fn(async (_url: string, _init: RequestInit) =>
+      jsonResponse(200, {}),
+    );
+    const client = clientWith(blockedEnvironment, fetchSpy, {
+      accessToken: 'access-cu',
+    });
+
+    await client.request({
+      path,
+      method: 'POST',
+      body: { refresh_token: 'refresh-cu' },
+    });
+
+    const init = fetchSpy.mock.calls[0][1] as RequestInit;
+    const headers = init.headers as Record<string, string>;
+    expect(headers[WMS_TOKEN_TRANSPORT_HEADER]).toBe('body');
+    expect(headers.Authorization).toBeUndefined();
+    expect(init.body).toBe(JSON.stringify({ refresh_token: 'refresh-cu' }));
   });
 });
 

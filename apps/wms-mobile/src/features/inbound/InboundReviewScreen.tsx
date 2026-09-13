@@ -15,7 +15,7 @@
  *
  * ⇒ Không tách thành hai màn. Cùng khuôn, khác dữ liệu và khác hành động cuối.
  *
- * Bấm *Ghi nhận nhập* sẽ đưa phiếu vào hàng đợi trước, rồi gửi `inbound/record`
+ * Bấm *Gửi phiếu lên Web* sẽ đưa phiếu vào hàng đợi trước, rồi gửi `inbound/record`
  * với khoá idempotency ổn định. Nếu không gửi được, phiếu vẫn nằm lại để người
  * dùng đối chiếu/gửi lại, không mất danh sách mã vừa quét.
  */
@@ -290,7 +290,7 @@ export function InboundReviewScreen({
       ) : (
         <>
           <Button
-            label="Ghi nhận nhập"
+            label="Gửi phiếu lên Web"
             onPress={onRecord}
             loading={recording}
             disabled={empty || recording}

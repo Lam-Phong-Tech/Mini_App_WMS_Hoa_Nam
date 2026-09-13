@@ -51,6 +51,7 @@ import {
   rejectedCodes,
   settleOutboundCode,
 } from '../src/features/outbound/outboundDraft';
+import { resultOutcomeForState } from '../src/features/outbound/OutboundFlow';
 import {
   ineligibleReason,
   isEligibleForOutbound,
@@ -610,6 +611,14 @@ describe('đấu luồng quét xuất kho Mini App', () => {
 });
 
 describe('tồn kho GIẢM, và giảm ở mốc thứ ba', () => {
+  it('không gom trạng thái outbox lỗi thành queued', () => {
+    expect(resultOutcomeForState('synced')).toBe('posted');
+    expect(resultOutcomeForState('pending')).toBe('queued');
+    expect(resultOutcomeForState('failed')).toBe('failed');
+    expect(resultOutcomeForState('conflict')).toBe('conflict');
+    expect(resultOutcomeForState('unknown')).toBe('unknown');
+  });
+
   it('câu ở màn kết quả nói rõ tồn kho chưa giảm', () => {
     expect(MESSAGE_NOT_ISSUED_BODY).toContain('Tồn kho chỉ giảm sau khi');
     expect(MESSAGE_NOT_ISSUED_BODY).toContain('Post Issue');

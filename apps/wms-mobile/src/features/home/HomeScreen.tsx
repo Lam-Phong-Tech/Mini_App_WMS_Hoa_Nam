@@ -8,7 +8,7 @@
 
 import React, { useCallback } from 'react';
 import {
-  ImageBackground,
+  Image,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -29,20 +29,21 @@ import { useHomeSummary } from './useHomeSummary';
 const styles = StyleSheet.create({
   root: { flex: 1 },
   scroll: { flex: 1 },
-  hero: { minHeight: 232 },
+  // Kích thước hero của board 02 ở viewport 390×844; không để ảnh nền đẩy
+  // cụm KPI/tác vụ xuống thấp như bản desktop trước đây.
+  hero: { minHeight: 198 },
+  heroBackgroundImage: { position: 'absolute', top: 0, right: 0, bottom: 0, left: 0 },
   heroShade: { flex: 1, backgroundColor: 'rgba(5, 49, 70, 0.74)' },
-  heroContent: { flex: 1, paddingHorizontal: 20, paddingBottom: 26, gap: 13 },
+  heroContent: { flex: 1, paddingHorizontal: 16, paddingBottom: 20, gap: 9 },
   brand: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   brandStart: { flexDirection: 'row', alignItems: 'center', flex: 1, minWidth: 0 },
+  headerActions: { flexDirection: 'row', alignItems: 'center' },
   scanMark: {
-    width: 42,
-    height: 42,
+    width: 32,
+    height: 32,
     alignItems: 'center',
     justifyContent: 'center',
-    borderRadius: 13,
-    backgroundColor: 'rgba(255,255,255,0.14)',
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.22)',
+    borderRadius: 8,
   },
   brandCopy: { flex: 1, minWidth: 0 },
   avatar: {
@@ -56,11 +57,19 @@ const styles = StyleSheet.create({
     borderColor: 'rgba(255,255,255,0.36)',
   },
   avatarText: { color: '#fff', fontWeight: '700' },
+  avatarImage: { width: 40, height: 40, borderRadius: 20 },
+  notification: {
+    width: 38,
+    height: 42,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   welcomeRow: { flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between' },
   welcomeCopy: { flex: 1, minWidth: 0 },
   online: { flexDirection: 'row', alignItems: 'center', borderRadius: 999, paddingHorizontal: 9, paddingVertical: 5 },
   onlineDot: { width: 7, height: 7, borderRadius: 4, backgroundColor: '#78df9d' },
-  content: { paddingHorizontal: 16, paddingBottom: 26, gap: 20 },
+  content: { paddingHorizontal: 16, paddingBottom: 26, gap: 16 },
+  contentGap: { gap: 12 },
   statRail: {
     flexDirection: 'row',
     marginTop: -19,
@@ -68,27 +77,33 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
     borderWidth: 1,
   },
-  stat: { flex: 1, minWidth: 0, paddingHorizontal: 12, paddingVertical: 14, gap: 4 },
+  stat: { flex: 1, minWidth: 0, paddingHorizontal: 11, paddingVertical: 8, gap: 2 },
+  statMetric: { fontSize: 20, lineHeight: 24, fontWeight: '700' },
+  statLabel: { fontSize: 11, lineHeight: 16 },
   statDivider: { borderLeftWidth: 1 },
   statTop: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   sectionHead: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   sectionAction: { flexDirection: 'row', alignItems: 'center' },
-  taskGrid: { flexDirection: 'row', flexWrap: 'wrap' },
-  task: { width: '48.3%', minWidth: 0 },
+  taskGrid: { flexDirection: 'row', flexWrap: 'wrap', marginTop: -10 },
+  taskGridGap: { gap: 10 },
+  // 48% + gap 12px phải vừa trong viewport 390px; 48.3% làm RN-Web
+  // tính dư vài phần thập phân và xếp bốn thẻ thành một cột.
+  task: { width: '48%', minWidth: 0 },
   taskCard: {
-    minHeight: 82,
+    minHeight: 62,
     flexDirection: 'row',
     alignItems: 'center',
     borderWidth: 1,
     borderRadius: 13,
     paddingHorizontal: 12,
-    paddingVertical: 11,
+    paddingVertical: 7,
   },
   taskActive: { borderColor: '#0c6286', backgroundColor: '#0c6286' },
   taskIcon: { width: 38, height: 38, alignItems: 'center', justifyContent: 'center', borderRadius: 10 },
   taskCopy: { flex: 1, minWidth: 0 },
-  scanCta: { flexDirection: 'row', alignItems: 'center', borderRadius: 13, padding: 15 },
-  scanCtaIcon: { width: 42, height: 42, borderRadius: 12, alignItems: 'center', justifyContent: 'center' },
+  scanCtaPressable: { marginTop: -6 },
+  scanCta: { flexDirection: 'row', alignItems: 'center', borderRadius: 13, padding: 13 },
+  scanCtaIcon: { width: 36, height: 36, borderRadius: 10, alignItems: 'center', justifyContent: 'center' },
   scanCtaCopy: { flex: 1, minWidth: 0 },
   documentList: { borderRadius: 14, borderWidth: 1, overflow: 'hidden' },
   document: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 13, paddingVertical: 12 },
@@ -106,11 +121,11 @@ const styles = StyleSheet.create({
   gap5: { gap: 5 },
   taskPlain: { backgroundColor: '#fff', borderColor: '#dce9ef' },
   taskActiveIcon: { backgroundColor: 'rgba(255,255,255,0.13)' },
-  taskIconPlain: { backgroundColor: '#eaf5fa' },
-  taskActiveTitle: { color: '#fff', fontWeight: '700' },
-  taskTitle: { color: '#12384e', fontWeight: '700' },
-  taskActiveHint: { color: 'rgba(255,255,255,0.8)' },
-  taskHint: { color: '#527186' },
+  taskIconPlain: { backgroundColor: '#f2f8ff' },
+  taskActiveTitle: { color: '#fff', fontWeight: '700', fontSize: 13, lineHeight: 18 },
+  taskTitle: { color: '#12384e', fontWeight: '700', fontSize: 13, lineHeight: 18 },
+  taskActiveHint: { color: 'rgba(255,255,255,0.8)', fontSize: 10, lineHeight: 14 },
+  taskHint: { color: '#527186', fontSize: 10, lineHeight: 14 },
   ctaIcon: { backgroundColor: 'rgba(255,255,255,0.12)' },
   ctaTitle: { color: '#fff', fontWeight: '700' },
   ctaHint: { color: 'rgba(255,255,255,0.76)' },
@@ -123,25 +138,30 @@ const TASKS: ReadonlyArray<{
   title: string;
   hint: string;
 }> = [
-  { key: 'inbound', icon: 'package-plus', title: 'Nhập kho', hint: 'Nhận hàng và kiểm đếm' },
-  { key: 'outbound', icon: 'package-minus', title: 'Xuất kho', hint: 'Soạn hàng theo phiếu' },
-  { key: 'warranty', icon: 'shield-check', title: 'Bảo hành', hint: 'Tiếp nhận và sửa chữa' },
+  { key: 'inbound', icon: 'inbound', title: 'Nhập kho', hint: 'Nhận hàng và kiểm đếm' },
+  { key: 'outbound', icon: 'outbound', title: 'Xuất kho', hint: 'Soạn hàng theo phiếu' },
+  { key: 'warranty', icon: 'warranty', title: 'Bảo hành', hint: 'Tiếp nhận và sửa chữa' },
   { key: 'nfc', icon: 'nfc', title: 'Thẻ NFC', hint: 'Liên kết và tra cứu thẻ' },
 ] as const;
+
+/** Màu icon lấy theo Board 02; không dùng chung màu teal của CTA quét. */
+const HOME_ICON_BLUE = '#1674e8';
+const HOME_ICON_ORANGE = '#ffb51b';
 
 export type HomeTaskKey = 'lookup' | (typeof TASKS)[number]['key'];
 
 export interface HomeScreenProps {
   userName?: string;
+  avatarUrl?: string;
   onSelectTask?: (key: HomeTaskKey) => void;
   onSeeAll?: () => void;
   onOpenDocument?: (kind: 'inbound' | 'outbound', documentId: string) => void;
+  onOpenProfile?: () => void;
   deps?: Parameters<typeof useHomeSummary>[0];
 }
 
-function formatTime(date: Date | undefined): string {
-  if (date === undefined) return '—';
-  return String(date.getHours()).padStart(2, '0') + ':' + String(date.getMinutes()).padStart(2, '0');
+function metricValue(value: number | undefined): string {
+  return value === undefined ? '—' : String(value);
 }
 
 function initials(value: string | undefined): string {
@@ -158,9 +178,11 @@ function documentLabel(status: string | undefined): { label: string; tone: 'prim
 
 export function HomeScreen({
   userName,
+  avatarUrl,
   onSelectTask,
   onSeeAll,
   onOpenDocument,
+  onOpenProfile,
   deps,
 }: HomeScreenProps): React.ReactElement {
   const theme = useTheme();
@@ -175,18 +197,41 @@ export function HomeScreen({
   return (
     <View style={[styles.root, { backgroundColor: theme.colors.surfaceCanvas }]}>
       <ScrollView style={styles.scroll} contentContainerStyle={{ paddingBottom: theme.spacing.lg }}>
-        <ImageBackground source={scannerAssets.warehouseDark} style={styles.hero}>
+        <View style={styles.hero}>
+          <Image
+            source={scannerAssets.warehouseDark}
+            style={styles.heroBackgroundImage}
+            resizeMode="cover"
+            accessible={false}
+            pointerEvents="none"
+          />
           <View style={styles.heroShade}>
             <SafeAreaView edges={['top']} style={styles.heroContent}>
               <View style={styles.brand}>
                 <View style={[styles.brandStart, { gap: theme.spacing.sm }]}>
-                  <View style={styles.scanMark}><AppIcon name="scan" size={22} color="#fff" /></View>
+                  <View style={styles.scanMark}><AppIcon name="scan" size={24} color="#fff" /></View>
                   <View style={styles.brandCopy}>
                     <Text variant="caption" numberOfLines={1} style={styles.brandMain}>HOA NAM SCANNER</Text>
                     <Text variant="caption" numberOfLines={1} style={styles.brandSub}>WMS · Vận hành chuyên nghiệp</Text>
                   </View>
                 </View>
-                <View style={styles.avatar}><Text variant="caption" style={styles.avatarText}>{initials(user)}</Text></View>
+                <View style={[styles.headerActions, { gap: theme.spacing.sm }]}>
+                  <View
+                    accessibilityLabel="Thông báo: Chưa áp dụng"
+                    style={styles.notification}
+                  >
+                    <AppIcon name="notification" size={23} color="#fff" />
+                  </View>
+                  <Pressable
+                    accessibilityRole="button"
+                    accessibilityLabel="Mở trang cá nhân"
+                    disabled={onOpenProfile === undefined}
+                    onPress={onOpenProfile}
+                    style={({ pressed }) => [styles.avatar, pressed ? styles.pressed : undefined]}
+                  >
+                    {avatarUrl?.trim() === '' || avatarUrl === undefined ? <Text variant="caption" style={styles.avatarText}>{initials(user)}</Text> : <Image source={{ uri: avatarUrl }} style={styles.avatarImage} accessibilityLabel="Ảnh đại diện" />}
+                  </Pressable>
+                </View>
               </View>
               <View style={styles.welcomeRow}>
                 <View style={styles.welcomeCopy}>
@@ -201,23 +246,22 @@ export function HomeScreen({
               </View>
             </SafeAreaView>
           </View>
-        </ImageBackground>
+        </View>
 
-        <View style={styles.content}>
+        <View style={[styles.content, styles.contentGap]}>
           <View style={[styles.statRail, { backgroundColor: theme.colors.surface, borderColor: theme.colors.divider }]}>
             <View style={styles.stat}>
-              <View style={styles.statTop}><Text variant="metric" style={{ color: theme.colors.danger }}>{home.phase === 'loading' ? '—' : String(home.summary.pendingApproval ?? 0)}</Text><AppIcon name="approvals" size={18} color={theme.colors.danger} /></View>
-              <Text variant="caption" tone="muted">Cần xử lý</Text>
-              <Text variant="caption" tone="muted">{home.phase === 'loading' ? 'Đang tải' : String(home.summary.pendingApproval ?? 0) + ' phiếu'}</Text>
+              <View style={styles.statTop}><Text variant="metric" style={[styles.statMetric, { color: theme.colors.danger }]}>{metricValue(home.summary.pendingApproval)}</Text><AppIcon name="approvals" size={17} color={theme.colors.danger} /></View>
+              <Text variant="caption" style={styles.statLabel} tone="muted">Phiếu chờ duyệt</Text>
             </View>
             <View style={[styles.stat, styles.statDivider, { borderLeftColor: theme.colors.divider }]}>
-              <View style={styles.statTop}><Text variant="metric" style={{ color: theme.colors.primary }}>{home.phase === 'loading' ? '—' : String(home.summary.approvedCount ?? 0)}</Text><AppIcon name="check-circle" size={18} color={theme.colors.primary} /></View>
-              <Text variant="caption" tone="muted">Web đã xử lý hôm nay</Text>
-              <Text variant="caption" tone="muted">Hoàn tất</Text>
+              <View style={styles.statTop}><Text variant="metric" style={[styles.statMetric, { color: HOME_ICON_BLUE }]}>{metricValue(home.summary.openWarranty)}</Text><AppIcon name="warranty" size={18} color={HOME_ICON_BLUE} /></View>
+              <Text variant="caption" style={styles.statLabel} tone="muted">Bảo hành đang mở</Text>
             </View>
             <View style={[styles.stat, styles.statDivider, { borderLeftColor: theme.colors.divider }]}>
-              <View style={styles.statTop}><Text variant="metric" style={{ color: theme.colors.textStrong }}>{formatTime(home.loadedAt)}</Text><AppIcon name="clock" size={18} color={theme.colors.primary} /></View>
-              <Text variant="caption" tone="muted">Cập nhật lúc</Text>
+              <View style={styles.statTop}><Text variant="metric" style={[styles.statMetric, { color: theme.colors.textStrong }]}>—</Text><AppIcon name="clock" size={17} color={HOME_ICON_BLUE} /></View>
+              <Text variant="caption" style={styles.statLabel} tone="muted">Ca bắt đầu</Text>
+              <Text variant="caption" style={styles.statLabel} tone="muted">Chưa áp dụng</Text>
             </View>
           </View>
 
@@ -228,12 +272,12 @@ export function HomeScreen({
             <View style={[styles.sectionAction, styles.gap5]}><Text variant="caption" tone="primary">Chọn nghiệp vụ để bắt đầu</Text><AppIcon name="chevron-right" size={14} color={theme.colors.primary} /></View>
           </View>
 
-          <View style={[styles.taskGrid, { gap: theme.spacing.md }]}>
+          <View style={[styles.taskGrid, styles.taskGridGap]}>
             {TASKS.map((task, index) => {
               const active = index === 0;
               return <Pressable key={task.key} accessibilityRole="button" accessibilityLabel={task.title + '. ' + task.hint} onPress={selectTask(task.key)} style={({ pressed }) => [styles.task, pressed ? styles.pressed : undefined]}>
                 <View style={[styles.taskCard, active ? styles.taskActive : styles.taskPlain, { gap: theme.spacing.sm }]}>
-                  <View style={[styles.taskIcon, active ? styles.taskActiveIcon : styles.taskIconPlain]}><AppIcon name={task.icon} size={20} color={active ? '#fff' : theme.colors.primary} /></View>
+                  <View style={[styles.taskIcon, active ? styles.taskActiveIcon : styles.taskIconPlain]}><AppIcon name={task.icon} size={22} color={active ? HOME_ICON_ORANGE : HOME_ICON_BLUE} /></View>
                   <View style={styles.taskCopy}>
                     <Text variant="body" numberOfLines={1} style={active ? styles.taskActiveTitle : styles.taskTitle}>{task.title}</Text>
                     <Text variant="caption" numberOfLines={2} style={active ? styles.taskActiveHint : styles.taskHint}>{task.hint}</Text>
@@ -244,7 +288,7 @@ export function HomeScreen({
             })}
           </View>
 
-          <Pressable accessibilityRole="button" accessibilityLabel="Quét hoặc nhập mã sản phẩm" onPress={selectTask('lookup')} style={({ pressed }) => [pressed ? styles.pressed : undefined]}>
+          <Pressable accessibilityRole="button" accessibilityLabel="Quét hoặc nhập mã sản phẩm" onPress={selectTask('lookup')} style={({ pressed }) => [styles.scanCtaPressable, pressed ? styles.pressed : undefined]}>
             <View style={[styles.scanCta, { gap: theme.spacing.md, backgroundColor: theme.colors.primary }]}>
               <View style={[styles.scanCtaIcon, styles.ctaIcon]}><AppIcon name="scan" size={24} color="#fff" /></View>
               <View style={styles.scanCtaCopy}><Text variant="body" style={styles.ctaTitle}>Quét hoặc nhập mã sản phẩm</Text><Text variant="caption" style={styles.ctaHint}>QR · Serial · SKU</Text></View>
@@ -257,13 +301,13 @@ export function HomeScreen({
             <Pressable accessibilityRole="button" accessibilityLabel="Xem tất cả chứng từ" onPress={onSeeAll} style={({ pressed }) => [pressed ? styles.pressed : undefined]}><View style={[styles.sectionAction, styles.gap5]}><Text variant="caption" tone="primary">Xem tất cả</Text><AppIcon name="chevron-right" size={14} color={theme.colors.primary} /></View></Pressable>
           </View>
 
-          {home.phase === 'loading' ? <View style={[styles.documentList, { borderColor: theme.colors.divider, backgroundColor: theme.colors.surface, padding: theme.spacing.lg }]}><Text variant="caption" tone="muted">Đang tải chứng từ…</Text></View> : home.summary.recent.length === 0 ? <View style={[styles.documentList, { borderColor: theme.colors.divider, backgroundColor: theme.colors.surface, padding: theme.spacing.xl }]}><EmptyState icon={<AppIcon name="approvals" color={theme.colors.primary} />} title="Chưa có phiếu nào" hint="Phiếu vừa ghi nhận và gửi lên WMS sẽ hiển thị tại đây." /></View> : <View style={[styles.documentList, { borderColor: theme.colors.divider, backgroundColor: theme.colors.surface }]}>
+          {home.phase === 'loading' ? <View style={[styles.documentList, { borderColor: theme.colors.divider, backgroundColor: theme.colors.surface, padding: theme.spacing.lg }]}><Text variant="caption" tone="muted">Đang tải chứng từ…</Text></View> : home.phase === 'error' && home.loadedAt === undefined ? <View style={[styles.documentList, { borderColor: theme.colors.divider, backgroundColor: theme.colors.surface, padding: theme.spacing.lg }]}><Text variant="caption" tone="muted">Chưa có dữ liệu để hiển thị. Thử lại để tải chứng từ.</Text></View> : home.summary.recent.length === 0 ? <View style={[styles.documentList, { borderColor: theme.colors.divider, backgroundColor: theme.colors.surface, padding: theme.spacing.xl }]}><EmptyState icon={<AppIcon name="approvals" color={theme.colors.primary} />} title="Chưa có chứng từ nào" hint="Phiếu nhập vừa ghi nhận và gửi lên WMS sẽ hiển thị tại đây." /></View> : <View style={[styles.documentList, { borderColor: theme.colors.divider, backgroundColor: theme.colors.surface }]}>
             {home.summary.recent.map((document, index) => {
               const status = documentLabel(document.mini_app_status ?? document.status);
               return <React.Fragment key={document.id}>
                 {index === 0 ? null : <View style={[styles.line, { backgroundColor: theme.colors.divider }]} />}
                 <Pressable accessibilityRole="button" accessibilityLabel={'Mở chứng từ ' + (document.doc_no ?? document.id)} onPress={() => onOpenDocument?.('inbound', document.id)} disabled={onOpenDocument === undefined} style={({ pressed }) => [styles.document, { gap: theme.spacing.md, opacity: pressed ? 0.74 : 1 }]}>
-                  <View style={[styles.documentIcon, { backgroundColor: theme.colors.primarySoft }]}><AppIcon name="package-plus" size={19} color={theme.colors.primary} /></View>
+                  <View style={[styles.documentIcon, { backgroundColor: theme.colors.primarySoft }]}><AppIcon name="arrow-down" size={19} color={HOME_ICON_BLUE} /></View>
                   <View style={styles.documentCopy}><Text variant="body" tone="strong" numberOfLines={1}>{document.doc_no ?? document.id}</Text><Text variant="caption" tone="muted" numberOfLines={1}>{(document.source_name ?? 'Phiếu nhập kho') + (document.doc_date === undefined ? '' : ' · ' + document.doc_date)}</Text></View>
                   <View style={styles.documentEnd}><Badge label={status.label} tone={status.tone} /><AppIcon name="chevron-right" size={13} color={theme.colors.textMuted} /></View>
                 </Pressable>

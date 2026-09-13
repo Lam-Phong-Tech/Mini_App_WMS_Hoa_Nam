@@ -1,8 +1,8 @@
 /**
- * `BottomNav` — thanh điều hướng 4 tab ở đáy màn.
+ * `BottomNav` — thanh điều hướng 5 tab ở đáy màn.
  *
- * Bốn tab đã chốt: **Trang chủ · Quét mã · Lịch sử · Cá nhân**. Chứng từ mở
- * từ Trang chủ hoặc Lịch sử; ghi sổ nhập/xuất vẫn thực hiện trên Web WMS.
+ * Board 02: **Trang chủ · Chứng từ · Quét mã · Lịch sử · Cá nhân**. Chứng từ
+ * chỉ mở danh sách/chi tiết; ghi sổ nhập/xuất vẫn thực hiện trên Web WMS.
  *
  * Cách sửa: đặt `minHeight` cố định cho ô tab và căn icon lên trên, nên nhãn dài
  * xuống dòng mà **hàng icon vẫn thẳng**. Cố ý **không** rút gọn chữ thành
@@ -43,6 +43,25 @@ const styles = StyleSheet.create({
   iconBoxInactive: {
     backgroundColor: 'transparent',
   },
+  scanDock: {
+    width: 54,
+    height: 54,
+    minWidth: 54,
+    marginTop: -27,
+    borderRadius: 27,
+    borderWidth: 4,
+    borderColor: '#ffffff',
+    paddingHorizontal: 0,
+    paddingVertical: 0,
+    shadowColor: '#073b52',
+    shadowOpacity: 0.18,
+    shadowRadius: 7,
+    shadowOffset: { width: 0, height: 3 },
+    elevation: 5,
+  },
+  scanLabel: {
+    marginTop: -3,
+  },
   label: {
     fontSize: 11,
     textAlign: 'center',
@@ -59,9 +78,10 @@ export interface BottomNavItem {
   readonly icon: AppIconName;
 }
 
-/** Bốn tab đã chốt cho App. */
+/** Năm tab đúng thứ tự Board 02. */
 export const BOTTOM_NAV_ITEMS: readonly BottomNavItem[] = [
   { key: 'home', label: 'Trang chủ', icon: 'home' },
+  { key: 'documents', label: 'Chứng từ', icon: 'document' },
   { key: 'scan', label: 'Quét mã', icon: 'scan' },
   { key: 'history', label: 'Lịch sử', icon: 'history' },
   { key: 'profile', label: 'Cá nhân', icon: 'profile' },
@@ -98,6 +118,7 @@ export function BottomNav({
     >
       {items.map(item => {
         const active = item.key === activeKey;
+        const scannerTab = item.key === 'scan';
         return (
           <Pressable
             key={item.key}
@@ -118,23 +139,33 @@ export function BottomNav({
             <View
               style={[
                 styles.iconBox,
-                active ? undefined : styles.iconBoxInactive,
+                active || scannerTab ? undefined : styles.iconBoxInactive,
                 {
                   minWidth: theme.touchTarget.min,
                   paddingHorizontal: theme.spacing.md,
                   paddingVertical: theme.spacing.xs,
                   borderRadius: theme.radius.control,
-                  ...(active
+                  ...(active || scannerTab
                     ? { backgroundColor: theme.colors.primarySoft }
                     : null),
                 },
+                scannerTab
+                  ? [
+                      styles.scanDock,
+                      { backgroundColor: theme.colors.primaryStrong },
+                    ]
+                  : undefined,
               ]}
             >
               <AppIcon
                 name={item.icon}
-                size={18}
+                size={scannerTab ? 22 : 20}
                 color={
-                  active ? theme.colors.primaryStrong : theme.colors.textMuted
+                  scannerTab
+                    ? '#ffffff'
+                    : active
+                      ? theme.colors.primaryStrong
+                      : theme.colors.textMuted
                 }
               />
             </View>
@@ -144,6 +175,7 @@ export function BottomNav({
               style={[
                 styles.label,
                 active ? styles.labelActive : undefined,
+                scannerTab ? styles.scanLabel : undefined,
                 {
                   color: active
                     ? theme.colors.primaryStrong

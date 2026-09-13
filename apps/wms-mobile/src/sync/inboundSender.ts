@@ -121,9 +121,13 @@ export function inboundScanFingerprint(
     .join('\n');
   let hash = 0x811c9dc5;
   for (let index = 0; index < source.length; index += 1) {
+    // FNV-1a được định nghĩa bằng XOR trên word 32-bit.
+    // eslint-disable-next-line no-bitwise
     hash ^= source.charCodeAt(index);
     hash = Math.imul(hash, 0x01000193);
   }
+  // Chuẩn hoá word signed của JavaScript về unsigned 32-bit để in hex ổn định.
+  // eslint-disable-next-line no-bitwise
   return 'fnv1a-' + (hash >>> 0).toString(16).padStart(8, '0');
 }
 

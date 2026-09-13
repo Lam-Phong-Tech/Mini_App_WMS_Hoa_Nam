@@ -74,6 +74,7 @@ import {
   supportsImageQrScan,
 } from './imageQrScanner';
 import { useDeploymentTier } from '../../services/wms/useDeploymentTier';
+import { ScanBeam } from './ScanBeam';
 import {
   MESSAGE_WRONG_ENVIRONMENT,
   type TierCheckResult,
@@ -212,6 +213,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: 'rgba(255,255,255,0.18)',
+  },
+  floatingButtonDisabled: {
+    opacity: 0.45,
   },
   floatingGlyph: {
     fontSize: 20,
@@ -716,6 +720,7 @@ export function BusinessScanScreen({
       {/* --- Khung ngắm --- */}
       <View style={styles.viewfinderArea}>
         <View style={styles.frame}>
+          <ScanBeam active={cameraActive} paused={scanPaused} />
           <View style={[styles.corner, styles.cornerTL]} />
           <View style={[styles.corner, styles.cornerTR]} />
           <View style={[styles.corner, styles.cornerBL]} />
@@ -842,7 +847,7 @@ export function BusinessScanScreen({
               style={[
                 styles.floatingButton,
                 imagePickerOpen || isDecodingImage || isProcessing
-                  ? { opacity: 0.45 }
+                  ? styles.floatingButtonDisabled
                   : undefined,
               ]}
             >

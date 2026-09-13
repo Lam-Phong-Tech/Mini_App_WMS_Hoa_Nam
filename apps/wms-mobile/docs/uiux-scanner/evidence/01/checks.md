@@ -4,17 +4,18 @@ All commands use `apps/wms-mobile` as the working directory unless noted.
 
 | Check | Status | Evidence |
 | --- | --- | --- |
-| TypeScript | PASS | `npm run typecheck` exited 0. |
-| Relevant lint | PASS | `npx eslint src/features/auth/LoginScreen.tsx src/features/auth/SessionConfirmationScreen.tsx src/app/AppShell.tsx src/services/wms/queries.ts src/services/wms/types.ts __tests__/authFlow.test.tsx` exited 0 after local style cleanup. |
-| Relevant tests | PASS | `npm test -- --runInBand __tests__/authFlow.test.tsx`: 1 suite / 22 tests passed. |
-| Full test suite | PASS | `npm test -- --runInBand --silent`: 32 suites / 863 tests passed. |
-| Web production build | PASS | `npm run build:web` exited 0; Vite reports its existing >500 kB bundle-size warning. |
-| Web manual UI | PASS (scoped) | In-app browser opened production preview at `390×844`; login screen showed dark surface, white card, green CTA. Empty submit showed two field errors; show/hide changed its accessible label from `Hiện mật khẩu` to `Ẩn mật khẩu`. |
-| Web dev server | FAIL (non-release) | `npm run web` fails while Vite prebundles React Native Flow source (`codegenNativeComponent.js: Expected from but found {`). Production build and `vite preview` work; not changed in this Prompt. |
-| Authenticated DEV API | NOT_RUN | No DEV account/role was supplied. No credentials were typed or sent. |
-| Android/PDA keyboard, Back, camera/NFC | NOT_RUN | No physical device was supplied; only source/unit coverage and web preview were checked. |
-| Pixel/motion diff | NOT_RUN | Board 01 has no approved crop/DPR/safe-area or native motion call-site. D06 forbids a pixel-perfect claim. |
+| TypeScript | PASS | `npm run typecheck` exited 0 at 2026-09-11 17:04 ICT. |
+| Lint source/test | PASS | `npm run lint` exited 0: 0 errors, 9 baseline warnings; no warning comes from Prompt 01 files. |
+| Focused auth fixtures | PASS | `npm test -- --runInBand __tests__/authFlow.test.tsx __tests__/tokenRefresh.test.ts`: 2 suites / 51 tests. Includes 401 refresh rejection, interrupted refresh, different-user replacement, same-frame double submit and password selection. |
+| Full test suite | PASS | `npm test -- --runInBand --silent`: 32 suites / 866 tests passed. |
+| Web production build | PASS | `npm run build:web` exited 0 at 2026-09-11 17:05 ICT; Vite reports its existing >500 kB bundle-size warning only. |
+| Login visual | PASS | Gate 00 fixture `../00/login-d07-390x844-dpr3.png` is the user-approved Login baseline (Chromium `390×844`, DPR 3, `vi-VN`, `Asia/Ho_Chi_Minh`, safe-area 0). Current local preview rendered the same anonymous Login controls; this Prompt's new code changes event/state handling only, not Login text/style/layout. |
+| Web dev server | PASS | `npm run web` serves the Login screen. `optimizeDeps.exclude` keeps React Native and Safe Area Context out of esbuild prebundling, allowing Vite to resolve their `.web` files instead of native Flow sources. |
+| Authenticated DEV API | PASS | On Xiaomi 2206122SC / Android 13, the user-supplied DEV account completed Login → session confirmation. Backend data rendered as **Quản lý kho 01**, role **Quản lý kho**, warehouse scope **Theo phạm vi phân quyền**. |
+| Real Android logout / re-login | PASS | Home → Cá nhân → Đăng xuất → confirmation → Login → re-login → session confirmation → Home. No scan, stock or document write action was taken. |
+| Android/PDA camera/NFC | OUT OF SCOPE | Prompt 01 is authentication. Hardware scan/NFC acceptance belongs to the assigned flow gates. |
+| Static motion | PASS | User explicitly approved static React Native motion for Prompt 01. No motion package or `Animated`/`LayoutAnimation` call-site exists in Login, session confirmation or AppShell. |
 
-The preview used the built app, not a data fixture. It intentionally remained
-at the login screen; no login, logout or write request was sent during manual
-browser verification.
+The web preview used the app with an empty local profile, not a data fixture.
+Real-device auth evidence does not include passwords or access tokens;
+controlled auth fixtures use fake identities/tokens only.

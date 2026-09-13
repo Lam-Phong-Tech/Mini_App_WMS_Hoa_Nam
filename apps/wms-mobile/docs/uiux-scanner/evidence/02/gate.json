@@ -1,0 +1,83 @@
+{
+  "schema_version": 1,
+  "prompt_id": "02",
+  "status": "PASS",
+  "started_at": "2026-09-11T16:49:48+07:00",
+  "completed_at": "2026-09-11T23:05:00+07:00",
+  "agent": "Codex",
+  "scope": {
+    "included": [
+      "Home visual/layout review at 390x844",
+      "semantic business icon mapping",
+      "functional five-tab Home navigation",
+      "Home loading/ready/empty/error regression coverage",
+      "CTA and Back smoke checks without WMS writes"
+    ],
+    "excluded": [
+      "shift business action",
+      "notification unread source/action",
+      "new API/schema/backend changes",
+      "camera/NFC hardware permission acceptance",
+      "pixel-diff claim outside the reviewed Home scope"
+    ],
+    "scope_revision": "The user superseded the prior four-tab decision by requiring the supplied five-tab Home reference and explicitly requested Prompt 02 be run to pass. Chứng từ uses the existing functional history/document route."
+  },
+  "baseline_revision": {
+    "app": "7f4d4006608009c400a4d6652200db030677db86",
+    "designer": "90b0032b970e4f40cf4ccc8a95407577f1ab720a"
+  },
+  "input_revision": {
+    "app_head": "635c9e090a61f2bec69d0c01547ca2fb5951eacf",
+    "branch": "codex/gate-01-inventory",
+    "working_tree": "dirty before Prompt 02; existing user changes were preserved"
+  },
+  "output_revision": {
+    "kind": "uncommitted source and evidence",
+    "content_hashes": {
+      "app_shell": "4fb1e84f860adc89681e9e495e0ea3f91c5687d6df7d53814a72c41336c68998",
+      "home_screen": "e774d87970a3926eca75683c3e936d6587e913cc7bef5e403ce7620487d1a200",
+      "home_summary": "f7fc117c338dc5e107db28efe22b36b3f7e55d35a65ef7e4971b502010fdb467",
+      "app_icons": "44806835a8c005dbec83728552f8b7e0f70d3857c7301e092fe2e9c46a9c88af",
+      "bottom_nav": "ec1cf71d722e4a6a373eb2ff0ddc419401cbb42c6689044de1bdcb751e76a60a",
+      "home_tests": "320bb6e0c0f5ff8be83a6f85a0f18f990dbe7a77b38c491841172387d50137b9"
+    }
+  },
+  "dependency_gates": [
+    { "prompt_id": "00", "status": "PASS", "sha256": "5d1c5b42d3f5d33579289b97e2411b3f7173918251cfd7c9528b5c427a968850" },
+    { "prompt_id": "01", "status": "PASS", "sha256": "6fe31ba630552cab5210e4d36ac9e766c6dac2591025b32e0ddc6f36b4bfa846" }
+  ],
+  "changed_files": [
+    "src/app/AppShell.tsx",
+    "src/features/home/HomeScreen.tsx",
+    "src/features/home/useHomeSummary.ts",
+    "src/ui/AppIcon.tsx",
+    "src/ui/BottomNav.tsx",
+    "index.html",
+    "__tests__/authFlow.test.tsx",
+    "docs/uiux-scanner/evidence/02/state-matrix.md",
+    "docs/uiux-scanner/evidence/02/changes.md",
+    "docs/uiux-scanner/evidence/02/checks.md",
+    "docs/uiux-scanner/evidence/02/blockers.md",
+    "docs/uiux-scanner/evidence/02/gate.json"
+  ],
+  "checks": [
+    { "id": "prerequisite-gates", "status": "PASS", "evidence": "Gate 00 and Gate 01 parse with status PASS and recorded hashes." },
+    { "id": "home-visual-review", "status": "PASS", "evidence": "Live local review at 390x844 after font/assets stabilized: hero, KPI rail, two-column task grid, scan CTA, recent documents and five-tab dock match the accepted Home structure." },
+    { "id": "business-icon-mapping", "status": "PASS", "evidence": "Inbound=box, outbound=up-arrow, warranty=wrench, NFC=waves, scan=scan frame, document=clipboard, user=person. Notification has no fabricated unread count." },
+    { "id": "home-cta-smoke", "status": "PASS", "evidence": "Browser interaction opened InboundFlow, OutboundFlow, Warranty list, NFC assignment, read-only lookup, and document history. Tested Back returned Home; avatar opened Profile. No write action was pressed." },
+    { "id": "home-state-regressions", "status": "PASS", "evidence": "Home tests cover loading/error/empty, stale-response rejection, prior snapshot retention after reload error, and avatar callback." },
+    { "id": "typecheck", "status": "PASS", "command": "npm run typecheck", "exit_code": 0 },
+    { "id": "lint", "status": "PASS", "command": "npm run lint", "exit_code": 0 },
+    { "id": "targeted-tests", "status": "PASS", "command": "npm test -- --runInBand __tests__/authFlow.test.tsx __tests__/App.test.tsx --silent", "exit_code": 0, "detail": "2 suites / 30 tests" },
+    { "id": "web-build", "status": "PASS", "command": "npm run build:web", "exit_code": 0, "detail": "Vite chunk-size advisory only" },
+    { "id": "hardware-camera-nfc", "status": "OUT_OF_SCOPE", "evidence": "Prompt 02 verifies Home entry UI; physical-device permission and NFC acceptance remain their flow-specific tests." }
+  ],
+  "unresolved_blockers": [],
+  "approvals": [
+    { "source": "user messages in this thread", "excerpt": "TÔI MUỐN LÀM GIỐNG Y HỆT; tôi cần đầy đủ 5 nghiệp vụ như demo.", "effect": "Uses the supplied five-tab Home as the accepted visual/product structure." },
+    { "source": "user messages in this thread", "excerpt": "lấy đúng icon áp dụng cho các nghiệp vụ; kiểm tra prompt 2 passchưa và chạy cho pass đi", "effect": "Authorizes semantic icon correction and final Gate 02 verification." },
+    { "source": "D03/D06 decisions", "excerpt": "Only real functions with confirmed API; unavailable shift/notification data must not be fabricated.", "effect": "Ca remains Chưa áp dụng and unread notification badge is omitted." }
+  ],
+  "next_stage_allowed": true,
+  "next_stage": "Prompt 02 is PASS. Prompt 03 may start only when the user assigns it."
+}

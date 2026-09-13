@@ -1,11 +1,11 @@
 /**
  * Khung ứng dụng — quyết định hiện màn đăng nhập hay khung có thanh tab.
  *
- * ## Bốn tab cho nhân viên quét
+ * ## Năm tab cho nhân viên quét
  *
  * App chỉ quét và gửi phiếu. Duyệt/Ghi sổ tồn kho thuộc Web WMS, nên App không
- * có tab thao tác Post trên thiết bị quét. Chứng từ mở từ Trang chủ hoặc Lịch
- * sử, chỉ để xem danh sách/chi tiết có thật, không duyệt hoặc ghi sổ.
+ * có tab thao tác Post trên thiết bị quét. Tab Chứng từ chỉ để xem danh
+ * sách/chi tiết có thật, không duyệt hoặc ghi sổ.
  *
  * Suốt đợt 1–4 thanh tab chỉ hiện tab đã dựng, vì nguyên tắc #4 của Prompt 4 cấm
  * *"màn hình demo để thay thế"* — một tab bấm vào ra màn trống đúng là thứ đó,
@@ -28,8 +28,9 @@
  * phải đăng nhập lại một lần (xem `auth/tokenRefresh.ts`).
  */
 
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { Suspense, lazy, useCallback, useEffect, useRef, useState } from 'react';
 import { StyleSheet, View } from 'react-native';
+import { Text } from '../ui/Text';
 import { BottomNav, type BottomNavItem } from '../ui/BottomNav';
 import { LoginScreen } from '../features/auth/LoginScreen';
 import { SessionConfirmationScreen } from '../features/auth/SessionConfirmationScreen';
@@ -38,24 +39,17 @@ import {
   SessionExpiredScreen,
 } from '../features/auth/StatusScreen';
 import { HomeScreen, type HomeTaskKey } from '../features/home/HomeScreen';
-import { InboundFlow } from '../features/inbound/InboundFlow';
-import { OutboundFlow } from '../features/outbound/OutboundFlow';
-import { WarrantyListScreen } from '../features/warranty/WarrantyListScreen';
-import { WarrantyIntakeScreen } from '../features/warranty/WarrantyIntakeScreen';
-import { WarrantyCaseDetail } from '../features/warranty/WarrantyCaseDetail';
-import { WarrantyComponentIssueFlow } from '../features/warranty/WarrantyComponentIssueFlow';
 import { useHardwareBack } from './useHardwareBack';
-import type { WarrantyCase } from '../services/wms/types';
-import { BusinessScanScreen } from '../features/scan/BusinessScanScreen';
-import { DocumentDetailScreen } from '../features/documents/DocumentDetailScreen';
-import { HistoryScreen } from '../features/history/HistoryScreen';
-import { LookupScreen } from '../features/lookup/LookupScreen';
-import { NfcAssignmentScreen } from '../features/nfc/NfcAssignmentScreen';
-import { NfcLookupScreen } from '../features/nfc/NfcLookupScreen';
-import { NfcTagListScreen } from '../features/nfc/NfcTagListScreen';
+import type { CurrentUser, WarrantyCase } from '../services/wms/types';
 import { NotFoundScreen } from '../features/auth/StatusScreen';
-import { ProfileScreen } from '../features/profile/ProfileScreen';
-import { getSession, subscribeSession, type Session } from '../auth/session';
+import {
+  getSession,
+  hydrateSession,
+  subscribeSession,
+  updateSessionIdentity,
+  type Session,
+} from '../auth/session';
+import { fetchCurrentUser } from '../services/wms/queries';
 import { recoverAfterRestart } from '../auth/tokenRefresh';
 import {
   checkDeploymentTier,
@@ -69,15 +63,103 @@ const styles = StyleSheet.create({
   body: {
     flex: 1,
   },
+  loading: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
 });
 
-/** Bốn tab đã chốt: chứng từ được mở từ Trang chủ hoặc Lịch sử. */
+/** Board 02 đã chốt năm tab, gồm lối vào Chứng từ riêng. */
 const IMPLEMENTED_TABS: readonly BottomNavItem[] = [
   { key: 'home', label: 'Trang chủ', icon: 'home' },
+  { key: 'documents', label: 'Chứng từ', icon: 'approvals' },
   { key: 'scan', label: 'Quét mã', icon: 'scan' },
   { key: 'history', label: 'Lịch sử', icon: 'history' },
   { key: 'profile', label: 'Cá nhân', icon: 'profile' },
 ];
+
+/**
+ * Tải các màn chỉ dùng sau thao tác của thủ kho theo nhu cầu.
+ *
+ * AppShell từng import toàn bộ 14 luồng ngay lúc mở app, làm bundle Home lớn
+ * và kéo dài thời gian interactive trên PDA. Màn đăng nhập, xác nhận phiên và
+ * Home vẫn được tải ngay; các luồng quét/phiếu/lịch sử được lấy đúng lúc mở.
+ */
+const InboundFlow = lazy(async () => {
+  const module = await import('../features/inbound/InboundFlow');
+  return { default: module.InboundFlow };
+});
+const OutboundFlow = lazy(async () => {
+  const module = await import('../features/outbound/OutboundFlow');
+  return { default: module.OutboundFlow };
+});
+const WarrantyListScreen = lazy(async () => {
+  const module = await import('../features/warranty/WarrantyListScreen');
+  return { default: module.WarrantyListScreen };
+});
+const WarrantyIntakeScreen = lazy(async () => {
+  const module = await import('../features/warranty/WarrantyIntakeScreen');
+  return { default: module.WarrantyIntakeScreen };
+});
+const WarrantyCaseDetail = lazy(async () => {
+  const module = await import('../features/warranty/WarrantyCaseDetail');
+  return { default: module.WarrantyCaseDetail };
+});
+const WarrantyComponentIssueFlow = lazy(async () => {
+  const module = await import('../features/warranty/WarrantyComponentIssueFlow');
+  return { default: module.WarrantyComponentIssueFlow };
+});
+const BusinessScanScreen = lazy(async () => {
+  const module = await import('../features/scan/BusinessScanScreen');
+  return { default: module.BusinessScanScreen };
+});
+const DocumentDetailScreen = lazy(async () => {
+  const module = await import('../features/documents/DocumentDetailScreen');
+  return { default: module.DocumentDetailScreen };
+});
+const HistoryScreen = lazy(async () => {
+  const module = await import('../features/history/HistoryScreen');
+  return { default: module.HistoryScreen };
+});
+const LookupScreen = lazy(async () => {
+  const module = await import('../features/lookup/LookupScreen');
+  return { default: module.LookupScreen };
+});
+const ScanTaskPickerScreen = lazy(async () => {
+  const module = await import('../features/scan/ScanTaskPickerScreen');
+  return { default: module.ScanTaskPickerScreen };
+});
+const NfcAssignmentScreen = lazy(async () => {
+  const module = await import('../features/nfc/NfcAssignmentScreen');
+  return { default: module.NfcAssignmentScreen };
+});
+const NfcLookupScreen = lazy(async () => {
+  const module = await import('../features/nfc/NfcLookupScreen');
+  return { default: module.NfcLookupScreen };
+});
+const NfcTagListScreen = lazy(async () => {
+  const module = await import('../features/nfc/NfcTagListScreen');
+  return { default: module.NfcTagListScreen };
+});
+const ProfileScreen = lazy(async () => {
+  const module = await import('../features/profile/ProfileScreen');
+  return { default: module.ProfileScreen };
+});
+
+function LazyScreen({ children }: { children: React.ReactNode }): React.ReactElement {
+  return (
+    <Suspense
+      fallback={
+        <View style={styles.loading} accessibilityLiveRegion="polite">
+          <Text variant="caption" tone="muted">Đang mở màn hình…</Text>
+        </View>
+      }
+    >
+      {children}
+    </Suspense>
+  );
+}
 
 /** Nội dung từng tab. Tab lạ rơi vào màn fallback của ảnh 47, không màn trắng. */
 function renderTab(
@@ -89,18 +171,27 @@ function renderTab(
     onHome: () => void;
     onOpenDocuments: () => void;
     onOpenDocument: (kind: 'inbound' | 'outbound', documentId: string) => void;
+    onOpenProfile: () => void;
     onLookupNfc: () => void;
     onScanLookup: () => void;
     userName?: string;
+    avatarUrl?: string;
   },
 ): React.ReactElement {
   switch (key) {
+    case 'documents':
+      return (
+        <HistoryScreen
+          title="Chứng từ"
+          eyebrow="Theo chứng từ"
+          onOpen={row => handlers.onOpenDocument(row.kind, row.id)}
+        />
+      );
     case 'scan':
       return (
-        <LookupScreen
+        <ScanTaskPickerScreen
+          onSelect={handlers.onSelectTask}
           onHome={handlers.onHome}
-          onScan={handlers.onScanLookup}
-          onScanAgain={handlers.onScanLookup}
           onLookupNfc={handlers.onLookupNfc}
         />
       );
@@ -122,9 +213,11 @@ function renderTab(
       return (
         <HomeScreen
           userName={handlers.userName}
+          avatarUrl={handlers.avatarUrl}
           onSelectTask={handlers.onSelectTask}
           onSeeAll={handlers.onOpenDocuments}
           onOpenDocument={handlers.onOpenDocument}
+          onOpenProfile={handlers.onOpenProfile}
         />
       );
     default:
@@ -137,6 +230,10 @@ export function AppShell(): React.ReactElement {
   const [session, setSessionState] = useState<Session | undefined>(() =>
     getSession(),
   );
+  /** Không gửi request có access token cũ trước khi Keystore nạp refresh token. */
+  const [sessionHydrated, setSessionHydrated] = useState(false);
+  /** Bỏ kết quả `/auth/me` của phiên cũ nếu người dùng đổi phiên giữa chừng. */
+  const identityRequest = useRef(0);
   const [tab, setTab] = useState('home');
   /** Luồng nghiệp vụ đang mở chồng lên tab. `undefined` = đang ở tab. */
   const [flow, setFlow] = useState<
@@ -267,10 +364,23 @@ export function AppShell(): React.ReactElement {
     if (outcome.outcome === 'forced_relogin') {
       setForcedRelogin(outcome.reason);
       setSessionState(undefined);
-    } else {
-      setSessionState(getSession());
     }
-    return subscribeSession(setSessionState);
+    let live = true;
+    hydrateSession()
+      .then(next => {
+        if (live && outcome.outcome === 'clean') setSessionState(next);
+      })
+      .catch(() => {
+        if (live) setSessionState(undefined);
+      })
+      .finally(() => {
+        if (live) setSessionHydrated(true);
+      });
+    const unsubscribe = subscribeSession(setSessionState);
+    return () => {
+      live = false;
+      unsubscribe();
+    };
   }, []);
 
   const handleLoggedIn = useCallback(() => {
@@ -319,8 +429,56 @@ export function AppShell(): React.ReactElement {
     [],
   );
 
+  const handleIdentityResolved = useCallback((user: CurrentUser) => {
+    const next = updateSessionIdentity({
+      userId: user.id,
+      userName: user.name ?? user.email,
+      avatarUrl: user.avatar_url,
+    });
+    if (next !== undefined) {
+      setSessionState(next);
+    }
+  }, []);
+
+  /**
+   * Bản app cũ chưa lưu `name`/`avatar_url` vào session. Khi mở lại bằng
+   * phiên hợp lệ đó, tải một lần `/auth/me` để Home không vĩnh viễn chào
+   * chung chung. Phiên đăng nhập mới đã làm việc này ở màn xác nhận, nên
+   * nhánh đó được loại trừ để không gọi trùng.
+   */
+  useEffect(() => {
+    if (
+      session === undefined ||
+      flow === 'session-confirmation' ||
+      (session.userName !== undefined && session.userName.trim() !== '')
+    ) {
+      return;
+    }
+    const requestId = ++identityRequest.current;
+    fetchCurrentUser()
+      .then(user => {
+        if (requestId === identityRequest.current) {
+          handleIdentityResolved(user);
+        }
+      })
+      // Không chặn phiên đang dùng chỉ vì tải thông tin hiển thị lỗi. Các màn
+      // nghiệp vụ vẫn tự báo lỗi API khi người dùng thực hiện thao tác thật.
+      .catch(() => undefined);
+    return () => {
+      identityRequest.current += 1;
+    };
+  }, [flow, handleIdentityResolved, session]);
+
   if (logoutInProgress) {
     return <LogoutProgressScreen />;
+  }
+
+  if (!sessionHydrated) {
+    return (
+      <View style={styles.loading} accessibilityLiveRegion="polite">
+        <Text variant="caption" tone="muted">Đang khôi phục phiên bảo mật…</Text>
+      </View>
+    );
   }
 
   // Phiên dở dang: nói rõ vì sao phải đăng nhập lại thay vì ném thẳng vào form.
@@ -338,11 +496,13 @@ export function AppShell(): React.ReactElement {
   // mở nó từ tab Duyệt/Lịch sử, không phải từ giữa một phiên quét.
   if (openDocument !== undefined) {
     return (
-      <DocumentDetailScreen
-        kind={openDocument.kind}
-        documentId={openDocument.id}
-        onBack={() => setOpenDocument(undefined)}
-      />
+      <LazyScreen>
+        <DocumentDetailScreen
+          kind={openDocument.kind}
+          documentId={openDocument.id}
+          onBack={() => setOpenDocument(undefined)}
+        />
+      </LazyScreen>
     );
   }
 
@@ -351,6 +511,7 @@ export function AppShell(): React.ReactElement {
       <SessionConfirmationScreen
         onContinue={() => setFlow(undefined)}
         onLoggedOut={handleLoggedOut}
+        onIdentityResolved={handleIdentityResolved}
       />
     );
   }
@@ -358,197 +519,219 @@ export function AppShell(): React.ReactElement {
   // Luồng nghiệp vụ chiếm toàn màn: thanh tab bị ẩn để không ai bấm nhầm sang
   // tab khác giữa lúc đang quét dở một phiếu.
   if (flow === 'inbound') {
-    return <InboundFlow onExit={() => setFlow(undefined)} />;
+    return <LazyScreen><InboundFlow onExit={() => setFlow(undefined)} /></LazyScreen>;
   }
   if (flow === 'outbound') {
-    return <OutboundFlow onExit={() => setFlow(undefined)} />;
+    return <LazyScreen><OutboundFlow onExit={() => setFlow(undefined)} /></LazyScreen>;
   }
   if (flow === 'nfc-assign') {
     return (
-      <NfcAssignmentScreen
-        initialCode={nfcAssignmentCode}
-        onBack={() => {
-          setNfcAssignmentCode(undefined);
-          setFlow(undefined);
-        }}
-        onScanCode={() => setFlow('nfc-scan')}
-        onManageTags={() => setFlow('nfc-tags')}
-      />
+      <LazyScreen>
+        <NfcAssignmentScreen
+          initialCode={nfcAssignmentCode}
+          onBack={() => {
+            setNfcAssignmentCode(undefined);
+            setFlow(undefined);
+          }}
+          onScanCode={() => setFlow('nfc-scan')}
+          onManageTags={() => setFlow('nfc-tags')}
+        />
+      </LazyScreen>
     );
   }
   if (flow === 'nfc-scan') {
     return (
-      <BusinessScanScreen
-        title="Quét QR/SKU để gán NFC"
-        documentName="Gán NFC"
-        sessionLabel="Nhận diện hiện vật"
-        scannedCount={0}
-        doneLabel="Nhập mã"
-        onScan={raw => {
-          setNfcAssignmentCode(raw);
-          setFlow('nfc-assign');
-        }}
-        onBack={() => setFlow('nfc-assign')}
-        onDone={() => setFlow('nfc-assign')}
-      />
+      <LazyScreen>
+        <BusinessScanScreen
+          title="Quét QR/SKU để gán NFC"
+          documentName="Gán NFC"
+          sessionLabel="Nhận diện hiện vật"
+          scannedCount={0}
+          doneLabel="Nhập mã"
+          onScan={raw => {
+            setNfcAssignmentCode(raw);
+            setFlow('nfc-assign');
+          }}
+          onBack={() => setFlow('nfc-assign')}
+          onDone={() => setFlow('nfc-assign')}
+        />
+      </LazyScreen>
     );
   }
   if (flow === 'nfc-lookup') {
-    return <NfcLookupScreen onBack={() => setFlow(undefined)} />;
+    return <LazyScreen><NfcLookupScreen onBack={() => setFlow(undefined)} /></LazyScreen>;
   }
   if (flow === 'nfc-tags') {
-    return <NfcTagListScreen onBack={() => setFlow('nfc-assign')} />;
+    return <LazyScreen><NfcTagListScreen onBack={() => setFlow('nfc-assign')} /></LazyScreen>;
   }
   if (flow === 'inventory-scan') {
     return (
-      <BusinessScanScreen
-        title="Kiểm tra tồn"
-        documentName="Tra cứu QR/Barcode"
-        sessionLabel="Phiên tra cứu tồn"
-        scannedCount={0}
-        doneLabel="Nhập mã"
-        onScan={raw => {
-          // Không gọi WMS trên khung camera. Chuyển mã sang màn tra cứu để
-          // camera tắt ngay, rồi cùng một lookup xử lý cả QR lẫn nhập tay.
-          setInventoryLookupCode(raw);
-          setFlow('inventory-lookup');
-        }}
-        onBack={() => setFlow(undefined)}
-        onDone={() => setFlow('inventory-lookup')}
-      />
+      <LazyScreen>
+        <BusinessScanScreen
+          title="Kiểm tra tồn"
+          documentName="Tra cứu QR/Barcode"
+          sessionLabel="Phiên tra cứu tồn"
+          scannedCount={0}
+          doneLabel="Nhập mã"
+          onScan={raw => {
+            // Không gọi WMS trên khung camera. Chuyển mã sang màn tra cứu để
+            // camera tắt ngay, rồi cùng một lookup xử lý cả QR lẫn nhập tay.
+            setInventoryLookupCode(raw);
+            setFlow('inventory-lookup');
+          }}
+          onBack={() => setFlow(undefined)}
+          onDone={() => setFlow('inventory-lookup')}
+        />
+      </LazyScreen>
     );
   }
   if (flow === 'inventory-lookup') {
     return (
-      <LookupScreen
-        initialCode={inventoryLookupCode}
-        onHome={() => {
-          setInventoryLookupCode(undefined);
-          setFlow(undefined);
-          setTab('home');
-        }}
-        onScan={() => setFlow('inventory-scan')}
-        onScanAgain={() => setFlow('inventory-scan')}
-        onLookupNfc={() => setFlow('nfc-lookup')}
-      />
+      <LazyScreen>
+        <LookupScreen
+          initialCode={inventoryLookupCode}
+          onHome={() => {
+            setInventoryLookupCode(undefined);
+            setFlow(undefined);
+            setTab('home');
+          }}
+          onScan={() => setFlow('inventory-scan')}
+          onScanAgain={() => setFlow('inventory-scan')}
+          onLookupNfc={() => setFlow('nfc-lookup')}
+        />
+      </LazyScreen>
     );
   }
   if (flow === 'warranty') {
     return (
-      <WarrantyListScreen
-        // Mini App đưa cả nhập tay lẫn mất mã về cùng một form tiếp nhận.
-        onBack={() => setFlow(undefined)}
-        onScan={() => setFlow('warranty-scan')}
-        onManualEntry={() => {
-          setWarrantyCode({ rawCode: '', tempOnly: false });
-          setFlow('warranty-intake');
-        }}
-        onCreateWithoutCode={() => {
-          // "Mất tem/mã": KHÔNG gọi resolve, vào thẳng hồ sơ tạm.
-          setWarrantyCode({ rawCode: '', tempOnly: true });
-          setFlow('warranty-intake');
-        }}
-        onOpenCase={warrantyCase => {
-          setWarrantyCaseCreated(false);
-          setOpenCase(warrantyCase);
-        }}
-      />
+      <LazyScreen>
+        <WarrantyListScreen
+          // Mini App đưa cả nhập tay lẫn mất mã về cùng một form tiếp nhận.
+          onBack={() => setFlow(undefined)}
+          onScan={() => setFlow('warranty-scan')}
+          onManualEntry={() => {
+            setWarrantyCode({ rawCode: '', tempOnly: false });
+            setFlow('warranty-intake');
+          }}
+          onCreateWithoutCode={() => {
+            // "Mất tem/mã": KHÔNG gọi resolve, vào thẳng hồ sơ tạm.
+            setWarrantyCode({ rawCode: '', tempOnly: true });
+            setFlow('warranty-intake');
+          }}
+          onOpenCase={warrantyCase => {
+            setWarrantyCaseCreated(false);
+            setOpenCase(warrantyCase);
+          }}
+        />
+      </LazyScreen>
     );
   }
   if (flow === 'warranty-case' && openCase !== undefined) {
     return (
-      <WarrantyCaseDetail
-        warrantyCase={openCase}
-        created={warrantyCaseCreated}
-        onIssueComponents={warrantyCase => {
-          setOpenCase(warrantyCase);
-          setWarrantyCaseCreated(false);
-          setFlow('warranty-components');
-        }}
-        onBack={() => {
-          setOpenCase(undefined);
-          setWarrantyCaseCreated(false);
-          setFlow('warranty');
-        }}
-      />
+      <LazyScreen>
+        <WarrantyCaseDetail
+          warrantyCase={openCase}
+          created={warrantyCaseCreated}
+          onIssueComponents={warrantyCase => {
+            setOpenCase(warrantyCase);
+            setWarrantyCaseCreated(false);
+            setFlow('warranty-components');
+          }}
+          onBack={() => {
+            setOpenCase(undefined);
+            setWarrantyCaseCreated(false);
+            setFlow('warranty');
+          }}
+        />
+      </LazyScreen>
     );
   }
   if (flow === 'warranty-components' && openCase !== undefined) {
     return (
-      <WarrantyComponentIssueFlow
-        warrantyCase={openCase}
-        onBack={() => setFlow('warranty-case')}
-        onComplete={updatedCase => {
-          setOpenCase(updatedCase);
-          setFlow('warranty-case');
-        }}
-      />
+      <LazyScreen>
+        <WarrantyComponentIssueFlow
+          warrantyCase={openCase}
+          onBack={() => setFlow('warranty-case')}
+          onComplete={updatedCase => {
+            setOpenCase(updatedCase);
+            setFlow('warranty-case');
+          }}
+        />
+      </LazyScreen>
     );
   }
   if (flow === 'warranty-scan') {
     return (
-      <BusinessScanScreen
-        title="Quét mã bảo hành"
-        documentName="Tiếp nhận bảo hành"
-        sessionLabel="Quét mã sản phẩm"
-        scannedCount={0}
-        doneLabel="Nhập tay"
-        onScan={raw => {
-          // Máy quét chỉ chuyển mã, KHÔNG gọi mạng — một lượt round-trip giữa
-          // lúc quét sẽ làm nó khựng, và mất mạng thì mất luôn mã vừa quét.
-          setWarrantyCode({ rawCode: raw, tempOnly: false });
-          setFlow('warranty-intake');
-        }}
-        onBack={() => setFlow('warranty')}
-        onDone={() => {
-          setWarrantyCode({ rawCode: '', tempOnly: false });
-          setFlow('warranty-intake');
-        }}
-      />
+      <LazyScreen>
+        <BusinessScanScreen
+          title="Quét mã bảo hành"
+          documentName="Tiếp nhận bảo hành"
+          sessionLabel="Quét mã sản phẩm"
+          scannedCount={0}
+          doneLabel="Nhập tay"
+          onScan={raw => {
+            // Máy quét chỉ chuyển mã, KHÔNG gọi mạng — một lượt round-trip giữa
+            // lúc quét sẽ làm nó khựng, và mất mạng thì mất luôn mã vừa quét.
+            setWarrantyCode({ rawCode: raw, tempOnly: false });
+            setFlow('warranty-intake');
+          }}
+          onBack={() => setFlow('warranty')}
+          onDone={() => {
+            setWarrantyCode({ rawCode: '', tempOnly: false });
+            setFlow('warranty-intake');
+          }}
+        />
+      </LazyScreen>
     );
   }
   if (flow === 'warranty-intake') {
     return (
-      <WarrantyIntakeScreen
-        initialCode={warrantyCode?.rawCode}
-        initialTempOnly={warrantyCode?.tempOnly}
-        onBack={() => setFlow('warranty')}
-        onScan={() => setFlow('warranty-scan')}
-        // 🔴 Sửa 2026-09-06. Bản trước **vứt bỏ** hồ sơ vừa tạo và quay về
-        // màn hub. Chạy thật cho thấy hậu quả: danh sách chỉ lấy 25 hồ sơ đầu
-        // (`per_page=25`, không có tham số sắp xếp) nên hồ sơ vừa tạo **không
-        // xuất hiện** — thủ kho không còn đường nào mở lại thứ mình vừa lập,
-        // không đính kèm ảnh được, không chuyển trạng thái được.
-        //
-        // Mini App gốc mở thẳng chi tiết:
-        // `navigate('/warranty/' + response.case.id + '?created=1')`
-        // (`src/pages/WarrantyReceivePage/index.tsx:239`). Làm y như vậy.
-        onCreated={created => {
-          setWarrantyCode(undefined);
-          setWarrantyCaseCreated(true);
-          setOpenCase(created);
-        }}
-      />
+      <LazyScreen>
+        <WarrantyIntakeScreen
+          initialCode={warrantyCode?.rawCode}
+          initialTempOnly={warrantyCode?.tempOnly}
+          onBack={() => setFlow('warranty')}
+          onScan={() => setFlow('warranty-scan')}
+          // 🔴 Sửa 2026-09-06. Bản trước **vứt bỏ** hồ sơ vừa tạo và quay về
+          // màn hub. Chạy thật cho thấy hậu quả: danh sách chỉ lấy 25 hồ sơ đầu
+          // (`per_page=25`, không có tham số sắp xếp) nên hồ sơ vừa tạo **không
+          // xuất hiện** — thủ kho không còn đường nào mở lại thứ mình vừa lập,
+          // không đính kèm ảnh được, không chuyển trạng thái được.
+          //
+          // Mini App gốc mở thẳng chi tiết:
+          // `navigate('/warranty/' + response.case.id + '?created=1')`
+          // (`src/pages/WarrantyReceivePage/index.tsx:239`). Làm y như vậy.
+          onCreated={created => {
+            setWarrantyCode(undefined);
+            setWarrantyCaseCreated(true);
+            setOpenCase(created);
+          }}
+        />
+      </LazyScreen>
     );
   }
 
   return (
     <View style={styles.root}>
       <View style={styles.body}>
-        {renderTab(tab, {
-          onLoggedOut: handleLoggedOut,
-          onLogoutStarted: handleLogoutStarted,
-          onSelectTask: handleTask,
-          onHome: () => setTab('home'),
-          onOpenDocuments: () => setTab('history'),
-          onOpenDocument: handleOpenDocument,
-          onLookupNfc: () => setFlow('nfc-lookup'),
-          onScanLookup: () => {
-            setInventoryLookupCode(undefined);
-            setFlow('inventory-scan');
-          },
-          userName: session.userId,
-        })}
+        <LazyScreen>
+          {renderTab(tab, {
+            onLoggedOut: handleLoggedOut,
+            onLogoutStarted: handleLogoutStarted,
+            onSelectTask: handleTask,
+            onHome: () => setTab('home'),
+            onOpenDocuments: () => setTab('documents'),
+            onOpenDocument: handleOpenDocument,
+            onOpenProfile: () => setTab('profile'),
+            onLookupNfc: () => setFlow('nfc-lookup'),
+            onScanLookup: () => {
+              setInventoryLookupCode(undefined);
+              setFlow('inventory-scan');
+            },
+            userName: session.userName ?? session.userId,
+            avatarUrl: session.avatarUrl,
+          })}
+        </LazyScreen>
       </View>
       <BottomNav items={IMPLEMENTED_TABS} activeKey={tab} onSelect={setTab} />
     </View>

@@ -399,8 +399,11 @@ describe('giới hạn tệp đính kèm (ảnh 46)', () => {
 
 async function render(element: React.ReactElement) {
   let tree: ReactTestRenderer.ReactTestRenderer | undefined;
-  await ReactTestRenderer.act(() => {
+  await ReactTestRenderer.act(async () => {
     tree = ReactTestRenderer.create(<AppProviders>{element}</AppProviders>);
+    // Cho effect nạp dữ liệu hoàn tất ngay trong `act`. Nếu không, state của
+    // WarrantyListScreen có thể đổi sau assert và Jest báo warning giả.
+    await Promise.resolve();
   });
   return {
     text: JSON.stringify(tree?.toJSON()),

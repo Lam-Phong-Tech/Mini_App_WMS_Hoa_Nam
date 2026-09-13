@@ -159,7 +159,7 @@ describe('chống trùng hiện vật trước khi tạo batch nhập', () => {
     };
 
     expect(
-      dedupePhysicalInboundCodes(legacy).codes.map(code => code.key),
+      dedupePhysicalInboundCodes(legacy).codes.map(scannedCode => scannedCode.key),
     ).toEqual(['legacy-a', 'sku-1', 'sku-2']);
   });
 });
@@ -943,7 +943,7 @@ describe('ba mốc tồn kho — nói sai là thủ kho tưởng hàng đã vào
     expect(MESSAGE_NOT_POSTED_BODY).toContain('Post Receipt');
   });
 
-  it('trạng thái là "Chờ duyệt nhập kho", KHÔNG phải "Hoàn tất"', async () => {
+  it('trạng thái là "Chờ xử lý trên Web", KHÔNG phải "Hoàn tất"', async () => {
     let tree: ReactTestRenderer.ReactTestRenderer | undefined;
     await ReactTestRenderer.act(() => {
       tree = ReactTestRenderer.create(
@@ -960,7 +960,7 @@ describe('ba mốc tồn kho — nói sai là thủ kho tưởng hàng đã vào
       );
     });
     const text = JSON.stringify(tree?.toJSON());
-    expect(text).toContain('Chờ duyệt nhập kho');
+    expect(text).toContain('Chờ xử lý trên Web');
     expect(text).not.toContain('Hoàn tất');
     await ReactTestRenderer.act(() => tree?.unmount());
   });
@@ -983,7 +983,7 @@ describe('ba mốc tồn kho — nói sai là thủ kho tưởng hàng đã vào
       );
     });
     const text = JSON.stringify(tree?.toJSON());
-    expect(text).toContain('WMS từ chối phiếu nhập');
+    expect(text).toContain('Web từ chối phiếu nhập');
     expect(text).toContain('Kho nhận không còn hoạt động.');
     expect(text).toContain('Bị từ chối — chưa tạo phiếu');
     expect(text).not.toContain('Chờ gửi lên WMS');

@@ -40,14 +40,15 @@ Người dùng chốt ngày 2026-09-11:
 4. Ca làm, Công việc được giao, Bàn giao bảo hành và Khôi phục tài khoản là **“Chưa áp dụng”**: không có API/nghiệp vụ và không là màn chức năng thật của Prompt 00.
 5. Không thêm motion hoặc virtual-list package trong đợt này; chỉ dùng React Native/dependency hiện có. Package mới cần duyệt riêng.
 6. Designer phải công bố SHA/commit nối bản GitHub Pages với source; chỉ SHA đó được dùng để đối chiếu deploy.
+7. Người dùng đã xác nhận `chốt` dùng `evidence/00/login-d07-390x844-dpr3.png` (SHA-256 `e4a605d5f8e7d359dbc38b33a8656fce8bd7c868b3c96b862c655fe2f110498e`) làm fixture chính thức cho Login. Fixture này thay thế yêu cầu crop từ board ghép hai điện thoại, chỉ áp dụng cho Login.
 
-Gate 00 chỉ chuyển PASS sau khi có: lint source sạch error, bằng chứng visual diff đạt ngưỡng D07 và SHA deploy của Designer. Quyết định bốn tab D06 vẫn giữ nguyên; năm nghiệp vụ là các lối vào từ Trang chủ, không phải tab thứ năm.
+Gate 00 chuyển PASS theo phạm vi foundation/Login sau khi có: lint source sạch error, fixture D07 Login được người dùng duyệt và SHA deploy của Designer. Quyết định bốn tab D06 vẫn giữ nguyên; năm nghiệp vụ là các lối vào từ Trang chủ, không phải tab thứ năm. Camera/NFC và DEV E2E vẫn là điều kiện nghiệm thu riêng, không phải bằng chứng đã hoàn tất.
 
 ## Xung đột còn hiệu lực
 
 1. **Xác nhận phiên/bắt đầu ca**: board Login có CTA “Bắt đầu ca làm việc”, trong khi shift BA-BLOCKED. Màn này phải ẩn/ghi “Chưa áp dụng”, không làm action thật.
 2. **Board 13**: gallery giữ hình duyệt/từ chối cũ, nhưng D02 cấm workflow đó trong Scanner.
-3. **D04 profile**: prototype 17–22 có `390×844`; 01–18 dùng profile partial review, không làm pixel-diff claim. Đây vẫn chặn visual acceptance tuyệt đối, không chặn UI sub-gate.
+3. **D04 profile**: fixture D07 `390×844` được duyệt riêng cho Login. Prototype 17–22 và 01–18 vẫn dùng profile partial review, không làm pixel-diff claim cho các màn đó.
 4. **Theme**: App hiện dùng token Vuexy tím trong `src/theme/tokens.ts`; prototype 17–22 dùng blue Public Sans. Chưa tự thay theme vì đó là thay shared foundation, làm invalid evidence của tất cả màn hiện hữu.
 
 ## Không được tự suy ra

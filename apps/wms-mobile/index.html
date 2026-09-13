@@ -11,6 +11,9 @@
          luôn bám đáy và không tạo thêm vùng cuộn thứ hai bên ngoài app. */
       body { overflow: hidden; background: #f3f8fb; }
       #root { display: flex; }
+      /* Bản thiết kế không có thanh cuộn trình duyệt phủ lên nội dung app. */
+      * { scrollbar-width: none; }
+      *::-webkit-scrollbar { width: 0; height: 0; }
     </style>
   </head>
   <body>

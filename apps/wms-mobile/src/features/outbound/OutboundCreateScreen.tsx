@@ -15,13 +15,14 @@
  *    *"Chọn tỉnh/thành trước"* — khoá mà nói rõ lý do.
  */
 
-import React, { useEffect, useMemo } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 import { Page } from '../../ui/Page';
 import { Box } from '../../ui/Box';
 import { Text } from '../../ui/Text';
 import { Input } from '../../ui/Input';
 import { Button } from '../../ui/Button';
+import { Dialog } from '../../ui/Dialog';
 import { Badge } from '../../ui/Badge';
 import { Banner } from '../../ui/Banner';
 import { Select } from '../../ui/Select';
@@ -96,6 +97,7 @@ export function OutboundCreateScreen({
   const warehouseState = warehouses ?? loadedWarehouses;
   const provinces = provinceState ?? loadedProvinces;
   const wards = wardState ?? loadedWards;
+  const [pausedNoticeOpen, setPausedNoticeOpen] = useState(false);
 
   const provinceOptions = useMemo(
     () => provinces.items.map(unit => ({ value: unit.code, label: unit.name })),
@@ -114,6 +116,12 @@ export function OutboundCreateScreen({
       onChange(updateForm(draft, { warehouseId: first.id }));
     }
   }, [draft, form.warehouseId, onChange, warehouseState.warehouses]);
+
+  useEffect(() => {
+    if (warehouseState.phase === 'ready' && warehouseState.warehouses.length === 0) {
+      setPausedNoticeOpen(true);
+    }
+  }, [warehouseState.phase, warehouseState.warehouses.length]);
 
   return (
     <Page
@@ -314,6 +322,16 @@ export function OutboundCreateScreen({
         title="Kiểm tra đúng phiếu trước khi quét"
         message="Tạo phiếu xuất trước, sau đó scanner sẽ quét liên tục theo số lượng đã nhập."
       />
+
+      <Dialog
+        visible={pausedNoticeOpen}
+        dismissible={false}
+        title="Kho tạm dừng"
+        message="Các thao tác trong kho đang tạm dừng. Vui lòng liên hệ quản trị viên."
+        onDismiss={() => setPausedNoticeOpen(false)}
+      >
+        <Button label="Đã hiểu" onPress={() => setPausedNoticeOpen(false)} />
+      </Dialog>
     </Page>
   );
 }

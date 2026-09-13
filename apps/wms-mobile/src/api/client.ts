@@ -78,6 +78,18 @@ const GATE_EXEMPT_AUTH_PATHS: readonly string[] = [
   '/api/v1/auth/logout',
 ];
 
+/** BE auth contract: refresh/logout read the refresh credential from JSON,
+ * never from a bearer header. This marker makes the transport unambiguous. */
+export const WMS_TOKEN_TRANSPORT_HEADER = 'X-WMS-Token-Transport';
+const BODY_TOKEN_AUTH_PATHS: readonly string[] = [
+  '/api/v1/auth/refresh',
+  '/api/v1/auth/logout',
+];
+
+function usesBodyTokenTransport(path: string): boolean {
+  return BODY_TOKEN_AUTH_PATHS.includes(path);
+}
+
 export function isGateExemptAuthPath(path: string): boolean {
   return GATE_EXEMPT_AUTH_PATHS.includes(path);
 }
@@ -253,6 +265,9 @@ export function createApiClient(deps: ApiClientDeps = {}) {
       // thì khoá được HAI chiều thay vì một.
       [CLIENT_TIER_HEADER]: environment.expectedTier,
     };
+    if (usesBodyTokenTransport(options.path)) {
+      headers[WMS_TOKEN_TRANSPORT_HEADER] = 'body';
+    }
     assertNoForbiddenHeaders(headers, options.path, method);
 
     // 🔓 §2i: một thao tác gửi `multipart/form-data` (tải file bảo hành).
@@ -266,7 +281,9 @@ export function createApiClient(deps: ApiClientDeps = {}) {
     }
 
     const session = readSession();
-    if (session !== undefined) {
+    // refresh/logout are body-token endpoints. Do not send a stale bearer token
+    // that could make BE choose the wrong transport during a token rotation.
+    if (session !== undefined && !usesBodyTokenTransport(options.path)) {
       headers.Authorization = 'Bearer ' + session.accessToken;
     }
 

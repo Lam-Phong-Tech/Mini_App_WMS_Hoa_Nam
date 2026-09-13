@@ -18,13 +18,14 @@
  * Mini App; nó không có trường chọn trên giao diện.
  */
 
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 import { Page } from '../../ui/Page';
 import { Box } from '../../ui/Box';
 import { Text } from '../../ui/Text';
 import { Input } from '../../ui/Input';
 import { Button } from '../../ui/Button';
+import { Dialog } from '../../ui/Dialog';
 import { Banner } from '../../ui/Banner';
 import { Stepper } from '../../ui/Stepper';
 import { AppIcon } from '../../ui/AppIcon';
@@ -74,6 +75,7 @@ export function InboundCreateScreen({
   // Gọi hook vô điều kiện — quy tắc hook. Bản tiêm chỉ ghi đè kết quả.
   const loaded = useWarehouses();
   const warehouseState = warehouses ?? loaded;
+  const [pausedNoticeOpen, setPausedNoticeOpen] = useState(false);
 
   // Mini App lấy kho đang hoạt động rồi tự chọn kho đầu tiên trong nền. Màn
   // không hiển thị bộ chọn kho; giữ nguyên vậy để số thao tác và bố cục trùng
@@ -84,6 +86,12 @@ export function InboundCreateScreen({
       onChange(setDraftWarehouse(draft, first.id, warehouseLabel(first)));
     }
   }, [draft, onChange, warehouseState.warehouses]);
+
+  useEffect(() => {
+    if (warehouseState.phase === 'ready' && warehouseState.warehouses.length === 0) {
+      setPausedNoticeOpen(true);
+    }
+  }, [warehouseState.phase, warehouseState.warehouses.length]);
 
   return (
     <Page title="Tạo phiếu nhập" subtitle="Nhập kho" onBack={onBack} scroll>
@@ -142,6 +150,16 @@ export function InboundCreateScreen({
         onPress={onContinue}
         disabled={!canContinueToScan(draft)}
       />
+
+      <Dialog
+        visible={pausedNoticeOpen}
+        dismissible={false}
+        title="Kho tạm dừng"
+        message="Các thao tác trong kho đang tạm dừng. Vui lòng liên hệ quản trị viên."
+        onDismiss={() => setPausedNoticeOpen(false)}
+      >
+        <Button label="Đã hiểu" onPress={() => setPausedNoticeOpen(false)} />
+      </Dialog>
     </Page>
   );
 }

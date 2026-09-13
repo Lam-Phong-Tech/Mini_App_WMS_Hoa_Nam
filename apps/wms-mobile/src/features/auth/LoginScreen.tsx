@@ -17,10 +17,10 @@
  *    tiên hỏi thủ kho khi hỗ trợ từ xa: *"màn đăng nhập ghi môi trường gì?"*
  */
 
-import React, { useCallback, useState } from 'react';
+import React, { useCallback, useRef, useState } from 'react';
 import {
+  Image,
   KeyboardAvoidingView,
-  ImageBackground,
   Platform,
   Pressable,
   ScrollView,
@@ -52,6 +52,13 @@ const styles = StyleSheet.create({
   root: {
     flex: 1,
     backgroundColor: '#073b52',
+  },
+  backgroundImage: {
+    position: 'absolute',
+    top: 0,
+    right: 0,
+    bottom: 0,
+    left: 0,
   },
   shade: {
     flex: 1,
@@ -200,15 +207,26 @@ export function LoginScreen({
   const environment = getCurrentEnvironment();
   const [form, setForm] = useState<LoginFormState>(initialLoginForm);
   const [revealed, setRevealed] = useState(false);
+  const [passwordSelection, setPasswordSelection] = useState<
+    { start: number; end: number } | undefined
+  >();
+  // `disabled` chỉ có hiệu lực sau lượt render kế tiếp. Giữ khóa đồng bộ này
+  // để hai sự kiện chạm/Enter đến trong cùng một frame vẫn không phát hai
+  // request đăng nhập cho cùng một form.
+  const submitInFlightRef = useRef(false);
 
   const submitting = form.phase === 'submitting';
 
   const handleSubmit = useCallback(async () => {
+    if (submitInFlightRef.current) {
+      return;
+    }
     const { next, canSubmit } = beginSubmit(form);
     setForm(next);
     if (!canSubmit) {
       return;
     }
+    submitInFlightRef.current = true;
     try {
       await loginFn({
         // AuthStatePage của Mini App chuẩn hoá email trước khi gửi.
@@ -218,15 +236,25 @@ export function LoginScreen({
       // Xoá sạch form — nhất là mật khẩu — trước khi rời màn.
       setForm(initialLoginForm);
       setRevealed(false);
+      setPasswordSelection(undefined);
       onSuccess?.();
     } catch (error) {
       setForm(current => failSubmit(current, classifyLoginError(error).message));
       setRevealed(false);
+    } finally {
+      submitInFlightRef.current = false;
     }
   }, [form, loginFn, onSuccess]);
 
   return (
-    <ImageBackground source={scannerAssets.warehouseMain} style={styles.root}>
+    <View style={styles.root}>
+    <Image
+      source={scannerAssets.warehouseMain}
+      style={styles.backgroundImage}
+      resizeMode="cover"
+      accessible={false}
+      pointerEvents="none"
+    />
     <SafeAreaView edges={['top', 'bottom']} style={styles.shade}>
       <KeyboardAvoidingView
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
@@ -299,6 +327,13 @@ export function LoginScreen({
           errorText={form.fieldErrors.password}
           editable={!submitting}
           secureTextEntry={!revealed}
+          // Android có thể đặt lại con trỏ khi đổi `secureTextEntry`. Lưu và
+          // truyền lại selection hiện hành để thao tác Hiện/Ẩn không làm người
+          // dùng đang sửa mật khẩu bị nhảy vị trí gõ.
+          selection={passwordSelection}
+          onSelectionChange={event =>
+            setPasswordSelection(event.nativeEvent.selection)
+          }
           autoCapitalize="none"
           autoCorrect={false}
           textContentType="password"
@@ -370,6 +405,6 @@ export function LoginScreen({
         </ScrollView>
       </KeyboardAvoidingView>
     </SafeAreaView>
-    </ImageBackground>
+    </View>
   );
 }

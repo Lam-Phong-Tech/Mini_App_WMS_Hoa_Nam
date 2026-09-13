@@ -27,6 +27,7 @@
 
 import { AppError } from '../errors/AppError';
 import { logger } from '../logging/logger';
+import { clearSecureRefreshToken } from './secureRefreshToken';
 import { recordServerTime, readServerTimestamp, serverNow } from './serverClock';
 import {
   clearRefreshInFlight,
@@ -34,7 +35,7 @@ import {
   getRefreshInFlight,
   getSession,
   markRefreshInFlight,
-  setSession,
+  persistSession,
   type Session,
 } from './session';
 
@@ -130,6 +131,8 @@ export function sessionFromRefresh(
     issuedAtMs,
     expiresAtMs: issuedAtMs + payload.expires_in * 1000,
     userId: previous?.userId,
+    userName: previous?.userName,
+    avatarUrl: previous?.avatarUrl,
   };
 }
 
@@ -189,6 +192,9 @@ export function recoverAfterRestart(): RestartRecovery {
   }
   clearRefreshInFlight();
   clearSession();
+  // Không để refresh credential cũ còn nằm trong Keystore sau một lượt refresh
+  // không rõ kết quả. Không await: recovery phải quyết định trước render.
+  clearSecureRefreshToken().catch(() => undefined);
   const reason =
     'App đã tắt giữa lúc đang gia hạn phiên. Không rõ máy chủ đã thu hồi ' +
     'token cũ hay chưa, nên không dùng lại — cần đăng nhập lại một lần.';
@@ -263,6 +269,7 @@ async function performRefresh(deps: RefreshDeps): Promise<Session> {
     if (error instanceof AppError && error.kind === 'auth') {
       clearRefreshInFlight();
       clearSession();
+      await clearSecureRefreshToken();
     }
     // Lỗi mạng/timeout: GIỮ dấu. Không biết máy chủ đã thu hồi hay chưa, và
     // `recoverAfterRestart()` sẽ xử lý ở lần mở app sau.
@@ -272,7 +279,10 @@ async function performRefresh(deps: RefreshDeps): Promise<Session> {
   recordServerTime(readServerTimestamp(raw), now());
   const payload = parseRefreshPayload(raw);
   const session = sessionFromRefresh(payload, serverNow(now()), current);
-  setSession(session);
+  // BE xoay refresh token ở mỗi lượt. Persist token mới vào Keystore trước khi
+  // xoá dấu in-flight, để app chết giữa chừng luôn buộc đăng nhập lại thay vì
+  // replay token cũ đã bị thu hồi.
+  await persistSession(session);
   clearRefreshInFlight();
   logger.debug('Đã gia hạn phiên', { expiresInSec: payload.expires_in });
   return session;

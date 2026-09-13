@@ -27,6 +27,7 @@ import {
   MESSAGE_NOT_ISSUED_TITLE,
   OUTBOUND_STEPS,
 } from './outboundDraft';
+import type { OutboundResultOutcome } from './OutboundFlow';
 
 const styles = StyleSheet.create({
   circle: {
@@ -56,7 +57,7 @@ export interface OutboundResultScreenProps {
   documentRef: string;
   recipientName: string;
   quantity: number;
-  outcome: 'posted' | 'queued';
+  outcome: OutboundResultOutcome;
   queuedReason?: string;
   onHome: () => void;
   onNext: () => void;
@@ -73,7 +74,41 @@ export function OutboundResultScreen({
   onNext,
 }: OutboundResultScreenProps): React.ReactElement {
   const theme = useTheme();
-  const queued = outcome === 'queued';
+  const posted = outcome === 'posted';
+  const resultCopy = {
+    queued: {
+      title: 'Đã lưu vào hàng đợi trên máy',
+      body: 'Phiếu chưa gửi được lên WMS. Mã đã quét vẫn còn nguyên trên máy.',
+      status: 'Chờ gửi lên WMS',
+      icon: 'clock' as const,
+      tone: theme.colors.warning,
+      bannerTitle: 'Chưa gửi được lên WMS',
+    },
+    failed: {
+      title: 'Gửi phiếu thất bại',
+      body: 'WMS đã từ chối phiếu. Sửa lỗi được nêu rồi gửi lại từ hàng đợi.',
+      status: 'Gửi thất bại',
+      icon: 'alert' as const,
+      tone: theme.colors.danger,
+      bannerTitle: 'WMS từ chối phiếu',
+    },
+    conflict: {
+      title: 'Phiếu bị xung đột dữ liệu',
+      body: 'Dữ liệu trên WMS đã thay đổi. Không tự ghi đè; cần đối chiếu trước khi gửi lại.',
+      status: 'Xung đột — cần đối chiếu',
+      icon: 'alert' as const,
+      tone: theme.colors.danger,
+      bannerTitle: 'Cần đối chiếu trên WMS',
+    },
+    unknown: {
+      title: 'Chưa xác định kết quả gửi',
+      body: 'Không thể biết máy chủ đã ghi nhận hay chưa. Không gửi lại tự động.',
+      status: 'Chưa xác định máy chủ',
+      icon: 'clock' as const,
+      tone: theme.colors.warning,
+      bannerTitle: 'Chưa xác định kết quả',
+    },
+  }[outcome === 'posted' ? 'queued' : outcome];
 
   return (
     <Page title="Kết quả xuất kho" subtitle="Đã ghi nhận mã" scroll>
@@ -84,28 +119,28 @@ export function OutboundResultScreen({
           style={[
             styles.circle,
             {
-              backgroundColor: queued
-                ? theme.colors.warningSoft
-                : theme.colors.successSoft,
+              backgroundColor: posted
+                ? theme.colors.successSoft
+                : outcome === 'failed' || outcome === 'conflict'
+                  ? theme.colors.dangerSoft
+                  : theme.colors.warningSoft,
             },
           ]}
         >
           <AppIcon
-            name={queued ? 'clock' : 'check-circle'}
+            name={posted ? 'check-circle' : resultCopy.icon}
             size={30}
-            color={queued ? theme.colors.warning : theme.colors.success}
+            color={posted ? theme.colors.success : resultCopy.tone}
           />
         </View>
 
         <Text variant="screenTitle" tone="strong" style={styles.center}>
-          {queued
-            ? 'Đã lưu vào hàng đợi trên máy'
-            : 'Đã gửi duyệt phiếu xuất'}
+          {posted ? 'Đã gửi duyệt phiếu xuất' : resultCopy.title}
         </Text>
         <Text variant="caption" tone="muted" style={styles.center}>
-          {queued
-            ? 'Phiếu chưa gửi được lên WMS. Mã đã quét vẫn còn nguyên trên máy.'
-            : 'Phiếu đã được lưu trên backend và chuyển sang chờ duyệt/Post Issue.'}
+          {posted
+            ? 'Phiếu đã được lưu trên backend và chuyển sang chờ duyệt/Post Issue.'
+            : resultCopy.body}
         </Text>
       </Box>
 
@@ -123,25 +158,27 @@ export function OutboundResultScreen({
         <DefinitionRow
           label="Trạng thái"
           // "Chờ duyệt xuất kho" — hàng CHƯA rời kho. Xem chú thích đầu tệp.
-          value={queued ? 'Chờ gửi lên WMS' : 'Chờ duyệt xuất kho'}
+          value={posted ? 'Chờ duyệt xuất kho' : resultCopy.status}
           last
         />
       </Box>
 
-      {queued && queuedReason !== undefined ? (
+      {!posted && queuedReason !== undefined ? (
         <Banner
-          tone="warning"
+          tone={outcome === 'failed' || outcome === 'conflict' ? 'danger' : 'warning'}
           icon={<AppIcon name="clock" color={theme.colors.warningText} />}
-          title="Chưa gửi được lên WMS"
+          title={resultCopy.bannerTitle}
           message={queuedReason}
         />
       ) : null}
 
-      <Banner
-        tone="warning"
-        title={MESSAGE_NOT_ISSUED_TITLE}
-        message={MESSAGE_NOT_ISSUED_BODY}
-      />
+      {posted ? (
+        <Banner
+          tone="warning"
+          title={MESSAGE_NOT_ISSUED_TITLE}
+          message={MESSAGE_NOT_ISSUED_BODY}
+        />
+      ) : null}
 
       <View style={[styles.row, { gap: theme.spacing.md }]}>
         <Button
