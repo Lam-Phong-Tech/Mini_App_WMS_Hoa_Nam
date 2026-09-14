@@ -81,6 +81,15 @@ describe('đọc phản hồi gia hạn', () => {
     expect(parseRefreshPayload({ data: flat }).refresh_token).toBe('r');
   });
 
+  it('chấp nhận access token + expires_in khi Web giữ refresh token bằng cookie HttpOnly', () => {
+    expect(
+      parseRefreshPayload(
+        { data: { access_token: 'web-access', expires_in: 60 } },
+        { allowCookieRefresh: true },
+      ),
+    ).toEqual({ access_token: 'web-access', expires_in: 60 });
+  });
+
   it('thiếu expires_in thì ném lỗi, KHÔNG tự đoán TTL', () => {
     // Đoán TTL là cách chắc chắn để token chết giữa ca mà app không biết.
     expect(() =>

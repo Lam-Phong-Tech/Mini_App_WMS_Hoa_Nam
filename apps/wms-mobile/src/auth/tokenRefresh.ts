@@ -28,6 +28,7 @@
 import { AppError } from '../errors/AppError';
 import { logger } from '../logging/logger';
 import { clearSecureRefreshToken } from './secureRefreshToken';
+import { usesCookieTokenTransport } from './tokenTransport';
 import { recordServerTime, readServerTimestamp, serverNow } from './serverClock';
 import {
   clearRefreshInFlight,
@@ -58,14 +59,15 @@ export const REFRESH_PATH = '/api/v1/auth/refresh';
 /** Thân phản hồi của `POST /auth/refresh`, theo đúng số đo thật trên staging. */
 export interface RefreshPayload {
   readonly access_token: string;
-  readonly refresh_token: string;
+  /** Web dùng cookie HttpOnly nên BE không trả trường này cho browser. */
+  readonly refresh_token?: string;
   /** Giây. Đây là **nguồn duy nhất** cho hạn — không decode JWT, không đoán. */
   readonly expires_in: number;
 }
 
 export interface RefreshDeps {
   /** Gửi request gia hạn. Tách ra để test không cần mạng. */
-  readonly send: (refreshToken: string) => Promise<unknown>;
+  readonly send: (refreshToken?: string) => Promise<unknown>;
   readonly now?: () => number;
 }
 
@@ -78,7 +80,10 @@ export type RestartRecovery =
 // Đọc phản hồi
 // ---------------------------------------------------------------------------
 
-export function parseRefreshPayload(payload: unknown): RefreshPayload {
+export function parseRefreshPayload(
+  payload: unknown,
+  options: { allowCookieRefresh?: boolean } = {},
+): RefreshPayload {
   const container =
     typeof payload === 'object' && payload !== null
       ? ((payload as { data?: unknown }).data ?? payload)
@@ -101,7 +106,12 @@ export function parseRefreshPayload(payload: unknown): RefreshPayload {
       message: 'Phản hồi gia hạn thiếu access_token.',
     });
   }
-  if (typeof refreshToken !== 'string' || refreshToken.length === 0) {
+  const allowCookieRefresh =
+    options.allowCookieRefresh ?? usesCookieTokenTransport;
+  if (
+    (typeof refreshToken !== 'string' || refreshToken.length === 0) &&
+    !allowCookieRefresh
+  ) {
     throw new AppError({
       kind: 'parse',
       message: 'Phản hồi gia hạn thiếu refresh_token.',
@@ -115,7 +125,9 @@ export function parseRefreshPayload(payload: unknown): RefreshPayload {
   }
   return {
     access_token: accessToken,
-    refresh_token: refreshToken,
+    ...(typeof refreshToken === 'string' && refreshToken.length > 0
+      ? { refresh_token: refreshToken }
+      : {}),
     expires_in: expiresIn,
   };
 }
@@ -127,7 +139,9 @@ export function sessionFromRefresh(
 ): Session {
   return {
     accessToken: payload.access_token,
-    refreshToken: payload.refresh_token,
+    ...(payload.refresh_token === undefined
+      ? {}
+      : { refreshToken: payload.refresh_token }),
     issuedAtMs,
     expiresAtMs: issuedAtMs + payload.expires_in * 1000,
     userId: previous?.userId,
@@ -164,7 +178,7 @@ export function needsProactiveRefresh(
   session: Session,
   nowMs: number = serverNow(),
 ): boolean {
-  if (session.refreshToken === undefined) {
+  if (!usesCookieTokenTransport && session.refreshToken === undefined) {
     return false;
   }
   const dueAt = refreshDueAtMs(session);
@@ -249,7 +263,10 @@ async function performRefresh(deps: RefreshDeps): Promise<Session> {
   const current = getSession();
   const refreshToken = current?.refreshToken;
 
-  if (refreshToken === undefined || refreshToken.length === 0) {
+  if (
+    !usesCookieTokenTransport &&
+    (refreshToken === undefined || refreshToken.length === 0)
+  ) {
     throw new AppError({
       kind: 'auth',
       message: 'Phiên chưa có refresh token. Cần đăng nhập.',
@@ -279,9 +296,9 @@ async function performRefresh(deps: RefreshDeps): Promise<Session> {
   recordServerTime(readServerTimestamp(raw), now());
   const payload = parseRefreshPayload(raw);
   const session = sessionFromRefresh(payload, serverNow(now()), current);
-  // BE xoay refresh token ở mỗi lượt. Persist token mới vào Keystore trước khi
-  // xoá dấu in-flight, để app chết giữa chừng luôn buộc đăng nhập lại thay vì
-  // replay token cũ đã bị thu hồi.
+  // Android xoay refresh token ở mỗi lượt và persist token mới vào Keystore
+  // trước khi xoá dấu in-flight. Web không nhận token này: browser giữ cookie
+  // HttpOnly, còn persistSession chỉ ghi access-token/metadata.
   await persistSession(session);
   clearRefreshInFlight();
   logger.debug('Đã gia hạn phiên', { expiresInSec: payload.expires_in });

@@ -26,6 +26,7 @@ import {
   type Session,
 } from '../../auth/session';
 import { clearSecureRefreshToken } from '../../auth/secureRefreshToken';
+import { usesCookieTokenTransport } from '../../auth/tokenTransport';
 import { parseRefreshPayload, sessionFromRefresh } from '../../auth/tokenRefresh';
 
 export const LOGIN_PATH = '/api/v1/auth/login';
@@ -92,8 +93,9 @@ export async function login(
  */
 export async function logout(deps: LoginDeps = {}): Promise<void> {
   const post = deps.post ?? defaultPost;
-  // Auth server đang dùng body transport cho refresh/logout. Lấy token trước
-  // khi xoá local session, không dùng Authorization cho endpoint này.
+  // Android dùng body transport; Web dùng cookie HttpOnly. Cả hai lấy token
+  // (nếu JavaScript nhìn thấy được) trước khi xoá local session và không gắn
+  // Authorization vào endpoint auth.
   const refreshToken = getSession()?.refreshToken;
   clearSession();
   clearRefreshInFlight();
@@ -103,9 +105,12 @@ export async function logout(deps: LoginDeps = {}): Promise<void> {
     // Local UI đã logout; lỗi xoá Keystore không được giữ nhân viên ở lại app.
   }
   try {
-    await post(LOGOUT_PATH, {
-      ...(refreshToken === undefined ? {} : { refresh_token: refreshToken }),
-    });
+    await post(
+      LOGOUT_PATH,
+      usesCookieTokenTransport
+        ? {}
+        : { ...(refreshToken === undefined ? {} : { refresh_token: refreshToken }) },
+    );
   } catch {
     // Nuốt lỗi có chủ đích: phiên cục bộ đã xoá xong ở trên. Máy chủ sẽ tự hết
     // hạn token theo TTL. Báo lỗi ở đây chỉ làm người dùng tưởng chưa đăng xuất.
@@ -127,6 +132,16 @@ export type LoginFailure =
  * phải gọi quản trị (§4j.2).
  */
 export function classifyLoginError(error: unknown): LoginFailure {
+  if (
+    error instanceof AppError &&
+    error.code === 'TOKEN_TRANSPORT_NOT_ALLOWED'
+  ) {
+    return {
+      kind: 'other',
+      message:
+        'Bản Web đang dùng kênh phiên không phù hợp. Hãy tải lại sau khi cập nhật ứng dụng.',
+    };
+  }
   // AuthStatePage của Mini App xử lý 401/422/403 theo HTTP status trước khi
   // dùng thông điệp tổng quát. `AppError` vẫn giữ status kể cả khi kind là
   // `auth`, nên không được chỉ nhìn vào kind ở đây.

@@ -32,6 +32,10 @@ import {
   usesMultipart,
 } from './writeGate';
 import { getActiveSession, getSession } from '../auth/session';
+import {
+  usesBodyTokenTransport,
+  usesCookieTokenTransport,
+} from '../auth/tokenTransport';
 import { recordServerTime, readServerTimestamp } from '../auth/serverClock';
 import { refreshSession, REFRESH_PATH } from '../auth/tokenRefresh';
 import { getCurrentEnvironment, type AppEnvironment } from '../config/env';
@@ -87,7 +91,7 @@ const BODY_TOKEN_AUTH_PATHS: readonly string[] = [
   '/api/v1/auth/logout',
 ];
 
-function usesBodyTokenTransport(path: string): boolean {
+function isTokenTransportAuthPath(path: string): boolean {
   return BODY_TOKEN_AUTH_PATHS.includes(path);
 }
 
@@ -266,7 +270,7 @@ export function createApiClient(deps: ApiClientDeps = {}) {
       // thì khoá được HAI chiều thay vì một.
       [CLIENT_TIER_HEADER]: environment.expectedTier,
     };
-    if (usesBodyTokenTransport(options.path)) {
+    if (usesBodyTokenTransport && isTokenTransportAuthPath(options.path)) {
       headers[WMS_TOKEN_TRANSPORT_HEADER] = 'body';
     }
     assertNoForbiddenHeaders(headers, options.path, method);
@@ -284,7 +288,7 @@ export function createApiClient(deps: ApiClientDeps = {}) {
     const session = readSession();
     // Auth body-token endpoints never use a bearer credential. In particular,
     // login needs this even when an expired access token still exists locally.
-    if (session !== undefined && !usesBodyTokenTransport(options.path)) {
+    if (session !== undefined && !isTokenTransportAuthPath(options.path)) {
       headers.Authorization = 'Bearer ' + session.accessToken;
     }
 
@@ -307,6 +311,10 @@ export function createApiClient(deps: ApiClientDeps = {}) {
       response = await fetchImpl(url, {
         method,
         headers,
+        // Browser nhận refresh token qua cookie HttpOnly. `include` giúp cookie
+        // đi theo login/refresh/logout qua Vite proxy; native tiếp tục body +
+        // Keystore và không nhận option này.
+        ...(usesCookieTokenTransport ? { credentials: 'include' } : {}),
         body:
           options.body === undefined
             ? undefined
@@ -436,7 +444,7 @@ export function createApiClient(deps: ApiClientDeps = {}) {
         error.kind === 'auth' &&
         SAFE_METHODS.has(options.method ?? 'GET') &&
         !isGateExemptAuthPath(options.path) &&
-        getSession()?.refreshToken !== undefined;
+        (usesCookieTokenTransport || getSession()?.refreshToken !== undefined);
 
       if (!canRetry) {
         throw error;
@@ -450,7 +458,9 @@ export function createApiClient(deps: ApiClientDeps = {}) {
           const result = await sendOnce<unknown>({
             path: REFRESH_PATH,
             method: 'POST',
-            body: { refresh_token: refreshToken },
+            body: usesCookieTokenTransport
+              ? {}
+              : { refresh_token: refreshToken },
           });
           return result.data;
         },

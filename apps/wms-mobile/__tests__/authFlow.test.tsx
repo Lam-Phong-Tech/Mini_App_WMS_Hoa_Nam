@@ -234,6 +234,19 @@ describe('dịch vụ đăng nhập — luồng chạy THẬT qua ngoại lệ �
     expect(blocked.message).toBe('Tài khoản chưa có quyền truy cập Mini App kho.');
   });
 
+  it('hiển thị đúng lỗi transport Web thay vì báo nhầm thiếu quyền', () => {
+    const failure = classifyLoginError(
+      new AppError({
+        kind: 'http',
+        status: 403,
+        code: 'TOKEN_TRANSPORT_NOT_ALLOWED',
+        message: 'Browser dùng cookie HttpOnly.',
+      }),
+    );
+    expect(failure.kind).toBe('other');
+    expect(failure.message).toContain('kênh phiên không phù hợp');
+  });
+
   it('401 dùng cùng câu chung của Mini App thay vì lộ copy backend', () => {
     const serverMessage = 'Email, tài khoản hoặc mật khẩu không đúng.';
     expect(
