@@ -142,6 +142,7 @@ export function Page({
   const scrollRef = useRef<React.ComponentRef<typeof ScrollView>>(null);
   const scrollY = useRef(0);
   const keyboardTop = useRef(Dimensions.get('window').height);
+  const [keyboardHeight, setKeyboardHeight] = useState(0);
   const pullStartY = useRef<number | undefined>(undefined);
   const [pullDistance, setPullDistance] = useState(0);
 
@@ -193,9 +194,11 @@ export function Page({
   useEffect(() => {
     const shown = Keyboard.addListener('keyboardDidShow', event => {
       keyboardTop.current = event.endCoordinates.screenY;
+      setKeyboardHeight(event.endCoordinates.height);
     });
     const hidden = Keyboard.addListener('keyboardDidHide', () => {
       keyboardTop.current = Dimensions.get('window').height;
+      setKeyboardHeight(0);
     });
     return () => {
       shown.remove();
@@ -290,7 +293,12 @@ export function Page({
             ref={scrollRef}
             keyboardShouldPersistTaps="handled"
             keyboardDismissMode="on-drag"
-            contentContainerStyle={styles.scrollContent}
+            contentContainerStyle={[
+              styles.scrollContent,
+              keyboardHeight > 0
+                ? { paddingBottom: keyboardHeight + KEYBOARD_GAP }
+                : null,
+            ]}
             onScroll={handleScroll}
             scrollEventThrottle={16}
             onTouchStart={handleTouchStart}

@@ -6,7 +6,7 @@
  * ghi. Không có nghiệp vụ nào bị nhúng vào component dùng chung.
  */
 
-import React, { useCallback, useEffect, useRef } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import {
   Dimensions,
   Keyboard,
@@ -72,13 +72,16 @@ export function Dialog({
   const scrollRef = useRef<React.ComponentRef<typeof ScrollView>>(null);
   const scrollY = useRef(0);
   const keyboardTop = useRef(Dimensions.get('window').height);
+  const [keyboardHeight, setKeyboardHeight] = useState(0);
 
   useEffect(() => {
     const shown = Keyboard.addListener('keyboardDidShow', event => {
       keyboardTop.current = event.endCoordinates.screenY;
+      setKeyboardHeight(event.endCoordinates.height);
     });
     const hidden = Keyboard.addListener('keyboardDidHide', () => {
       keyboardTop.current = Dimensions.get('window').height;
+      setKeyboardHeight(0);
     });
     return () => {
       shown.remove();
@@ -140,7 +143,12 @@ export function Dialog({
                 ref={scrollRef}
                 keyboardShouldPersistTaps="handled"
                 keyboardDismissMode="on-drag"
-                contentContainerStyle={{ gap: theme.spacing.md }}
+                contentContainerStyle={[
+                  { gap: theme.spacing.md },
+                  keyboardHeight > 0
+                    ? { paddingBottom: keyboardHeight + 20 }
+                    : null,
+                ]}
                 onScroll={event => {
                   scrollY.current = event.nativeEvent.contentOffset.y;
                 }}
