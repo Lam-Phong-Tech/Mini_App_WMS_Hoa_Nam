@@ -7,8 +7,11 @@ import { CodeInput } from '../../ui/CodeInput';
 import { DefinitionRow } from '../../ui/DefinitionRow';
 import { Page } from '../../ui/Page';
 import { Text } from '../../ui/Text';
-import { messageForUser, toAppError, type AppError } from '../../errors/AppError';
+import { AppIcon } from '../../ui/AppIcon';
+import { useTheme } from '../../theme/ThemeProvider';
+import { toAppError, type AppError } from '../../errors/AppError';
 import { cancelNfc, writeNfcText } from '../../native/nfc';
+import { nfcUserMessage } from './nfcUserMessage';
 import {
   confirmNfcAssignment,
   createNfcConfirmationKey,
@@ -21,22 +24,17 @@ import {
 
 const styles = StyleSheet.create({
   actions: { gap: 12 },
+  nfcCircle: {
+    width: 96,
+    height: 96,
+    borderRadius: 48,
+    alignSelf: 'center',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  center: { textAlign: 'center' },
+  headerStep: { color: '#ffffff', fontWeight: '600' },
 });
-
-function nfcMessage(error: AppError): string {
-  switch (error.code) {
-    case 'ITEM_ALREADY_HAS_NFC': return 'Sản phẩm này đã có thẻ NFC. Không ghi đè thẻ cũ.';
-    case 'NFC_WRITE_RESERVED_BY_OTHER': return 'Sản phẩm đang được một nhân viên khác gán NFC. Thử lại sau.';
-    case 'NFC_UID_ALREADY_ASSIGNED': return 'Thẻ NFC này đã được gán cho sản phẩm khác.';
-    case 'NFC_PAYLOAD_ITEM_MISMATCH': return 'Nội dung thẻ không khớp sản phẩm đã chọn. Không lưu mapping.';
-    case 'NFC_DISABLED': return 'NFC đang tắt. Bật NFC trong cài đặt rồi thử lại.';
-    case 'NFC_UNSUPPORTED': return 'Thiết bị này không có NFC.';
-    case 'NFC_READ_ONLY': return 'Thẻ đã bị khoá, không thể ghi. Dùng thẻ mới.';
-    case 'NFC_TAG_TOO_SMALL': return 'Thẻ không đủ dung lượng. Dùng thẻ NFC khác.';
-    case 'NFC_VERIFY_FAILED': return 'Không đọc lại được đúng nội dung sau khi ghi. Không có mapping nào được lưu.';
-    default: return messageForUser(error);
-  }
-}
 
 function itemId(value: NfcResolvedCode | NfcPreparation): string | undefined {
   return value.item?.id ?? value.item?.item_id;
@@ -53,8 +51,14 @@ export interface NfcAssignmentScreenProps {
   onManageTags?: () => void;
 }
 
-/** Màn gán chip: confirm WMS chỉ chạy sau native write + read-back thành công. */
-export function NfcAssignmentScreen({ initialCode, onBack, onScanCode, onManageTags }: NfcAssignmentScreenProps): React.ReactElement {
+/** Gán thẻ theo board NFC: nhận diện → xác minh → hoàn tất. */
+export function NfcAssignmentScreen({
+  initialCode,
+  onBack,
+  onScanCode,
+  onManageTags,
+}: NfcAssignmentScreenProps): React.ReactElement {
+  const theme = useTheme();
   const [code, setCode] = useState(initialCode ?? '');
   const [resolved, setResolved] = useState<NfcResolvedCode>();
   const [prepared, setPrepared] = useState<NfcPreparation>();
@@ -65,38 +69,62 @@ export function NfcAssignmentScreen({ initialCode, onBack, onScanCode, onManageT
 
   useEffect(() => {
     setCode(initialCode ?? '');
-    setResolved(undefined); setPrepared(undefined); setConfirmed(undefined); setError(undefined);
+    setResolved(undefined);
+    setPrepared(undefined);
+    setConfirmed(undefined);
+    setError(undefined);
+    idempotencyKey.current = undefined;
   }, [initialCode]);
   useEffect(() => () => cancelNfc(), []);
 
   const resolve = async (): Promise<void> => {
     const raw = code.trim();
     if (raw === '' || busy !== undefined) return;
-    setBusy('resolve'); setError(undefined); setPrepared(undefined); setConfirmed(undefined);
-    try { setResolved(await resolveNfcCode(raw)); }
-    catch (cause) { setResolved(undefined); setError(toAppError(cause)); }
-    finally { setBusy(undefined); }
+    setBusy('resolve');
+    setError(undefined);
+    setPrepared(undefined);
+    setConfirmed(undefined);
+    try {
+      setResolved(await resolveNfcCode(raw));
+    } catch (cause) {
+      setResolved(undefined);
+      setError(toAppError(cause));
+    } finally {
+      setBusy(undefined);
+    }
   };
 
   const prepare = async (): Promise<void> => {
     if (busy !== undefined || resolved?.assignable !== true) return;
     const id = itemId(resolved);
-    if (id === undefined) { setError(toAppError(new Error('WMS không trả item_id để gán NFC.'))); return; }
-    setBusy('prepare'); setError(undefined);
-    try { setPrepared(await prepareNfcAssignment(id)); }
-    catch (cause) { setError(toAppError(cause)); }
-    finally { setBusy(undefined); }
+    if (id === undefined) {
+      setError(toAppError(new Error('WMS không trả item_id để gán NFC.')));
+      return;
+    }
+    setBusy('prepare');
+    setError(undefined);
+    try {
+      setPrepared(await prepareNfcAssignment(id));
+    } catch (cause) {
+      setError(toAppError(cause));
+    } finally {
+      setBusy(undefined);
+    }
   };
 
   const writeAndConfirm = async (): Promise<void> => {
     const current = prepared;
     const id = current === undefined ? undefined : itemId(current);
     const payload = current?.nfc_payload;
-    if (busy !== undefined || current === undefined || id === undefined || payload === undefined || payload === null || payload === '') return;
-    setBusy('write'); setError(undefined);
+    if (
+      busy !== undefined || current === undefined || id === undefined ||
+      payload === undefined || payload === null || payload === ''
+    ) return;
+
+    setBusy('write');
+    setError(undefined);
     try {
-      // Native chỉ resolve sau write + read-back; vì vậy request PATCH dưới đây
-      // không bao giờ có đường chạy khi thẻ chưa xác minh vật lý.
+      // Chỉ confirm WMS sau write + read-back native thành công.
       const tag = await writeNfcText(payload);
       idempotencyKey.current ??= createNfcConfirmationKey(id, tag.hardwareUid);
       setConfirmed(await confirmNfcAssignment(id, {
@@ -105,44 +133,148 @@ export function NfcAssignmentScreen({ initialCode, onBack, onScanCode, onManageT
         reservationToken: current.reservation_token,
         idempotencyKey: idempotencyKey.current,
       }));
-    } catch (cause) { setError(toAppError(cause)); }
-    finally { setBusy(undefined); }
+    } catch (cause) {
+      setError(toAppError(cause));
+    } finally {
+      setBusy(undefined);
+    }
   };
 
   const assignable = resolved?.assignable === true && itemId(resolved) !== undefined;
+  const stepLabel = confirmed === undefined
+    ? 'Bước ' + String(prepared === undefined ? 1 : 2) + '/3'
+    : undefined;
+
   return (
-    <Page title="Gán NFC" subtitle="Xuất kho · QR/SKU → thẻ NFC" onBack={onBack} scroll>
-      <Banner tone="info" title="Gán trong lúc xuất kho" message="Quét/nhập QR hoặc SKU của hiện vật. App giữ chỗ trên WMS, ghi và đọc lại thẻ rồi mới xác nhận liên kết. Thao tác này không làm thay đổi tồn kho." />
-      <Box card padding="lg" gap="md">
-        <Text variant="cardTitle" tone="strong">1. Nhận diện sản phẩm</Text>
-        <CodeInput label="QR / SKU / serial" placeholder="Quét bằng máy quét hoặc nhập mã" value={code} onChangeText={setCode} returnKeyType="done" onSubmitEditing={resolve} />
-        {onScanCode === undefined ? null : <Button label="Mở camera quét QR/SKU" variant="secondary" onPress={onScanCode} />}
-        <Button label="Nhận diện hiện vật" loading={busy === 'resolve'} disabled={code.trim() === '' || busy !== undefined} onPress={resolve} />
-      </Box>
-      {error === undefined ? null : <Banner tone="danger" title="Chưa thể gán NFC" message={nfcMessage(error)} />}
-      {resolved === undefined ? null : (
-        <Box card padding="lg" gap="sm">
-          <Text variant="cardTitle" tone="strong">Hiện vật trên WMS</Text>
-          <DefinitionRow label="Item / serial" value={itemLabel(resolved)} />
-          <DefinitionRow label="SKU" value={resolved.item?.sku_code ?? resolved.sku?.sku_code} />
-          <DefinitionRow label="Trạng thái NFC" value={resolved.nfc_status} last />
-          {assignable ? <Button label="2. Chuẩn bị ghi thẻ NFC" loading={busy === 'prepare'} disabled={busy !== undefined || prepared !== undefined || confirmed !== undefined} onPress={prepare} /> : <Banner tone="warning" title="Chưa thể gán thẻ" message={resolved.assign_block_code === undefined || resolved.assign_block_code === null ? 'WMS không cho phép gán NFC cho hiện vật này.' : 'Mã chặn: ' + resolved.assign_block_code} />}
+    <Page
+      title="Thẻ NFC"
+      onBack={onBack}
+      scroll
+      headerVariant="brand"
+      headerRight={
+        stepLabel === undefined ? undefined : (
+          <Text variant="caption" style={styles.headerStep}>{stepLabel}</Text>
+        )
+      }
+    >
+      {confirmed === undefined ? null : (
+        <Box padding="xl" gap="md">
+          <View style={[styles.nfcCircle, { backgroundColor: theme.colors.successSoft }]}>
+            <AppIcon name="check-circle" color={theme.colors.success} size={42} />
+          </View>
+          <Text variant="screenTitle" tone="strong" style={styles.center}>
+            Đã liên kết thẻ NFC
+          </Text>
+          <Text variant="caption" tone="muted" style={styles.center}>
+            Thẻ đã được ghi, đọc lại và WMS xác nhận liên kết thành công.
+          </Text>
         </Box>
       )}
-      {prepared === undefined ? null : (
-        <Box card padding="lg" gap="md">
-          <Text variant="cardTitle" tone="strong">2. Ghi thẻ mới</Text>
-          <Text variant="caption" tone="muted">Đặt thẻ NFC mới sát điện thoại. Giữ nguyên tới khi app thông báo đã đọc lại thành công.</Text>
-          <DefinitionRow label="Giữ chỗ đến" value={prepared.expires_at} />
-          <DefinitionRow label="Payload WMS" value={prepared.nfc_payload} last />
-          <Button label="Chạm thẻ NFC để ghi" loading={busy === 'write'} disabled={busy !== undefined || confirmed !== undefined} onPress={writeAndConfirm} />
-        </Box>
+
+      {confirmed !== undefined ? (
+        <>
+          <Box card padding="lg">
+            <DefinitionRow label="UID thẻ NFC" value={confirmed.nfc?.hardware_uid} />
+            <DefinitionRow label="Item / serial" value={itemLabel(confirmed)} />
+            <DefinitionRow label="SKU" value={confirmed.item?.sku_code ?? confirmed.sku?.sku_code} />
+            <DefinitionRow label="Trạng thái" value="Đã liên kết" last />
+          </Box>
+          <View style={styles.actions}>
+            {onManageTags === undefined ? null : (
+              <Button label="Danh sách thẻ NFC" onPress={onManageTags} />
+            )}
+            <Button label="Về Trang chủ" variant="secondary" onPress={onBack} />
+          </View>
+        </>
+      ) : (
+        <>
+          <Box card padding="lg" gap="md">
+            <View style={[styles.nfcCircle, { backgroundColor: theme.colors.primarySoft }]}>
+              <AppIcon name="nfc" color={theme.colors.primary} size={42} />
+            </View>
+            <Text variant="cardTitle" tone="strong" style={styles.center}>
+              {prepared === undefined ? 'Đọc thẻ NFC' : 'Xác minh liên kết'}
+            </Text>
+            <Text variant="caption" tone="muted" style={styles.center}>
+              {prepared === undefined
+                ? 'Quét QR/SKU của hiện vật để WMS kiểm tra có thể gán thẻ.'
+                : 'Đặt thẻ NFC mới sát thiết bị. App chỉ xác nhận sau khi ghi và đọc lại thành công.'}
+            </Text>
+
+            {resolved !== undefined ? (
+              <>
+                <DefinitionRow label="Item / serial" value={itemLabel(resolved)} />
+                <DefinitionRow label="SKU" value={resolved.item?.sku_code ?? resolved.sku?.sku_code} />
+                <DefinitionRow label="Trạng thái NFC" value={resolved.nfc_status} last />
+              </>
+            ) : (
+              <CodeInput
+                label="QR / SKU / serial"
+                placeholder="Quét bằng máy quét hoặc nhập mã"
+                value={code}
+                onChangeText={setCode}
+                returnKeyType="done"
+                onSubmitEditing={resolve}
+              />
+            )}
+          </Box>
+
+          {error === undefined ? null : (
+            <Banner tone="danger" title="Chưa thể gán NFC" message={nfcUserMessage(error)} />
+          )}
+
+          {resolved === undefined ? (
+            <View style={styles.actions}>
+              {onScanCode === undefined ? null : (
+                <Button label="Quét QR/SKU" variant="secondary" onPress={onScanCode} />
+              )}
+              <Button
+                label="Nhận diện hiện vật"
+                loading={busy === 'resolve'}
+                disabled={code.trim() === '' || busy !== undefined}
+                onPress={resolve}
+              />
+            </View>
+          ) : prepared === undefined ? (
+            assignable ? (
+              <Button
+                label="Xác minh liên kết"
+                loading={busy === 'prepare'}
+                disabled={busy !== undefined}
+                onPress={prepare}
+              />
+            ) : (
+              <Banner
+                tone="warning"
+                title="Chưa thể gán thẻ"
+                message={
+                  resolved.assign_block_code === undefined || resolved.assign_block_code === null
+                    ? 'WMS không cho phép gán NFC cho hiện vật này.'
+                    : 'Mã chặn: ' + resolved.assign_block_code
+                }
+              />
+            )
+          ) : (
+            <>
+              <Box card padding="lg">
+                <DefinitionRow label="Giữ chỗ đến" value={prepared.expires_at} />
+                <DefinitionRow label="Payload WMS" value={prepared.nfc_payload} last />
+              </Box>
+              <Banner
+                tone="warning"
+                title="Chạm thẻ để ghi"
+                message="Không rời thẻ khỏi thiết bị cho tới khi app đọc lại và báo xác nhận thành công."
+              />
+              <Button
+                label="Chạm thẻ NFC để ghi"
+                loading={busy === 'write'}
+                disabled={busy !== undefined}
+                onPress={writeAndConfirm}
+              />
+            </>
+          )}
+        </>
       )}
-      {confirmed === undefined ? null : <Banner tone="success" title="Đã gán NFC thành công" message={'Thẻ ' + (confirmed.nfc?.hardware_uid ?? 'NFC') + ' đã liên kết với ' + itemLabel(confirmed) + '. Có thể đính thẻ lên sản phẩm và hoàn tất phiếu xuất.'} />}
-      <View style={styles.actions}>
-        {onManageTags === undefined ? null : <Button label="Danh sách chip NFC" variant="secondary" onPress={onManageTags} />}
-        <Button label="Quay lại" variant="secondary" onPress={onBack} />
-      </View>
     </Page>
   );
 }

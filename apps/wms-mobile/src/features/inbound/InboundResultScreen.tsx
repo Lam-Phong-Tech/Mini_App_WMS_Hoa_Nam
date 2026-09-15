@@ -23,12 +23,10 @@ import { Box } from '../../ui/Box';
 import { Text } from '../../ui/Text';
 import { Button } from '../../ui/Button';
 import { Banner } from '../../ui/Banner';
-import { Stepper } from '../../ui/Stepper';
 import { DefinitionRow } from '../../ui/DefinitionRow';
 import { AppIcon } from '../../ui/AppIcon';
 import { useTheme } from '../../theme/ThemeProvider';
 import {
-  INBOUND_STEPS,
   MESSAGE_NOT_POSTED_BODY,
   MESSAGE_NOT_POSTED_TITLE,
 } from './inboundDraft';
@@ -135,9 +133,7 @@ export function InboundResultScreen({
   }[outcome];
 
   return (
-    <Page title="Kết quả gửi phiếu nhập" subtitle="IN-04" scroll>
-      <Stepper steps={INBOUND_STEPS} current={3} />
-
+    <Page title="Nhập kho" scroll headerVariant="brand" backgroundColor="#ffffff">
       <Box card padding="xl" gap="md">
         <View
           style={[

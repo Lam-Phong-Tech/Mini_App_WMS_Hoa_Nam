@@ -22,7 +22,7 @@ export function NfcTagListScreen({ onBack }: NfcTagListScreenProps): React.React
   const load = useCallback(async () => { setLoading(true); setError(undefined); try { setTags((await listNfcTags({ status: filter === 'all' ? undefined : filter, per_page: 50 })).items); } catch (cause) { setError(toAppError(cause)); } finally { setLoading(false); } }, [filter]);
   useEffect(() => { load().catch(() => undefined); }, [load]);
   const deactivate = async (): Promise<void> => { const id = selected?.physical_code_id ?? selected?.id; if (id === undefined || reason.trim() === '' || saving) return; setSaving(true); try { await deactivateNfcTag(id, { status, reason: reason.trim() }); setSelected(undefined); setReason(''); await load(); } catch (cause) { setError(toAppError(cause)); } finally { setSaving(false); } };
-  return <Page title="Danh sách chip NFC" subtitle="Theo dõi và thu hồi chip đã gán" onBack={onBack} scroll>
+  return <Page title="Thẻ NFC" subtitle="Theo dõi và thu hồi thẻ đã gán" onBack={onBack} scroll headerVariant="brand">
     <Banner tone="info" title="Thu hồi giữ lại audit" message="Ngừng dùng, báo mất hoặc hỏng không xoá dữ liệu mapping; hệ thống lưu trạng thái và lý do để truy vết." />
     <FilterChipRow chips={FILTERS} activeKey={filter} onSelect={setFilter} />
     {error === undefined ? null : <Banner tone="danger" title="Không tải được chip NFC" message={messageForUser(error)}><Button label="Thử lại" variant="secondary" onPress={load} /></Banner>}

@@ -28,13 +28,11 @@ import { Text } from '../../ui/Text';
 import { Button } from '../../ui/Button';
 import { Badge } from '../../ui/Badge';
 import { Banner } from '../../ui/Banner';
-import { Stepper } from '../../ui/Stepper';
 import { StatCard } from '../../ui/StatCard';
 import { AppIcon } from '../../ui/AppIcon';
 import { SwipeToDelete } from '../../ui/SwipeToDelete';
 import { useTheme } from '../../theme/ThemeProvider';
 import {
-  INBOUND_STEPS,
   MESSAGE_NO_CODE_BODY,
   MESSAGE_NO_CODE_TITLE,
   MESSAGE_POST_ONLY_BODY,
@@ -71,6 +69,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
   },
+  headerStep: { color: '#ffffff', fontWeight: '600' },
 });
 
 export interface InboundReviewScreenProps {
@@ -104,24 +103,24 @@ export function InboundReviewScreen({
 
   return (
     <Page
-      title="Xác nhận hàng nhập"
-      subtitle="IN-04"
+      title="Nhập kho"
       onBack={recorded ? onBackToHistory : onBackToScan}
       scroll
+      headerVariant="brand"
+      headerRight={
+        recorded ? undefined : (
+          <Text variant="caption" style={styles.headerStep}>Bước 3/3</Text>
+        )
+      }
     >
-      <Stepper steps={INBOUND_STEPS} current={2} />
-
       <Box card padding="lg" gap="md">
         <View style={[styles.cardHead, { gap: theme.spacing.md }]}>
           <View style={styles.cardHeadBody}>
-            <Text variant="caption" tone="muted">
-              {documentRef}
-            </Text>
             <Text variant="cardTitle" tone="strong">
-              {draft.name}
+              Kiểm tra phiếu nhập
             </Text>
             <Text variant="caption" tone="muted">
-              {draft.warehouseName ?? 'Kho nhận theo phiếu WMS'}
+              {documentRef + ' · ' + (draft.warehouseName ?? 'Kho nhận theo phiếu WMS')}
             </Text>
           </View>
           <Badge

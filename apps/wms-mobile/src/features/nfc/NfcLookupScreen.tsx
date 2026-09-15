@@ -5,9 +5,10 @@ import { Button } from '../../ui/Button';
 import { DefinitionRow } from '../../ui/DefinitionRow';
 import { Page } from '../../ui/Page';
 import { Text } from '../../ui/Text';
-import { messageForUser, toAppError, type AppError } from '../../errors/AppError';
+import { toAppError, type AppError } from '../../errors/AppError';
 import { cancelNfc, readNfcTag } from '../../native/nfc';
 import { resolveNfcTag, type NfcTagResolution } from '../../services/wms/nfc';
+import { nfcUserMessage } from './nfcUserMessage';
 
 function display(record: Record<string, unknown> | null | undefined, keys: readonly string[]): string | undefined {
   for (const key of keys) { const value = record?.[key]; if (typeof value === 'string' || typeof value === 'number' || typeof value === 'boolean') return String(value); }
@@ -26,10 +27,10 @@ export function NfcLookupScreen({ onBack }: NfcLookupScreenProps): React.ReactEl
     catch (cause) { setError(toAppError(cause)); } finally { setBusy(false); }
   };
   const unresolved = result !== undefined && result.resolve_code !== 'RESOLVED';
-  return <Page title="Tra cứu NFC" subtitle="Bảo hành · chạm thẻ để xem sản phẩm" onBack={onBack} scroll>
+  return <Page title="Tra cứu NFC" subtitle="Chạm thẻ để xem sản phẩm" onBack={onBack} scroll headerVariant="brand">
     <Banner tone="info" title="Tra cứu không làm đổi tồn kho" message="Chạm thẻ NFC trên sản phẩm. WMS trả thông tin hiện vật, lịch sử xuất gần nhất và bảo hành đang hiệu lực theo quyền của bạn." />
     <Button label="Chạm thẻ NFC để tra cứu" loading={busy} disabled={busy} onPress={lookup} />
-    {error === undefined ? null : <Banner tone="danger" title="Không tra cứu được" message={messageForUser(error)}><Button label="Thử lại" variant="secondary" onPress={lookup} /></Banner>}
+    {error === undefined ? null : <Banner tone="danger" title="Không tra cứu được" message={nfcUserMessage(error)}><Button label="Thử lại" variant="secondary" onPress={lookup} /></Banner>}
     {unresolved ? <Banner tone="warning" title="Thẻ chưa được liên kết" message={'WMS trả về: ' + (result?.resolve_code ?? 'NFC_TAG_NOT_REGISTERED') + '. Không suy đoán sản phẩm từ thẻ này.'} /> : null}
     {result === undefined || unresolved ? null : <>
       <Banner tone="success" title="Đã nhận diện sản phẩm" message="Dữ liệu được truy vấn theo UID của thẻ NFC." />

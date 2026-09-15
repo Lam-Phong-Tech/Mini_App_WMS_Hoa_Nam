@@ -671,8 +671,9 @@ export function InboundFlow({
       return (
         <>
           <BusinessScanScreen
-            title="Quét hàng nhập"
+            title="Nhập kho"
             documentName={draft.name}
+            stepLabel="Bước 2/3"
             sessionLabel="Phiên quét nhập kho"
             scannedCount={draft.codes.length}
             scanPaused={pendingScan !== undefined}

@@ -1062,7 +1062,7 @@ describe('bộ gửi từ chối: phiếu ở lại hàng đợi, KHÔNG mất d
     });
 
     // Màn đầu là bước tạo phiếu.
-    expect(JSON.stringify(tree?.toJSON())).toContain('Tạo phiếu nhập mới');
+    expect(JSON.stringify(tree?.toJSON())).toContain('Thông tin phiếu nhập');
     await ReactTestRenderer.act(() => tree?.unmount());
   });
 });

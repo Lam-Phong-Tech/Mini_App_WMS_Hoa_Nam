@@ -27,11 +27,9 @@ import { Input } from '../../ui/Input';
 import { Button } from '../../ui/Button';
 import { Dialog } from '../../ui/Dialog';
 import { Banner } from '../../ui/Banner';
-import { Stepper } from '../../ui/Stepper';
 import { AppIcon } from '../../ui/AppIcon';
 import { useTheme } from '../../theme/ThemeProvider';
 import {
-  INBOUND_STEPS,
   canContinueToScan,
   setDraftName,
   setDraftWarehouse,
@@ -53,6 +51,7 @@ const styles = StyleSheet.create({
   headBody: {
     flex: 1,
   },
+  headerStep: { color: '#ffffff', fontWeight: '600' },
 });
 
 export interface InboundCreateScreenProps {
@@ -94,15 +93,13 @@ export function InboundCreateScreen({
   }, [warehouseState.phase, warehouseState.warehouses.length]);
 
   return (
-    <Page title="Tạo phiếu nhập" subtitle="Nhập kho" onBack={onBack} scroll>
-      <Stepper steps={INBOUND_STEPS} current={0} />
-
-      <Banner
-        tone="info"
-        icon={<AppIcon name="shield-check" color={theme.colors.infoText} />}
-        title="Luồng nhập theo mã quét thực tế"
-        message="Không cần chọn SKU hoặc nhập số lượng trước. Mini App gom các mã cùng SKU sau khi quét."
-      />
+    <Page
+      title="Nhập kho"
+      onBack={onBack}
+      scroll
+      headerVariant="brand"
+      headerRight={<Text variant="caption" style={styles.headerStep}>Bước 1/3</Text>}
+    >
 
       <Box card padding="lg" gap="lg">
         <View style={[styles.head, { gap: theme.spacing.md }]}>
@@ -119,10 +116,10 @@ export function InboundCreateScreen({
           </View>
           <View style={styles.headBody}>
             <Text variant="cardTitle" tone="strong">
-              Tạo phiếu nhập mới
+              Thông tin phiếu nhập
             </Text>
             <Text variant="caption" tone="muted">
-              Tạo phiên nhập, sau đó quét mã để WMS tự xác định SKU
+              Kiểm tra kho nhận và tạo phiên trước khi quét mã hàng
             </Text>
           </View>
         </View>
@@ -134,6 +131,7 @@ export function InboundCreateScreen({
           onChangeText={text => onChange(setDraftName(draft, text))}
           errorText={draft.nameError}
           returnKeyType="next"
+          leftAdornment={<AppIcon name="document" color={theme.colors.primary} size={18} />}
         />
 
       </Box>
@@ -146,7 +144,7 @@ export function InboundCreateScreen({
       />
 
       <Button
-        label="Tiếp tục quét"
+        label="Bắt đầu quét hàng"
         onPress={onContinue}
         disabled={!canContinueToScan(draft)}
       />
