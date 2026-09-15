@@ -18,14 +18,12 @@ import { Box } from '../../ui/Box';
 import { Text } from '../../ui/Text';
 import { Button } from '../../ui/Button';
 import { Banner } from '../../ui/Banner';
-import { Stepper } from '../../ui/Stepper';
 import { DefinitionRow } from '../../ui/DefinitionRow';
 import { AppIcon } from '../../ui/AppIcon';
 import { useTheme } from '../../theme/ThemeProvider';
 import {
   MESSAGE_NOT_ISSUED_BODY,
   MESSAGE_NOT_ISSUED_TITLE,
-  OUTBOUND_STEPS,
 } from './outboundDraft';
 import type { OutboundResultOutcome } from './OutboundFlow';
 
@@ -38,17 +36,11 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  glyph: {
-    fontSize: 30,
-  },
   center: {
     textAlign: 'center',
   },
-  row: {
-    flexDirection: 'row',
-  },
-  half: {
-    flex: 1,
+  actionStack: {
+    gap: 8,
   },
 });
 
@@ -61,6 +53,7 @@ export interface OutboundResultScreenProps {
   queuedReason?: string;
   onHome: () => void;
   onNext: () => void;
+  onViewDocument?: () => void;
 }
 
 export function OutboundResultScreen({
@@ -72,6 +65,7 @@ export function OutboundResultScreen({
   queuedReason,
   onHome,
   onNext,
+  onViewDocument,
 }: OutboundResultScreenProps): React.ReactElement {
   const theme = useTheme();
   const posted = outcome === 'posted';
@@ -111,10 +105,8 @@ export function OutboundResultScreen({
   }[outcome === 'posted' ? 'queued' : outcome];
 
   return (
-    <Page title="Kết quả xuất kho" subtitle="Đã ghi nhận mã" scroll>
-      <Stepper steps={OUTBOUND_STEPS} current={3} />
-
-      <Box card padding="xl" gap="md">
+    <Page title="Xuất kho" scroll headerVariant="brand" backgroundColor="#ffffff">
+      <Box padding="xl" gap="md">
         <View
           style={[
             styles.circle,
@@ -150,10 +142,12 @@ export function OutboundResultScreen({
           value={documentName === '' ? 'Phiếu xuất' : documentName}
         />
         <DefinitionRow label="Mã phiếu" value={documentRef} />
+        <DefinitionRow label="Kho xuất" value="Kho đã chọn" />
         <DefinitionRow label="Người nhận" value={recipientName} />
+        <DefinitionRow label="Số lượng đã soạn" value={String(quantity) + '/' + String(quantity)} />
         <DefinitionRow
-          label="Số lượng"
-          value={String(quantity) + ' sản phẩm'}
+          label="Thời gian gửi"
+          value={posted ? 'Đã gửi duyệt' : 'Chưa xác định'}
         />
         <DefinitionRow
           label="Trạng thái"
@@ -180,14 +174,12 @@ export function OutboundResultScreen({
         />
       ) : null}
 
-      <View style={[styles.row, { gap: theme.spacing.md }]}>
-        <Button
-          label="Trang chủ"
-          variant="secondary"
-          onPress={onHome}
-          style={styles.half}
-        />
-        <Button label="Xuất kho tiếp" onPress={onNext} style={styles.half} />
+      <View style={styles.actionStack}>
+        {posted && onViewDocument !== undefined ? (
+          <Button label="Xem chứng từ" onPress={onViewDocument} />
+        ) : null}
+        <Button label="Về Trang chủ" variant="secondary" onPress={onHome} />
+        <Button label="Xuất kho tiếp" variant="secondary" onPress={onNext} />
       </View>
     </Page>
   );

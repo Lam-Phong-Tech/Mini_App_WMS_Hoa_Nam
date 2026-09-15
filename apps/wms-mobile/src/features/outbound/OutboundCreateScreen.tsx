@@ -26,13 +26,11 @@ import { Dialog } from '../../ui/Dialog';
 import { Badge } from '../../ui/Badge';
 import { Banner } from '../../ui/Banner';
 import { Select } from '../../ui/Select';
-import { Stepper } from '../../ui/Stepper';
 import { AppIcon } from '../../ui/AppIcon';
 import { useTheme } from '../../theme/ThemeProvider';
 import {
   MESSAGE_FORM_INVALID_BODY,
   MESSAGE_FORM_INVALID_TITLE,
-  OUTBOUND_STEPS,
   changeProvince,
   isWardEnabled,
   updateForm,
@@ -65,6 +63,13 @@ const styles = StyleSheet.create({
     letterSpacing: 0.5,
     textTransform: 'uppercase',
   },
+  readonlyField: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderWidth: 1,
+  },
+  readonlyCopy: { flex: 1 },
+  headerStep: { color: '#ffffff', fontWeight: '600' },
 });
 
 export interface OutboundCreateScreenProps {
@@ -107,6 +112,9 @@ export function OutboundCreateScreen({
     () => wards.items.map(unit => ({ value: unit.code, label: unit.name })),
     [wards.items],
   );
+  const selectedWarehouse = warehouseState.warehouses.find(
+    warehouse => warehouse.id === form.warehouseId,
+  );
 
   // Kho xuất KHÔNG hiện trên form (mô tả 2026-09-06) nhưng bắt buộc hợp lệ.
   // Chọn sẵn kho đầu tiên, giống luồng nhập và giống Mini App đang chạy.
@@ -126,12 +134,15 @@ export function OutboundCreateScreen({
   return (
     <Page
       title="Xuất kho"
-      subtitle="Chọn ngữ cảnh vận hành"
       onBack={onBack}
       scroll
+      headerVariant="brand"
+      headerRight={
+        <Text variant="caption" style={styles.headerStep}>
+          Bước 1/3
+        </Text>
+      }
     >
-      <Stepper steps={OUTBOUND_STEPS} current={0} />
-
       <Box card padding="lg" gap="lg">
         <View style={[styles.head, { gap: theme.spacing.md }]}>
           <View style={styles.headBody}>
@@ -139,10 +150,10 @@ export function OutboundCreateScreen({
               Thông tin xuất kho
             </Text>
             <Text variant="cardTitle" tone="strong">
-              Tạo phiếu trước khi quét
+              Thông tin phiếu xuất
             </Text>
             <Text variant="caption" tone="muted">
-              Nhập thông tin cơ bản và số lượng cần quét, không nhập SKU
+              Kiểm tra và nhập thông tin giao hàng trước khi soạn
             </Text>
           </View>
           <Badge label="Tạo mới" uppercase tone="warning" />
@@ -157,12 +168,30 @@ export function OutboundCreateScreen({
           />
         ) : null}
 
-        <Banner
-          tone="info"
-          icon={<AppIcon name="shield-check" color={theme.colors.infoText} />}
-          title="Không nhập SKU ở bước này"
-          message="Backend WMS sẽ tự resolve SKU/item theo QR/Barcode khi quét. Số lượng ở đây chỉ là tổng số sản phẩm cần quét cho phiếu."
-        />
+        <View style={{ gap: theme.spacing.xs }}>
+          <Text variant="caption" tone="muted">Kho xuất</Text>
+          <View
+            style={[
+              styles.readonlyField,
+              {
+                minHeight: theme.field.height,
+                paddingHorizontal: theme.field.paddingX,
+                gap: theme.spacing.sm,
+                borderRadius: theme.field.radius,
+                borderColor: theme.field.border,
+                backgroundColor: theme.field.disabledBackground,
+              },
+            ]}
+          >
+            <AppIcon name="box" color={theme.colors.primary} size={18} />
+            <View style={styles.readonlyCopy}>
+              <Text variant="body" tone="strong">
+                {selectedWarehouse?.name ?? 'Đang lấy kho xuất…'}
+              </Text>
+            </View>
+            <AppIcon name="shield-check" color={theme.colors.textMuted} size={16} />
+          </View>
+        </View>
 
         {fieldErrors.warehouseId === undefined ? null : (
           <Banner
@@ -194,6 +223,7 @@ export function OutboundCreateScreen({
           value={form.name}
           onChangeText={text => onChange(updateForm(draft, { name: text }))}
           returnKeyType="next"
+          leftAdornment={<AppIcon name="document" color={theme.colors.primary} size={18} />}
         />
 
         <Select
@@ -216,6 +246,7 @@ export function OutboundCreateScreen({
           }
           errorText={fieldErrors.recipientName}
           returnKeyType="next"
+          leftAdornment={<AppIcon name="user" color={theme.colors.primary} size={18} />}
         />
 
         <Input
@@ -232,6 +263,7 @@ export function OutboundCreateScreen({
           keyboardType="phone-pad"
           maxLength={10}
           returnKeyType="next"
+          leftAdornment={<AppIcon name="user" color={theme.colors.primary} size={18} />}
         />
 
         <Select
@@ -292,6 +324,7 @@ export function OutboundCreateScreen({
           value={form.address}
           onChangeText={text => onChange(updateForm(draft, { address: text }))}
           returnKeyType="next"
+          leftAdornment={<AppIcon name="document" color={theme.colors.primary} size={18} />}
         />
 
         <Input
@@ -302,6 +335,7 @@ export function OutboundCreateScreen({
           errorText={fieldErrors.quantity}
           keyboardType="number-pad"
           returnKeyType="next"
+          leftAdornment={<AppIcon name="box" color={theme.colors.primary} size={18} />}
         />
 
         <Input
@@ -311,9 +345,10 @@ export function OutboundCreateScreen({
           onChangeText={text => onChange(updateForm(draft, { note: text }))}
           returnKeyType="go"
           onSubmitEditing={onStart}
+          leftAdornment={<AppIcon name="document" color={theme.colors.primary} size={18} />}
         />
 
-        <Button label="Tạo phiên và bắt đầu quét" onPress={onStart} />
+        <Button label="Bắt đầu soạn hàng" onPress={onStart} />
       </Box>
 
       <Banner

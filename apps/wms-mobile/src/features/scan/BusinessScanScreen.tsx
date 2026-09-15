@@ -145,6 +145,8 @@ const styles = StyleSheet.create({
     color: '#ffffff',
     fontWeight: '700',
   },
+  countBadgePrimary: { backgroundColor: tokens.colors.primary },
+  countBadgeStep: { backgroundColor: 'transparent' },
   /** Vùng giữa chứa khung ngắm. */
   viewfinderArea: {
     flex: 1,
@@ -273,6 +275,8 @@ export interface BusinessScanScreenProps {
   title: string;
   /** Phụ đề — bộ ảnh dùng **tên phiếu**. */
   documentName: string;
+  /** Nhãn bước của riêng luồng 3 màn (ví dụ “Bước 2/3”). */
+  stepLabel?: string;
   /** Nhãn phiên ở thanh dưới, ví dụ *"Phiên quét nhập kho"*. */
   sessionLabel: string;
   /** Số mã luồng nghiệp vụ đang giữ. Badge và thanh dưới đều đọc số này. */
@@ -334,6 +338,7 @@ const POST_SCAN_SETTLE_MS = 520;
 export function BusinessScanScreen({
   title,
   documentName,
+  stepLabel,
   sessionLabel,
   scannedCount,
   progressLabel,
@@ -708,11 +713,11 @@ export function BusinessScanScreen({
         <View
           style={[
             styles.countBadge,
-            { backgroundColor: tokens.colors.primary },
+            stepLabel === undefined ? styles.countBadgePrimary : styles.countBadgeStep,
           ]}
         >
           <Text variant="caption" style={styles.countText}>
-            {badgeText}
+            {stepLabel ?? badgeText}
           </Text>
         </View>
       </View>

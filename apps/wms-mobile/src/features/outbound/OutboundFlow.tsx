@@ -64,6 +64,8 @@ const styles = StyleSheet.create({
 
 export interface OutboundFlowProps {
   onExit: () => void;
+  /** Mở chứng từ thật sau khi WMS đã trả id phiếu. */
+  onViewDocument?: (documentId: string) => void;
   dataLayer?: Pick<ReturnType<typeof getDataLayer>, 'outbox' | 'syncEngine'>;
   /** Tiêm để test không cần mạng. */
   resolveCode?: typeof resolveOutboundCode;
@@ -76,6 +78,7 @@ interface RecordOutcome {
   readonly quantity: number;
   readonly name: string;
   readonly recipientName: string;
+  readonly documentId?: string;
 }
 
 /** Trạng thái hiển thị giữ nguyên từng kết quả outbox, không gộp lỗi. */
@@ -109,6 +112,7 @@ export function resultOutcomeForState(
 
 export function OutboundFlow({
   onExit,
+  onViewDocument,
   dataLayer,
   resolveCode = resolveOutboundCode,
 }: OutboundFlowProps): React.ReactElement {
@@ -267,6 +271,10 @@ export function OutboundFlow({
             : record.id,
         outcome: resultOutcomeForState(sync.state),
         reason: sync.reason,
+        documentId:
+          sync.state === 'synced'
+            ? recordedOutboundDocumentId(sync.response)
+            : undefined,
       });
     } catch (error) {
       setResult({
@@ -330,6 +338,11 @@ export function OutboundFlow({
         queuedReason={result.reason}
         onHome={onExit}
         onNext={restart}
+        onViewDocument={
+          result.documentId === undefined || onViewDocument === undefined
+            ? undefined
+            : () => onViewDocument(result.documentId as string)
+        }
       />
     );
   }
@@ -371,10 +384,11 @@ export function OutboundFlow({
     case 1:
       return (
         <BusinessScanScreen
-          title="Quét hàng xuất"
+          title="Xuất kho"
           documentName={
             draft.form.name === '' ? 'Phiếu xuất kho' : draft.form.name
           }
+          stepLabel="Bước 2/3"
           sessionLabel="Phiếu xuất đang quét"
           scannedCount={outboundProgress(draft).scanned}
           // Badge hiện `N/M` như ảnh 28 — luồng xuất có mốc số lượng.
@@ -414,4 +428,13 @@ function recordedOutboundReference(response: unknown, fallback: string): string 
     (document.id === undefined || document.id === null
       ? fallback
       : String(document.id));
+}
+
+function recordedOutboundDocumentId(response: unknown): string | undefined {
+  if (typeof response !== 'object' || response === null) return undefined;
+  const document = response as RecordedOutboundDocument & {
+    readonly document_id?: string | number;
+  };
+  const value = document.id ?? document.document_id;
+  return value === undefined || value === null ? undefined : String(value);
 }

@@ -25,8 +25,6 @@ import { Button } from '../../ui/Button';
 import { Badge } from '../../ui/Badge';
 import { SwipeToDelete } from '../../ui/SwipeToDelete';
 import { Banner } from '../../ui/Banner';
-import { Stepper } from '../../ui/Stepper';
-import { ProgressBar } from '../../ui/ProgressBar';
 import { DefinitionRow } from '../../ui/DefinitionRow';
 import { AppIcon } from '../../ui/AppIcon';
 import { useTheme } from '../../theme/ThemeProvider';
@@ -35,10 +33,10 @@ import {
   MESSAGE_NOT_DEDUCTED_TITLE,
   MESSAGE_NOT_ENOUGH_BODY,
   MESSAGE_NOT_ENOUGH_TITLE,
-  OUTBOUND_STEPS,
   canRecordOutbound,
   outboundProgress,
   rejectedCodes,
+  recipientGroupLabel,
   type OutboundDraft,
 } from './outboundDraft';
 
@@ -67,6 +65,14 @@ const styles = StyleSheet.create({
     borderStyle: 'dashed',
     borderRadius: 8,
   },
+  metricRow: {
+    flexDirection: 'row',
+    borderWidth: 1,
+  },
+  metric: { flex: 1 },
+  metricDivider: { borderLeftWidth: 1 },
+  metricBox: { overflow: 'hidden' },
+  headerStep: { color: '#ffffff', fontWeight: '600' },
 });
 
 export interface OutboundReviewScreenProps {
@@ -114,62 +120,81 @@ export function OutboundReviewScreen({
 
   return (
     <Page
-      title={posted ? 'Kiểm tra hàng xuất' : 'Xác nhận hàng xuất'}
-      subtitle={posted ? 'OUT-04' : 'OUT-RECORD'}
+      title="Xuất kho"
       onBack={onBackToScan}
       scroll
+      headerVariant="brand"
+      headerRight={
+        posted ? undefined : (
+          <Text variant="caption" style={styles.headerStep}>
+            Bước 3/3
+          </Text>
+        )
+      }
     >
-      <Stepper steps={OUTBOUND_STEPS} current={2} />
-
       <Box card padding="lg" gap="md">
         <View style={[styles.head, { gap: theme.spacing.md }]}>
           <View style={styles.headBody}>
-            <Text variant="caption" tone="muted">
-              {documentRef}
-            </Text>
             <Text variant="cardTitle" tone="strong">
-              {draft.form.name === '' ? 'Phiếu xuất kho' : draft.form.name}
+              Kiểm tra phiếu xuất
             </Text>
             <Text variant="caption" tone="muted">
-              {'Người nhận: ' +
-                (draft.form.recipientName === ''
-                  ? '—'
-                  : draft.form.recipientName)}
+              Xem lại thông tin, số lượng và danh sách sản phẩm trước khi gửi duyệt.
             </Text>
           </View>
-          {posted ? (
-            <Badge label="Đã post" tone="success" />
-          ) : (
-            <Badge label={progress.label} tone={ready ? 'success' : 'warning'} />
-          )}
+          <Badge label={posted ? 'Đã gửi' : progress.label} tone={posted || ready ? 'success' : 'warning'} />
         </View>
-
-        <ProgressBar
-          value={progress.scanned}
-          target={progress.target}
-          tone={ready ? 'success' : 'primary'}
-          accessibilityLabel={
-            'Đã quét ' +
-            String(progress.scanned) +
-            ' trên ' +
-            String(progress.target)
-          }
+        <DefinitionRow label="Mã phiếu" value={documentRef} />
+        <DefinitionRow label="Kho xuất" value="Kho đã chọn" />
+        <DefinitionRow label="Người nhận" value={draft.form.recipientName} />
+        <DefinitionRow label="Số điện thoại" value={draft.form.phone} />
+        <DefinitionRow
+          label="Địa chỉ giao"
+          value={[draft.form.address, draft.form.wardName, draft.form.provinceName]
+            .filter(Boolean)
+            .join(', ')}
         />
-
-        {posted ? (
-          <>
-            <DefinitionRow label="Đã quét" value={progress.label} />
-            <DefinitionRow label="Trạng thái" value="Đã post" />
-            <DefinitionRow
-              label="Người nhận"
-              value={draft.form.recipientName}
-            />
-            {/* Trường trống hiện `—`, không ẩn hàng — ảnh 31 hàng SĐT. */}
-            <DefinitionRow label="SĐT" value={draft.form.phone} />
-            <DefinitionRow label="Địa chỉ" value={draft.form.address} last />
-          </>
-        ) : null}
+        <DefinitionRow
+          label="Nhóm hàng"
+          value={recipientGroupLabel(draft.form.recipientGroup)}
+          last
+        />
       </Box>
+
+      <View
+        style={[
+          styles.metricRow,
+          {
+            borderColor: theme.colors.divider,
+            borderRadius: theme.radius.card,
+            backgroundColor: theme.colors.surface,
+          },
+          styles.metricBox,
+        ]}
+      >
+        <View style={[styles.metric, { padding: theme.spacing.lg, gap: theme.spacing.xs }]}>
+          <Text variant="caption" tone="muted">Số lượng yêu cầu</Text>
+          <Text variant="metric" tone="strong">{String(progress.target)}</Text>
+          <Text variant="caption" tone="muted">sản phẩm</Text>
+        </View>
+        <View
+          style={[
+            styles.metric,
+            styles.metricDivider,
+            {
+              padding: theme.spacing.lg,
+              gap: theme.spacing.xs,
+              borderLeftColor: theme.colors.divider,
+            },
+          ]}
+        >
+          <Text variant="caption" tone="muted">Số lượng đã soạn</Text>
+          <Text variant="metric" style={{ color: ready ? theme.colors.success : theme.colors.primary }}>
+            {String(progress.scanned)}
+          </Text>
+          <Text variant="caption" tone="muted">sản phẩm</Text>
+        </View>
+      </View>
 
       {posted ? (
         <Banner
@@ -307,14 +332,14 @@ export function OutboundReviewScreen({
       ) : (
         <>
           <Button
-            label="Xác nhận ghi nhận"
+            label="Gửi duyệt"
             onPress={onRecord}
             loading={recording}
             disabled={!ready || recording}
           />
           {onBackToScan === undefined ? null : (
             <Button
-              label="Quay lại quét"
+              label="Quay lại soạn hàng"
               variant="secondary"
               onPress={onBackToScan}
             />

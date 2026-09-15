@@ -522,7 +522,17 @@ export function AppShell(): React.ReactElement {
     return <LazyScreen><InboundFlow onExit={() => setFlow(undefined)} /></LazyScreen>;
   }
   if (flow === 'outbound') {
-    return <LazyScreen><OutboundFlow onExit={() => setFlow(undefined)} /></LazyScreen>;
+    return (
+      <LazyScreen>
+        <OutboundFlow
+          onExit={() => setFlow(undefined)}
+          onViewDocument={documentId => {
+            setFlow(undefined);
+            setOpenDocument({ kind: 'outbound', id: documentId });
+          }}
+        />
+      </LazyScreen>
+    );
   }
   if (flow === 'nfc-assign') {
     return (

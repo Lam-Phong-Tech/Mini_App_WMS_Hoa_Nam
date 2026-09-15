@@ -52,6 +52,15 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
   },
+  headerBrand: {
+    backgroundColor: tokens.colors.primaryStrong,
+  },
+  backButtonBrand: {
+    backgroundColor: 'rgba(255,255,255,0.14)',
+  },
+  brandEyebrow: { color: 'rgba(255,255,255,0.72)' },
+  brandTitle: { color: '#ffffff' },
+  brandSubtitle: { color: 'rgba(255,255,255,0.76)' },
   backButton: {
     width: 40,
     height: 40,
@@ -81,6 +90,12 @@ export interface PageProps {
   /** Nhãn ngữ cảnh ở TRÊN tiêu đề, tương ứng WmsPageHeader. */
   eyebrow?: string;
   subtitle?: string;
+  /** Header xanh đậm cho các màn nghiệp vụ quét theo board Scanner. */
+  headerVariant?: 'default' | 'brand';
+  /** Nhãn/trạng thái đặt ở mép phải header, ví dụ “Bước 2/3”. */
+  headerRight?: ReactNode;
+  /** Luồng nghiệp vụ có thể dùng nền trắng thay cho nền canvas mặc định. */
+  backgroundColor?: string;
   /** Nút quay lại đầu trang cho các luồng nhiều bước. */
   onBack?: () => void;
   /** Bọc nội dung trong ScrollView. Tắt khi màn hình tự cuộn (danh sách dài). */
@@ -132,6 +147,9 @@ export function Page({
   title,
   eyebrow,
   subtitle,
+  headerVariant = 'default',
+  headerRight,
+  backgroundColor,
   onBack,
   scroll = true,
   onPullRefresh,
@@ -231,6 +249,7 @@ export function Page({
       <View
         style={[
           styles.header,
+          headerVariant === 'brand' ? styles.headerBrand : undefined,
           {
             paddingHorizontal: theme.spacing.lg,
             paddingTop: theme.spacing.lg,
@@ -247,29 +266,40 @@ export function Page({
             style={[
               styles.backButton,
               {
-              borderRadius: theme.radius.control,
-              backgroundColor: theme.colors.surfaceSubtle,
+                borderRadius: theme.radius.control,
+                backgroundColor: theme.colors.surfaceSubtle,
               },
+              headerVariant === 'brand' ? styles.backButtonBrand : undefined,
             ]}
           >
-            <AppIcon name="chevron-left" color={theme.colors.textStrong} />
+            <AppIcon
+              name="chevron-left"
+              color={headerVariant === 'brand' ? '#ffffff' : theme.colors.textStrong}
+            />
           </Pressable>
         )}
         <View style={[styles.headerBody, { gap: theme.spacing.xs }]}>
           {eyebrow === undefined ? null : (
-            <Text variant="caption" tone="muted">
-              {eyebrow}
-            </Text>
+            headerVariant === 'brand' ? (
+              <Text variant="caption" style={styles.brandEyebrow}>{eyebrow}</Text>
+            ) : (
+              <Text variant="caption" tone="muted">{eyebrow}</Text>
+            )
           )}
-          <Text variant="screenTitle" tone="strong">
-            {title}
-          </Text>
+          {headerVariant === 'brand' ? (
+            <Text variant="screenTitle" style={styles.brandTitle}>{title}</Text>
+          ) : (
+            <Text variant="screenTitle" tone="strong">{title}</Text>
+          )}
           {subtitle === undefined ? null : (
-            <Text variant="caption" tone="muted">
-              {subtitle}
-            </Text>
+            headerVariant === 'brand' ? (
+              <Text variant="caption" style={styles.brandSubtitle}>{subtitle}</Text>
+            ) : (
+              <Text variant="caption" tone="muted">{subtitle}</Text>
+            )
           )}
         </View>
+        {headerRight}
       </View>
     );
 
@@ -280,12 +310,15 @@ export function Page({
   );
 
   return (
-    <SafeAreaView edges={['top', 'bottom']} style={styles.screen}>
+    <SafeAreaView
+      edges={['top', 'bottom']}
+      style={[styles.screen, backgroundColor === undefined ? undefined : { backgroundColor }]}
+    >
       {/*
         RN 0.87 bỏ prop `backgroundColor` của StatusBar (Android chạy edge-to-edge).
         Nền sau thanh trạng thái do `SafeAreaView` ở trên đảm nhiệm.
       */}
-      <StatusBar barStyle="dark-content" />
+      <StatusBar barStyle={headerVariant === 'brand' ? 'light-content' : 'dark-content'} />
       {header}
       {scroll ? (
         <KeyboardViewportContext.Provider value={revealFocusedInput}>
