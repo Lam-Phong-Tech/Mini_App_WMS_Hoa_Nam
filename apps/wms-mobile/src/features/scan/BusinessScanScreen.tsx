@@ -53,6 +53,9 @@ import { AppIcon } from '../../ui/AppIcon';
 import { CodeInput } from '../../ui/CodeInput';
 import { Button } from '../../ui/Button';
 import { Sheet } from '../../ui/Sheet';
+import { Page } from '../../ui/Page';
+import { Box } from '../../ui/Box';
+import { Banner } from '../../ui/Banner';
 import { tokens } from '../../theme/tokens';
 import { logger } from '../../logging/logger';
 import { allowedCameraKitFormats } from '../../scanner/cameraFormats';
@@ -268,6 +271,43 @@ const styles = StyleSheet.create({
   scanResultTitle: {
     fontWeight: '700',
   },
+  boardCameraFrame: {
+    width: '100%',
+    aspectRatio: 4 / 3,
+    borderRadius: 12,
+    overflow: 'hidden',
+    backgroundColor: '#18384a',
+  },
+  boardCamera: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+  },
+  boardFrame: {
+    position: 'absolute',
+    top: '17%',
+    left: '18%',
+    right: '18%',
+    bottom: '17%',
+  },
+  boardFallback: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  boardTools: { flexDirection: 'row' },
+  boardTool: { flex: 1 },
+  boardStats: {
+    flexDirection: 'row',
+    borderWidth: 1,
+    borderRadius: 12,
+    overflow: 'hidden',
+  },
+  boardStat: { flex: 1 },
+  boardStatDivider: { borderLeftWidth: 1 },
+  boardHeaderStep: { color: '#ffffff', fontWeight: '600' },
 });
 
 export interface BusinessScanScreenProps {
@@ -298,6 +338,8 @@ export interface BusinessScanScreenProps {
   onDone: () => void;
   /** Nhãn nút kết thúc. Bộ ảnh dùng *"Kiểm tra phiếu"*. */
   doneLabel?: string;
+  /** Bố cục card camera theo board Nhập/Xuất kho. */
+  layout?: 'immersive' | 'board';
 }
 
 /** Kết quả ngắn gọn để luồng nghiệp vụ báo lại ngay tại màn camera. */
@@ -347,6 +389,7 @@ export function BusinessScanScreen({
   onBack,
   onDone,
   doneLabel = 'Kiểm tra phiếu',
+  layout = 'immersive',
 }: BusinessScanScreenProps): React.ReactElement {
   const permission = useCameraPermission();
   // Không dùng `useIsFocused()` của react-navigation: nó ném lỗi khi màn được
@@ -657,6 +700,184 @@ export function BusinessScanScreen({
   }, [manualCode, scanPaused, submitAcceptedCode]);
 
   const badgeText = progressLabel ?? String(scannedCount) + ' MÃ';
+
+  if (layout === 'board') {
+    return (
+      <Page
+        title={title}
+        onBack={onBack}
+        scroll
+        headerVariant="brand"
+        headerRight={
+          <Text variant="caption" style={styles.boardHeaderStep}>
+            {stepLabel ?? 'Bước 2/3'}
+          </Text>
+        }
+      >
+        <Box card padding="lg" gap="md">
+          <View style={[styles.header, { gap: tokens.spacing.md }]}>
+            <View style={[styles.permissionIcon, { backgroundColor: tokens.colors.primarySoft }]}>
+              <AppIcon name="scan" color={tokens.colors.primary} size={24} />
+            </View>
+            <View style={styles.headerBody}>
+              <Text variant="cardTitle" tone="strong">
+                {title === 'Nhập kho' ? 'Quét hàng nhập vào' : 'Quét hàng xuất kho'}
+              </Text>
+              <Text variant="caption" tone="muted">
+                Hướng camera vào mã QR/Serial/SKU
+              </Text>
+            </View>
+          </View>
+
+          <View style={styles.boardCameraFrame}>
+            {cameraActive ? (
+              <Camera
+                style={styles.boardCamera}
+                cameraType={CameraType.Back}
+                scanBarcode
+                showFrame={false}
+                scanThrottleDelay={140}
+                focusMode="on"
+                torchMode={torchOn ? 'on' : 'off'}
+                onReadCode={handleReadCode}
+                onError={handleError}
+                {...(allowedTypes.length > 0 ? { barcodeFrameSize: undefined } : {})}
+              />
+            ) : (
+              <View style={styles.boardFallback}>
+                <AppIcon name="camera" color="#ffffff" size={34} />
+              </View>
+            )}
+            <View style={styles.boardFrame}>
+              <ScanBeam active={cameraActive} paused={scanPaused} />
+              <View style={[styles.corner, styles.cornerTL]} />
+              <View style={[styles.corner, styles.cornerTR]} />
+              <View style={[styles.corner, styles.cornerBL]} />
+              <View style={[styles.corner, styles.cornerBR]} />
+            </View>
+          </View>
+
+          {cameraActive ? null : (
+            <Banner
+              tone="info"
+              title={tier.allowed ? 'Sẵn sàng quét mã' : MESSAGE_WRONG_ENVIRONMENT}
+              message={
+                !tier.allowed
+                  ? wrongEnvironmentBody(tier)
+                  : permission.state === 'granted'
+                    ? 'Bấm bật camera để quét mã.'
+                    : permissionMessage(permission.state)
+              }
+            />
+          )}
+
+          <View style={[styles.boardTools, { gap: tokens.spacing.md }]}>
+            {cameraActive ? (
+              <Button
+                label={torchOn ? 'Tắt đèn' : 'Bật đèn'}
+                variant="secondary"
+                style={styles.boardTool}
+                onPress={() => setTorchOn(current => !current)}
+              />
+            ) : canRequestAgain(permission.state) && tier.allowed ? (
+              <Button
+                label="Bật camera"
+                style={styles.boardTool}
+                onPress={() => { permission.request().catch(() => undefined); }}
+              />
+            ) : (
+              <Button
+                label="Kiểm tra môi trường"
+                variant="secondary"
+                style={styles.boardTool}
+                onPress={tier.recheck}
+              />
+            )}
+            <Button
+              label="Nhập tay"
+              variant="secondary"
+              style={styles.boardTool}
+              disabled={scanPaused}
+              onPress={() => {
+                setManualError(undefined);
+                setManualOpen(true);
+              }}
+            />
+          </View>
+
+          <View
+            style={[
+              styles.boardStats,
+              { borderColor: tokens.colors.divider, backgroundColor: tokens.colors.surface },
+            ]}
+          >
+            <View style={[styles.boardStat, { padding: tokens.spacing.md, gap: tokens.spacing.xs }]}>
+              <Text variant="caption" tone="muted">Tổng đã quét</Text>
+              <Text variant="metric" tone="strong">{String(scannedCount)}</Text>
+              <Text variant="caption" tone="muted">lượt quét</Text>
+            </View>
+            <View
+              style={[
+                styles.boardStat,
+                styles.boardStatDivider,
+                { padding: tokens.spacing.md, gap: tokens.spacing.xs, borderLeftColor: tokens.colors.divider },
+              ]}
+            >
+              <Text variant="caption" tone="muted">Mã hợp lệ</Text>
+              <Text variant="metric" style={{ color: tokens.colors.success }}>{String(scannedCount)}</Text>
+              <Text variant="caption" tone="muted">đã xác minh</Text>
+            </View>
+          </View>
+        </Box>
+
+        {cameraError === undefined ? null : (
+          <Banner tone="danger" title="Camera gặp lỗi" message={cameraError} />
+        )}
+        {isScanResultVisible && scanResult !== undefined ? (
+          <Banner
+            tone={scanResult.tone === 'success' ? 'success' : 'danger'}
+            title={scanResult.tone === 'success' ? 'Quét thành công' : 'Không thể thêm mã'}
+            message={scanResult.message}
+          />
+        ) : null}
+
+        <Button
+          label={doneLabel}
+          onPress={onDone}
+          disabled={scannedCount === 0 || isProcessing || isDecodingImage || scanPaused}
+        />
+
+        <Sheet
+          visible={manualOpen}
+          onDismiss={() => {
+            setManualError(undefined);
+            setManualOpen(false);
+          }}
+          title="Nhập mã thủ công"
+          message="Mã nhập tay cũng kiểm tra trùng và tồn tại trên WMS"
+        >
+          <CodeInput
+            label="Mã sản phẩm / mã tem"
+            placeholder="Nhập QR, barcode hoặc serial"
+            value={manualCode}
+            onChangeText={value => {
+              setManualCode(value);
+              setManualError(undefined);
+            }}
+            returnKeyType="done"
+            onSubmitEditing={submitManual}
+          />
+          {manualError === undefined ? null : (
+            <Text variant="caption" style={{ color: tokens.colors.dangerText }}>
+              {manualError}
+            </Text>
+          )}
+          <Button label="Kiểm tra mã" onPress={submitManual} loading={isProcessing} disabled={manualCode.trim() === '' || isProcessing} />
+          <Button label="Huỷ" variant="secondary" onPress={() => setManualOpen(false)} />
+        </Sheet>
+      </Page>
+    );
+  }
 
   return (
     <View style={styles.root}>

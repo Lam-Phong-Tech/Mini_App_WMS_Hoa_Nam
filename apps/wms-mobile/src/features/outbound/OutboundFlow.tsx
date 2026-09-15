@@ -389,6 +389,7 @@ export function OutboundFlow({
             draft.form.name === '' ? 'Phiếu xuất kho' : draft.form.name
           }
           stepLabel="Bước 2/3"
+          layout="board"
           sessionLabel="Phiếu xuất đang quét"
           scannedCount={outboundProgress(draft).scanned}
           // Badge hiện `N/M` như ảnh 28 — luồng xuất có mốc số lượng.
