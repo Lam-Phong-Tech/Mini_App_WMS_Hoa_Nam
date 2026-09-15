@@ -31,6 +31,9 @@ import { parseRefreshPayload, sessionFromRefresh } from '../../auth/tokenRefresh
 
 export const LOGIN_PATH = '/api/v1/auth/login';
 export const LOGOUT_PATH = '/api/v1/auth/logout';
+export const FORGOT_PASSWORD_PATH = '/api/v1/auth/forgot-password';
+export const VERIFY_OTP_PATH = '/api/v1/auth/verify-otp';
+export const RESET_PASSWORD_PATH = '/api/v1/auth/reset-password';
 
 export interface Credentials {
   readonly email: string;
@@ -43,6 +46,11 @@ export interface LoginDeps {
   readonly now?: () => number;
 }
 
+export interface PasswordRecoveryDeps {
+  /** Tiêm POST để kiểm thử mà không gửi OTP thật. */
+  readonly post?: (path: string, body: unknown) => Promise<unknown>;
+}
+
 async function defaultPost(path: string, body: unknown): Promise<unknown> {
   const response = await apiClient.request<unknown>({
     path,
@@ -50,6 +58,81 @@ async function defaultPost(path: string, body: unknown): Promise<unknown> {
     body,
   });
   return response.data;
+}
+
+function authResponseData<T>(raw: unknown, path: string): T {
+  if (typeof raw !== 'object' || raw === null) {
+    throw new AppError({ kind: 'parse', route: path, message: 'Phản hồi xác thực không hợp lệ.' });
+  }
+  const envelope = raw as { success?: unknown; data?: unknown; message?: unknown };
+  if (envelope.success === false) {
+    throw new AppError({
+      kind: 'http',
+      route: path,
+      message: typeof envelope.message === 'string' ? envelope.message : 'Máy chủ từ chối yêu cầu xác thực.',
+    });
+  }
+  return envelope.data as T;
+}
+
+/** Gửi email OTP đặt lại mật khẩu. Chỉ được gọi khi người dùng bấm gửi. */
+export async function forgotPassword(
+  email: string,
+  deps: PasswordRecoveryDeps = {},
+): Promise<void> {
+  const normalized = email.trim().toLowerCase();
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(normalized)) {
+    throw new AppError({ kind: 'config', route: FORGOT_PASSWORD_PATH, message: 'Email không hợp lệ.' });
+  }
+  const raw = await (deps.post ?? defaultPost)(FORGOT_PASSWORD_PATH, { email: normalized });
+  authResponseData<unknown>(raw, FORGOT_PASSWORD_PATH);
+}
+
+export interface VerifyOtpResult {
+  readonly reset_token?: string;
+  readonly token?: string;
+}
+
+/** Xác thực OTP và giữ reset token chỉ trong state bộ nhớ của flow. */
+export async function verifyPasswordOtp(
+  email: string,
+  otp: string,
+  deps: PasswordRecoveryDeps = {},
+): Promise<VerifyOtpResult> {
+  const raw = await (deps.post ?? defaultPost)(VERIFY_OTP_PATH, {
+    email: email.trim().toLowerCase(),
+    otp: otp.trim(),
+  });
+  const data = authResponseData<VerifyOtpResult>(raw, VERIFY_OTP_PATH);
+  if (typeof data?.reset_token !== 'string' && typeof data?.token !== 'string') {
+    throw new AppError({ kind: 'parse', route: VERIFY_OTP_PATH, message: 'WMS không trả reset_token sau khi xác thực OTP.' });
+  }
+  return data;
+}
+
+/** Đặt mật khẩu mới; không lưu mật khẩu/reset token vào storage hay log. */
+export async function resetPassword(
+  input: {
+    email: string;
+    resetToken: string;
+    newPassword: string;
+    newPasswordConfirmation: string;
+  },
+  deps: PasswordRecoveryDeps = {},
+): Promise<void> {
+  if (input.newPassword.length < 8) {
+    throw new AppError({ kind: 'config', route: RESET_PASSWORD_PATH, message: 'Mật khẩu mới phải có ít nhất 8 ký tự.' });
+  }
+  if (input.newPassword !== input.newPasswordConfirmation) {
+    throw new AppError({ kind: 'config', route: RESET_PASSWORD_PATH, message: 'Mật khẩu xác nhận không khớp.' });
+  }
+  const raw = await (deps.post ?? defaultPost)(RESET_PASSWORD_PATH, {
+    email: input.email.trim().toLowerCase(),
+    reset_token: input.resetToken,
+    new_password: input.newPassword,
+    new_password_confirmation: input.newPasswordConfirmation,
+  });
+  authResponseData<unknown>(raw, RESET_PASSWORD_PATH);
 }
 
 /**

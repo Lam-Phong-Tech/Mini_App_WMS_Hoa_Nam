@@ -30,6 +30,10 @@ const styles = StyleSheet.create({
     padding: 20,
     backgroundColor: 'rgba(18, 56, 78, 0.52)',
   },
+  /** See Sheet: on Web the dismissal target must not wrap panel buttons. */
+  dismissHitArea: {
+    ...StyleSheet.absoluteFill,
+  },
   panel: {
     width: '100%',
     maxWidth: 360,
@@ -115,15 +119,16 @@ export function Dialog({
       onRequestClose={dismiss}
       accessibilityViewIsModal
     >
-      <Pressable
-        accessibilityRole={dismissible ? 'button' : undefined}
-        accessibilityLabel={dismissible ? 'Đóng hộp thoại' : undefined}
-        onPress={dismiss}
-        style={styles.backdrop}
-      >
-        <Pressable
-          accessible={false}
-          onPress={() => undefined}
+      <View style={styles.backdrop}>
+        {dismissible ? (
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="Đóng hộp thoại"
+            onPress={dismiss}
+            style={styles.dismissHitArea}
+          />
+        ) : null}
+        <View
           style={[
             styles.panel,
             {
@@ -163,8 +168,8 @@ export function Dialog({
               </ScrollView>
             </KeyboardAvoidingView>
           </KeyboardViewportContext.Provider>
-        </Pressable>
-      </Pressable>
+        </View>
+      </View>
     </Modal>
   );
 }

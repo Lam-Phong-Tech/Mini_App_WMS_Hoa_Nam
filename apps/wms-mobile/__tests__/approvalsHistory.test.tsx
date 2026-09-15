@@ -305,8 +305,9 @@ describe('Tra cứu sản phẩm (ảnh 16, 17)', () => {
         })}
       />,
     );
-    // Chưa bấm tra cứu nên chưa có kết quả — mở hộp nhập mã trước.
-    expect(view.text).toContain('Nhập mã thủ công');
+    // Chưa bấm tra cứu nên chưa có kết quả — board mới đặt ô mã trực tiếp trên
+    // màn, thay vì buộc người dùng mở thêm một hộp nhập tay.
+    expect(view.text).toContain('Tra cứu bằng mã');
     await view.unmount();
   });
 

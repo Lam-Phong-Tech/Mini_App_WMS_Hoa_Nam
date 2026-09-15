@@ -61,6 +61,14 @@ export const WMS_READ_PATHS = {
   warrantyAttachmentDownload: '/api/v1/mini-app/warranty-attachments',
   printerConfigs: '/api/v1/mini-app/printer-configs',
   inventoryBalances: '/api/v1/inventory/balances',
+  /** Annex C queryInventory: số dư theo SKU/kho/trạng thái, có filter sku_id. */
+  inventory: '/api/v1/inventory',
+  /** Sổ ledger authoritative, có filter item_id / product_id / code_value. */
+  inventoryLedger: '/api/v1/reports/inventory-ledger',
+  /** Thông báo của chính người dùng đang đăng nhập. */
+  notifications: '/api/v1/notifications',
+  /** Bộ đếm dùng cho chuông ở Trang chủ. */
+  notificationUnreadCount: '/api/v1/notifications/unread-count',
   scanEvents: '/api/v1/scan/events',
   /**
    * 🔴 Trả **403 ACCESS_DENIED** với vai Thủ kho — đo thật 2026-09-05

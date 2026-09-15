@@ -6,7 +6,7 @@
  * liệu vẫn đi từ useHomeSummary và mọi tác vụ vẫn vào luồng WMS thật.
  */
 
-import React, { useCallback } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import {
   Image,
   Pressable,
@@ -25,6 +25,8 @@ import { useTheme } from '../../theme/ThemeProvider';
 import { scannerAssets } from '../../theme/scannerAssets';
 import { messageForUser } from '../../errors/AppError';
 import { useHomeSummary } from './useHomeSummary';
+import { fetchUnreadNotificationCount } from '../../services/wms/notifications';
+import { NotificationPopover } from '../notifications/NotificationPopover';
 
 const styles = StyleSheet.create({
   root: { flex: 1 },
@@ -64,6 +66,18 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
+  notificationBadge: {
+    position: 'absolute',
+    top: 5,
+    right: 1,
+    minWidth: 17,
+    height: 17,
+    paddingHorizontal: 4,
+    borderRadius: 9,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  notificationBadgeText: { color: '#fff', fontSize: 10, fontWeight: '800' },
   welcomeRow: { flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between' },
   welcomeCopy: { flex: 1, minWidth: 0 },
   online: { flexDirection: 'row', alignItems: 'center', borderRadius: 999, paddingHorizontal: 9, paddingVertical: 5 },
@@ -157,6 +171,8 @@ export interface HomeScreenProps {
   onSeeAll?: () => void;
   onOpenDocument?: (kind: 'inbound' | 'outbound', documentId: string) => void;
   onOpenProfile?: () => void;
+  /** AppShell bật khi người dùng có phiên WMS; tắt ở preview/unit test tĩnh. */
+  notificationsEnabled?: boolean;
   deps?: Parameters<typeof useHomeSummary>[0];
 }
 
@@ -183,11 +199,37 @@ export function HomeScreen({
   onSeeAll,
   onOpenDocument,
   onOpenProfile,
+  notificationsEnabled = false,
   deps,
 }: HomeScreenProps): React.ReactElement {
   const theme = useTheme();
   const home = useHomeSummary(deps);
   const user = userName?.trim() || 'bạn';
+  const [unreadNotifications, setUnreadNotifications] = useState<number | undefined>();
+  const notificationRequest = useRef(0);
+  const [notificationPopoverOpen, setNotificationPopoverOpen] = useState(false);
+
+  useEffect(() => {
+    // Những instance Home chỉ dùng trong test/trình xem tĩnh không cần gọi WMS.
+    if (!notificationsEnabled) return;
+    const request = notificationRequest.current + 1;
+    notificationRequest.current = request;
+    fetchUnreadNotificationCount()
+      .then(count => {
+        if (notificationRequest.current === request) setUnreadNotifications(count);
+      })
+      // Chuông vẫn mở được khi mạng tạm lỗi; chỉ không suy đoán badge là 0.
+      .catch(() => {
+        if (notificationRequest.current === request) setUnreadNotifications(undefined);
+      });
+    return () => {
+      notificationRequest.current += 1;
+    };
+  }, [notificationsEnabled]);
+
+  const openNotificationPopover = useCallback(() => {
+    setNotificationPopoverOpen(true);
+  }, []);
 
   const selectTask = useCallback(
     (key: HomeTaskKey) => () => onSelectTask?.(key),
@@ -216,12 +258,17 @@ export function HomeScreen({
                   </View>
                 </View>
                 <View style={[styles.headerActions, { gap: theme.spacing.sm }]}>
-                  <View
-                    accessibilityLabel="Thông báo: Chưa áp dụng"
-                    style={styles.notification}
-                  >
-                    <AppIcon name="notification" size={23} color="#fff" />
-                  </View>
+                  <Pressable
+                      accessibilityRole="button"
+                      accessibilityLabel={unreadNotifications === undefined ? 'Mở thông báo' : 'Mở thông báo. ' + String(unreadNotifications) + ' chưa đọc'}
+                      accessibilityState={{ disabled: !notificationsEnabled }}
+                      disabled={!notificationsEnabled}
+                      onPress={openNotificationPopover}
+                      style={({ pressed }) => [styles.notification, pressed ? styles.pressed : undefined]}
+                    >
+                      <AppIcon name="notification" size={23} color="#fff" />
+                      {unreadNotifications === undefined || unreadNotifications === 0 ? null : <View style={[styles.notificationBadge, { backgroundColor: theme.colors.danger }]}><Text style={styles.notificationBadgeText}>{unreadNotifications > 99 ? '99+' : String(unreadNotifications)}</Text></View>}
+                  </Pressable>
                   <Pressable
                     accessibilityRole="button"
                     accessibilityLabel="Mở trang cá nhân"
@@ -316,6 +363,11 @@ export function HomeScreen({
           </View>}
         </View>
       </ScrollView>
+      <NotificationPopover
+        visible={notificationPopoverOpen}
+        onDismiss={() => setNotificationPopoverOpen(false)}
+        onUnreadCountChange={setUnreadNotifications}
+      />
     </View>
   );
 }

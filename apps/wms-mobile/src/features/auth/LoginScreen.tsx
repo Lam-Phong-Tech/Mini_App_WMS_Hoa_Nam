@@ -166,6 +166,10 @@ const styles = StyleSheet.create({
   revealButton: {
     padding: 5,
   },
+  forgotLink: {
+    alignSelf: 'flex-end',
+    fontWeight: '600',
+  },
   unavailable: {
     alignSelf: 'flex-end',
     maxWidth: '100%',
@@ -197,11 +201,14 @@ export interface LoginScreenProps {
   onSuccess?: () => void;
   /** Tiêm để test không cần mạng. */
   loginFn?: typeof login;
+  /** Mở luồng forgot-password → verify-otp → reset-password. */
+  onForgotPassword?: () => void;
 }
 
 export function LoginScreen({
   onSuccess,
   loginFn = login,
+  onForgotPassword,
 }: LoginScreenProps): React.ReactElement {
   const theme = useTheme();
   const scrollRef = useRef<React.ComponentRef<typeof ScrollView>>(null);
@@ -381,6 +388,17 @@ export function LoginScreen({
           }
         />
 
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel="Quên mật khẩu"
+          onPress={onForgotPassword ?? (() => undefined)}
+          disabled={submitting}
+        >
+          <Text variant="caption" style={[styles.forgotLink, { color: theme.colors.primary }]}>
+            Quên mật khẩu?
+          </Text>
+        </Pressable>
+
         <Button
           label={submitLabel(form.phase)}
           onPress={handleSubmit}
@@ -411,9 +429,6 @@ export function LoginScreen({
             message="Không đóng ứng dụng trong lúc xác thực."
           />
         ) : null}
-        <Text variant="caption" style={styles.unavailable}>
-          Khôi phục tài khoản: Chưa áp dụng
-        </Text>
       </View>
 
       <Text variant="caption" style={styles.footer}>

@@ -301,7 +301,7 @@ describe('màn Đăng nhập dựng được và bám reference Designer', () =>
     expect(view.text).toContain('WMS · Vận hành chuyên nghiệp');
     expect(view.text).toContain('Đăng nhập để bắt đầu phiên làm việc');
     expect(view.text).toContain('Tên đăng nhập');
-    expect(view.text).toContain('Khôi phục tài khoản: Chưa áp dụng');
+    expect(view.text).toContain('Quên mật khẩu?');
     expect(view.text).toContain('Đăng nhập');
     await view.unmount();
   });

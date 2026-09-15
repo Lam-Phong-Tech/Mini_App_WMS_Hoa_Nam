@@ -1,0 +1,90 @@
+{
+  "schema_version": 1,
+  "prompt_id": "06",
+  "status": "PASS",
+  "lifecycle": [
+    { "status": "NOT_STARTED", "at": "2026-09-16T08:00:00+07:00", "reason": "Prompt 06 assigned." },
+    { "status": "RUNNING", "at": "2026-09-16T08:10:00+07:00", "reason": "Gate 05 reconciled as PASS; board and read-only contract inspected." },
+    { "status": "BLOCKED", "at": "2026-09-16T08:40:00+07:00", "reason": "Visual fixture, location/history contract and NFC acceptance were pending." },
+    { "status": "PASS", "at": "2026-09-16T09:15:00+07:00", "reason": "User approved the Xiaomi fixture and explicitly deferred BE location/history enrichment validation." }
+  ],
+  "agent": "Codex",
+  "baseline_revision": {
+    "app": "7f4d4006608009c400a4d6652200db030677db86",
+    "designer": "90b0032b970e4f40cf4ccc8a95407577f1ab720a"
+  },
+  "input_revision": {
+    "workspace_head": "c5489b3a74aa9494ae1675ec70907313076d4082",
+    "gate_05_status": "PASS",
+    "gate_05_sha256": "6ec1a0eecef2a0bb2728aac8c8fad1bf15be0a5e98a5a8d1f9a58bd0b50360d4"
+  },
+  "dependency_gates": [
+    { "prompt_id": "00", "status": "PASS" },
+    { "prompt_id": "01", "status": "PASS" },
+    { "prompt_id": "02", "status": "PASS" },
+    { "prompt_id": "03", "status": "PASS" },
+    { "prompt_id": "04", "status": "PASS", "sha256": "303923d145635b8a1cae74d0d4638ec48a5d23d10c3b2a761ec834e325c470d4" },
+    { "prompt_id": "05", "status": "PASS", "sha256": "6ec1a0eecef2a0bb2728aac8c8fad1bf15be0a5e98a5a8d1f9a58bd0b50360d4" }
+  ],
+  "scope": {
+    "included": ["lookup UI", "direct Home lookup entry", "read-only trace/catalogue adapter", "cancellation/stale-response guard", "NFC lookup enrichment", "regression tests"],
+    "excluded": ["backend/API/schema changes", "location/history inference", "record/Post/mutation", "new package", "Prompt 07"],
+    "scope_revision": "User approved Xiaomi fixture. Only confirmed trace/catalogue data is rendered; BE location/history enrichment is deferred for later validation."
+  },
+  "changed_files": [
+    "apps/wms-mobile/src/app/AppShell.tsx",
+    "apps/wms-mobile/src/features/lookup/LookupScreen.tsx",
+    "apps/wms-mobile/src/features/lookup/inventoryLookup.ts",
+    "apps/wms-mobile/src/features/nfc/NfcLookupScreen.tsx",
+    "apps/wms-mobile/__tests__/lookupScreen.test.tsx",
+    "apps/wms-mobile/__tests__/inventoryLookup.test.ts",
+    "apps/wms-mobile/__tests__/nfcLookup.test.ts",
+    "apps/wms-mobile/__tests__/approvalsHistory.test.tsx",
+    "apps/wms-mobile/docs/uiux-scanner/evidence/06/state-matrix.md",
+    "apps/wms-mobile/docs/uiux-scanner/evidence/06/changes.md",
+    "apps/wms-mobile/docs/uiux-scanner/evidence/06/checks.md",
+    "apps/wms-mobile/docs/uiux-scanner/evidence/06/blockers.md",
+    "apps/wms-mobile/docs/uiux-scanner/evidence/06/fixture.md",
+    "apps/wms-mobile/docs/uiux-scanner/evidence/06/gate.json",
+    "apps/wms-mobile/docs/uiux-scanner/evidence/06/fixture-06-lookup-ready-xiaomi-1440x3200.png",
+    "apps/wms-mobile/docs/uiux-scanner/evidence/06/android-nfc-lookup-resolved.png"
+  ],
+  "output_revision": {
+    "kind": "uncommitted source and evidence",
+    "content_hashes": {
+      "lookup_screen": "5cf0ccaef87e69e75bd9219539d327171bff2d879795da43f1b2eef8aae19d51",
+      "inventory_lookup": "04aab2592f8e959ab71dd0e9a128d613e90900fd9671f1bdc0b216bd8b1feda3",
+      "nfc_lookup": "614ee828f31363b43678af7f2f45e31ded54d19400f8fd5fe743e5d9901beb4e",
+      "app_shell": "3343a886d10d60a355ded36a6962d09409135a949ca034f569c00f51e3e88864",
+      "lookup_tests": "78e936a63fb6428be141869cdbad4b4e1cc42b0e25a461e23dd2f00f9e1e3571",
+      "inventory_lookup_tests": "da94828e48569db90034ba345176ea59706a5f3d51edb0a6578d28af9159ab81",
+      "nfc_lookup_tests": "93aa3012958b3bf9ddee5b01ca45f42fd068b922fd9a97aae7eb75ab7d18d023",
+      "fixture": "a73ee7579841c8b593b8eed6bc09314a97a9bf7e9771918e8fb66432f5c9cefa",
+      "nfc_evidence": "493bc9c2dc21a4f8645a77570f126d36462ebae27c33633d2f591f5bc4266ed6"
+    }
+  },
+  "checks": [
+    { "id": "prerequisite-gates", "status": "PASS", "evidence": "Gates 00–05 are PASS." },
+    { "id": "board-inspection", "status": "PASS", "evidence": "Pinned Designer board 04_tra_cuu.png opened directly." },
+    { "id": "lookup-race-and-errors", "status": "PASS", "evidence": "Regression covers blank code, abort, response inversion, 4xx not-found and network error." },
+    { "id": "full-tests", "status": "PASS", "command": "npm test -- --runInBand --silent", "exit_code": 0, "detail": "37 suites / 893 tests" },
+    { "id": "typecheck", "status": "PASS", "command": "npm run typecheck", "exit_code": 0 },
+    { "id": "lint", "status": "PASS", "command": "npm run lint", "exit_code": 0 },
+    { "id": "web-build", "status": "PASS", "command": "npm run build:web", "exit_code": 0 },
+    { "id": "web-read-only-smoke", "status": "PASS", "evidence": "Known and not-found lookup were exercised; CDP observed only GET trace, no mutation." },
+    { "id": "sku-name-mapping", "status": "PASS", "evidence": "BE resolved_object.sku_name is now mapped. Web displays Máy Khoan cắt điện for DF1234; NFC enriches missing names through GET trace." },
+    { "id": "visual-fixture", "status": "PASS", "evidence": "User-approved Xiaomi fixture fixture-06-lookup-ready-xiaomi-1440x3200.png." },
+    { "id": "physical-nfc", "status": "PASS", "evidence": "Registered tag resolved to DF1234-01 / DF1234 on Xiaomi; disabled-NFC error also verified." },
+    { "id": "location-history-contract", "status": "NOT_RUN", "evidence": "Deferred by explicit user scope decision until BE contract exists." }
+  ],
+  "unresolved_blockers": [],
+  "deferred_validation": [
+    "BE read contract for per-location stock and item transaction history; reopen and test after BE implementation."
+  ],
+  "approvals": [
+    { "source": "user assignment", "excerpt": "PROMPT 06 — Tra cứu", "effect": "Authorized Prompt 06 implementation." },
+    { "source": "user message 2026-09-16", "excerpt": "tôi chốt còn phần BE bổ sung cho pass tạm đi BE bổ sung sau sẽ để kiểm tra thêm sau", "effect": "Approved Xiaomi fixture and deferred only BE location/history enrichment validation." }
+  ],
+  "next_stage_allowed": true,
+  "next_stage": "Prompt 07 may be opened by an explicit user assignment. Re-run deferred BE validation when the contract is available."
+}

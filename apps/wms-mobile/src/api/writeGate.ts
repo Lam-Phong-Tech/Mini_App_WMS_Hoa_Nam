@@ -22,7 +22,7 @@
  *
  * ⇒ Cờ môi trường vẫn `false`; đường đi duy nhất là danh sách dưới đây.
  *
- * ## Hai mươi thao tác được duyệt
+ * ## Hai mươi hai thao tác được duyệt
  *
  * | Thao tác | Rủi ro | Header đặc biệt |
  * |---|---|---|
@@ -93,7 +93,7 @@
  * sẽ lọt qua đúng chỗ nguy hiểm nhất.
  */
 
-/** Hai mươi thao tác được duyệt. */
+/** Hai mươi hai thao tác được duyệt. */
 export type ApprovedWrite =
   | 'inbound.resolveCode'
   | 'inbound.record'
@@ -116,7 +116,10 @@ export type ApprovedWrite =
   | 'nfc.prepare'
   | 'nfc.confirm'
   | 'nfc.resolveTag'
-  | 'nfc.deactivate';
+  | 'nfc.deactivate'
+  /** Chỉ đổi cờ đã đọc của thông báo thuộc chính tài khoản hiện tại. */
+  | 'notifications.markRead'
+  | 'notifications.markAllRead';
 
 interface ApprovedWriteEntry {
   readonly id: ApprovedWrite;
@@ -241,6 +244,18 @@ const APPROVED_WRITES: readonly ApprovedWriteEntry[] = [
     id: 'nfc.deactivate',
     method: 'POST',
     segments: segmentsOf('/api/v1/mini-app/nfc-tags/{id}/deactivate'),
+  },
+  // Người dùng chủ động đánh dấu đã đọc. Không có endpoint tạo/xoá/broadcast
+  // nào được mở từ app quét.
+  {
+    id: 'notifications.markRead',
+    method: 'PATCH',
+    segments: segmentsOf('/api/v1/notifications/{id}/read'),
+  },
+  {
+    id: 'notifications.markAllRead',
+    method: 'POST',
+    segments: segmentsOf('/api/v1/notifications/read-all'),
   },
   // 🔴 `DELETE warranty-attachments/{id}` cố ý VẮNG MẶT — chưa duyệt, và sẽ là
   // method DELETE đầu tiên nếu được mở.

@@ -110,7 +110,6 @@ class NfcModule(private val context: ReactApplicationContext) :
       claimed
     } ?: return
 
-    disableReaderMode()
     try {
       val uid = uidOf(tag)
       if (uid.isBlank()) {
@@ -141,6 +140,12 @@ class NfcModule(private val context: ReactApplicationContext) :
       request.promise.reject(failure.code, failure.message)
     } catch (error: Exception) {
       request.promise.reject("NFC_IO_ERROR", error.message ?: "Không đọc/ghi được thẻ NFC.", error)
+    } finally {
+      // Reader mode phải còn hoạt động trong toàn bộ chuỗi connect → write →
+      // read-back. Tắt nó ngay khi callback bắt đầu có thể cắt RF trước khi
+      // Ndef kịp giao tiếp với thẻ: UID vẫn đọc được nhưng ghi/xác minh thất
+      // bại ngẫu nhiên bằng NFC_IO_ERROR.
+      disableReaderMode()
     }
   }
 

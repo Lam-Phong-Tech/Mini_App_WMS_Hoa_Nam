@@ -1,11 +1,12 @@
 {
   "schema_version": 1,
   "prompt_id": "05",
-  "status": "BLOCKED",
+  "status": "PASS",
   "lifecycle": [
     { "status": "NOT_STARTED", "at": "2026-09-12T08:55:00+07:00" },
     { "status": "RUNNING", "at": "2026-09-12T09:00:00+07:00", "reason": "Gates 00–04 and source preflight passed." },
-    { "status": "BLOCKED", "at": "2026-09-12T09:20:00+07:00", "reason": "Local checks pass; DEV write and board visual evidence are not run." }
+    { "status": "BLOCKED", "at": "2026-09-14T17:52:00+07:00", "reason": "DEV E2E completed; board visual diff remains outstanding." },
+    { "status": "PASS", "at": "2026-09-15T23:47:00+07:00", "reason": "User approved the newest Xiaomi outbound-review screenshot as the Gate 05 acceptance fixture." }
   ],
   "agent": "Codex",
   "baseline_revision": {
@@ -18,11 +19,14 @@
     "gate_04_sha256": "fbd1e247d1f01110303a9a5362623b80a05db55662f751132ce0effe0ac0b8a9"
   },
   "output_revision": {
-    "kind": "uncommitted source and evidence",
+    "kind": "main c5489b3 plus uncommitted shared UI fix and evidence",
     "content_hashes": {
-      "outbound_flow": "b1bd5e8851df8b37ffb66f1d5ee57b70cceaf1bc311243b33cd9cfdb8ff6b06f",
-      "outbound_result": "710cc4dcda81041845de14162da63fec9450d0ebc8a63bc0e6662ffb537360b7",
-      "outbound_tests": "3aa082e3113b833cff5bc07e3911eab4bb7b3e770fc14b4a946414a6ae3c5871"
+      "outbound_flow": "dcc582cbbb7a12ee6d222d097bb910c469658f637c3efa48f07ce379929e1c96",
+      "outbound_result": "ea22a49dc1183ebd4b42549665eb2dc54a6e138892ca877abc8309a188ec865a",
+      "outbound_tests": "356a8735c5a002b717ef5337a6263431a7873919df20f4f3a81ce1c767ae1e21",
+      "sheet": "06f9a44dd259c1cefbbbf874cbebb18711bd4c33721cbcd497770a9a3a949b79",
+      "dialog": "33454cb03439e740150069b5aa8daf2dfd5fdf95ac975a7244fb721369d01a07",
+      "fixture_outbound_review": "53b182116f24d0d03d62f01430a18d2ba5889d4124028a39b93a25f382d4ae0b"
     }
   },
   "dependency_gates": [
@@ -35,42 +39,43 @@
   "scope": {
     "included": ["outbound form/scan/review/result", "outbox result semantics", "draft resume/cancel reuse"],
     "excluded": ["BE/API changes", "Post Issue stock mutation", "new motion package"],
-    "scope_revision": "Continue direct App record flow; Web performs approval/Post Issue and stock reduction."
+    "scope_revision": "Continue direct App record flow; Web performs approval/Post Issue and stock reduction. On 2026-09-15 the user replaced the unavailable composite-board pixel diff with the newest Xiaomi outbound-review fixture as Gate 05 visual acceptance."
   },
   "changed_files": [
     "apps/wms-mobile/src/features/outbound/OutboundFlow.tsx",
     "apps/wms-mobile/src/features/outbound/OutboundResultScreen.tsx",
     "apps/wms-mobile/__tests__/outboundFlow.test.tsx",
+    "apps/wms-mobile/src/ui/Sheet.tsx",
+    "apps/wms-mobile/src/ui/Dialog.tsx",
     "apps/wms-mobile/docs/uiux-scanner/evidence/05/state-matrix.md",
     "apps/wms-mobile/docs/uiux-scanner/evidence/05/changes.md",
     "apps/wms-mobile/docs/uiux-scanner/evidence/05/checks.md",
     "apps/wms-mobile/docs/uiux-scanner/evidence/05/blockers.md",
     "apps/wms-mobile/docs/uiux-scanner/evidence/05/gate.json",
     "apps/wms-mobile/docs/uiux-scanner/evidence/05/android-metro-launch.png",
-    "apps/wms-mobile/docs/uiux-scanner/evidence/05/android-outbound-create.png"
+    "apps/wms-mobile/docs/uiux-scanner/evidence/05/android-outbound-create.png",
+    "apps/wms-mobile/docs/uiux-scanner/evidence/05/fixture-05-outbound-review-xiaomi-1440x3200.png",
+    "apps/wms-mobile/docs/uiux-scanner/evidence/05/fixture.md"
   ],
   "checks": [
     { "id": "prerequisite-gates", "status": "PASS", "evidence": "Gates 00–04 are PASS and Gate 04 hash is recorded." },
     { "id": "typecheck", "status": "PASS", "command": "npm run typecheck", "exit_code": 0 },
     { "id": "lint", "status": "PASS", "command": "npm run lint", "exit_code": 0 },
-    { "id": "full-tests", "status": "PASS", "command": "npm test -- --runInBand", "exit_code": 0, "detail": "33 suites / 874 tests" },
+    { "id": "full-tests", "status": "PASS", "command": "npm test -- --runInBand --silent", "exit_code": 0, "detail": "35 suites / 886 tests" },
     { "id": "web-build", "status": "PASS", "command": "npm run build:web", "exit_code": 0 },
     { "id": "web-smoke", "status": "PASS", "evidence": "Local browser form validation, dependent province/ward selectors, create-to-scan transition and camera fallback were exercised." },
     { "id": "android-launch", "status": "PASS", "evidence": "Debug APK installed on Xiaomi 2206122SC (fbb9e686); Metro over adb reverse loaded Home. Screenshot: android-metro-launch.png." },
     { "id": "android-outbound-entry", "status": "PASS", "evidence": "Home → Xuất kho opened the real outbound information form on device. Screenshot: android-outbound-create.png." },
     { "id": "outbox-outcomes", "status": "PASS", "evidence": "Regression covers posted/queued/failed/conflict/unknown separately." },
-    { "id": "dev-outbound-e2e", "status": "NOT_RUN", "evidence": "No real DEV record/Post Issue write was performed." },
-    { "id": "visual-diff", "status": "NOT_RUN", "evidence": "No same-fixture board capture/diff saved." },
-    { "id": "physical-outbound-camera", "status": "NOT_RUN", "evidence": "Gate 04 scanner camera evidence is not an outbound E2E result." }
+    { "id": "dev-outbound-e2e", "status": "PASS", "evidence": "Admin resolved DF12345-03 and record succeeded as PX-20260914055046-RWYUUS; no Post Issue was called." },
+    { "id": "visual-fixture", "status": "PASS", "evidence": "User-approved latest Xiaomi fixture: fixture-05-outbound-review-xiaomi-1440x3200.png (1440x3200, SHA-256 53B182116F24D0D03D62F01430A18D2BA5889D4124028A39B93A25F382D4AE0B). This supersedes the former unavailable composite-board pixel-diff acceptance for Gate 05 only." },
+    { "id": "physical-outbound-camera", "status": "PASS", "evidence": "Xiaomi camera opened the Xuất kho BusinessScan screen; manual resolve completed on the same session." }
   ],
   "approvals": [
-    { "source": "Prompt 05 user constraints", "excerpt": "Xuất kho chính chỉ ghi nhận và chờ xử lý Web; không gọi Post Issue trên App.", "effect": "No stock mutation was executed." }
+    { "source": "Prompt 05 user constraints", "excerpt": "Xuất kho chính chỉ ghi nhận và chờ xử lý Web; không gọi Post Issue trên App.", "effect": "No stock mutation was executed." },
+    { "source": "user message 2026-09-15", "excerpt": "hãy tự chụp bản mới nhất và lấy đó làm tiêu chí hoàn thiện", "effect": "The newest Xiaomi review screenshot is the approved Gate 05 visual fixture; the former composite-board pixel-diff blocker is closed." }
   ],
-  "unresolved_blockers": [
-    "DEV outbound record/Post Issue E2E with authorized test data",
-    "390×844 DPR3 board visual capture and quantitative diff",
-    "Optional physical outbound scan acceptance"
-  ],
-  "next_stage_allowed": false,
-  "next_stage": "Close blockers with authorized DEV/visual evidence, then re-evaluate Gate 05."
+  "unresolved_blockers": [],
+  "next_stage_allowed": true,
+  "next_stage": "Prompt 06 may be opened by an explicit user assignment."
 }

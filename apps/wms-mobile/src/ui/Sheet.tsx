@@ -37,6 +37,14 @@ const styles = StyleSheet.create({
     justifyContent: 'flex-end',
     backgroundColor: 'rgba(47, 43, 61, 0.55)',
   },
+  /**
+   * Phủ riêng vùng nền để panel không trở thành con của một nút bấm trên Web.
+   * Nếu bọc cả Sheet bằng Pressable thì React Native Web sinh ra `<button>`
+   * chứa các button của danh sách chọn — HTML không hợp lệ và làm hỏng focus.
+   */
+  dismissHitArea: {
+    ...StyleSheet.absoluteFill,
+  },
   panel: {
     width: '100%',
     maxHeight: '92%',
@@ -115,16 +123,19 @@ export function Sheet({
       // hành vi back của app cũ chưa từng được test; ở đây nối rõ ràng.
       onRequestClose={onDismiss}
     >
-      <Pressable
-        accessibilityRole="button"
-        accessibilityLabel="Đóng hộp thoại"
-        onPress={onDismiss}
-        style={styles.backdrop}
-      >
-        {/* Chặn sự kiện chạm lọt xuống nền: bấm TRONG tấm thì không đóng. */}
+      <View style={styles.backdrop}>
+        {/*
+         * Vùng đóng là sibling nằm sau panel, không phải wrapper của panel.
+         * Nhờ vậy bấm trong Sheet không đóng, còn button bên trong không lồng
+         * trong một HTML button khi chạy Web.
+         */}
         <Pressable
-          accessible={false}
-          onPress={() => undefined}
+          accessibilityRole="button"
+          accessibilityLabel="Đóng hộp thoại"
+          onPress={onDismiss}
+          style={styles.dismissHitArea}
+        />
+        <View
           style={[
             styles.panel,
             {
@@ -177,8 +188,8 @@ export function Sheet({
               </ScrollView>
             </KeyboardAvoidingView>
           </KeyboardViewportContext.Provider>
-        </Pressable>
-      </Pressable>
+        </View>
+      </View>
     </Modal>
   );
 }

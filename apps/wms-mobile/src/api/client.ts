@@ -80,6 +80,9 @@ const GATE_EXEMPT_AUTH_PATHS: readonly string[] = [
   '/api/v1/auth/login',
   '/api/v1/auth/refresh',
   '/api/v1/auth/logout',
+  '/api/v1/auth/forgot-password',
+  '/api/v1/auth/verify-otp',
+  '/api/v1/auth/reset-password',
 ];
 
 /** BE auth contract: tokens are returned/accepted in JSON body for the whole

@@ -146,6 +146,10 @@ const ProfileScreen = lazy(async () => {
   const module = await import('../features/profile/ProfileScreen');
   return { default: module.ProfileScreen };
 });
+const ForgotPasswordFlow = lazy(async () => {
+  const module = await import('../features/auth/ForgotPasswordFlow');
+  return { default: module.ForgotPasswordFlow };
+});
 
 function LazyScreen({ children }: { children: React.ReactNode }): React.ReactElement {
   return (
@@ -218,6 +222,7 @@ function renderTab(
           onSeeAll={handlers.onOpenDocuments}
           onOpenDocument={handlers.onOpenDocument}
           onOpenProfile={handlers.onOpenProfile}
+          notificationsEnabled
         />
       );
     default:
@@ -251,6 +256,7 @@ export function AppShell(): React.ReactElement {
     | 'inventory-scan'
     | 'inventory-lookup'
     | 'session-confirmation'
+    | 'forgot-password'
     | undefined
   >();
   /**
@@ -309,6 +315,10 @@ export function AppShell(): React.ReactElement {
     // Xác nhận phiên chỉ được rời bằng hai CTA có chủ đích. Back không được
     // bỏ qua nó để nhảy thẳng vào Home sau một đăng nhập mới.
     if (flow === 'session-confirmation') {
+      return true;
+    }
+    if (flow === 'forgot-password') {
+      setFlow(undefined);
       return true;
     }
     if (flow === 'warranty-components') {
@@ -393,7 +403,9 @@ export function AppShell(): React.ReactElement {
   const handleTask = useCallback((key: HomeTaskKey) => {
     if (key === 'lookup') {
       setInventoryLookupCode(undefined);
-      setFlow('inventory-scan');
+      // Home CTA mở thẳng tra cứu. Camera là một lựa chọn bên trong màn đó,
+      // không bắt thủ kho đi qua màn quét khi họ chỉ muốn gõ SKU/serial.
+      setFlow('inventory-lookup');
     } else if (key === 'inbound' || key === 'outbound' || key === 'warranty') {
       setFlow(key);
     } else if (key === 'nfc') {
@@ -489,7 +501,22 @@ export function AppShell(): React.ReactElement {
   }
 
   if (session === undefined) {
-    return <LoginScreen onSuccess={handleLoggedIn} />;
+    if (flow === 'forgot-password') {
+      return (
+        <LazyScreen>
+          <ForgotPasswordFlow
+            onBack={() => setFlow(undefined)}
+            onDone={() => setFlow(undefined)}
+          />
+        </LazyScreen>
+      );
+    }
+    return (
+      <LoginScreen
+        onSuccess={handleLoggedIn}
+        onForgotPassword={() => setFlow('forgot-password')}
+      />
+    );
   }
 
   // Chi tiết chứng từ chồng lên tab — kiểm TRƯỚC luồng nghiệp vụ vì người dùng
@@ -736,7 +763,7 @@ export function AppShell(): React.ReactElement {
             onLookupNfc: () => setFlow('nfc-lookup'),
             onScanLookup: () => {
               setInventoryLookupCode(undefined);
-              setFlow('inventory-scan');
+              setFlow('inventory-lookup');
             },
             userName: session.userName ?? session.userId,
             avatarUrl: session.avatarUrl,
