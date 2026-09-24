@@ -29,5 +29,6 @@ export const SystemStatePanel = ({ state, onRetry }: SystemStatePanelProps) => (
     {onRetry && state.kind !== "maintenance" && state.kind !== "update-required" ? (
       <Button variant="primary" onClick={onRetry}>Thử lại</Button>
     ) : null}
+    {state.kind === "no-network" ? <a className="system-state__hotline" href="tel:0986366675">Gọi hotline</a> : null}
   </section>
 );

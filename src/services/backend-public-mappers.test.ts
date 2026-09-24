@@ -121,6 +121,7 @@ describe("public storefront backend mappers", () => {
     });
 
     expect(home.sections[0].kind).toBe("RECENTLY_UPDATED");
+    expect(home.sections[0].source_code).toBe("NEWEST");
     expect(categories[0]).toMatchObject({ code: "PUMP", display_name: "Máy bơm nước", sort_order: 1 });
     expect(detail).toMatchObject({
       product_id: backendProduct.id,

@@ -63,6 +63,24 @@ export const isPreorderAvailability = (availability: PublicAvailability): boolea
 export const getAvailabilityLabel = (availability: PublicAvailability): "Sẵn hàng" | "Đặt trước" =>
   isPreorderAvailability(availability) ? "Đặt trước" : "Sẵn hàng";
 
+/** The public API may append the model and variant group to a marketing name
+ * (for example, `Tên sản phẩm - DCZC02-26 (EM/FK/H2K/Z)`).  The model is
+ * rendered in its own UI field, so repeating that suffix turns a two-line
+ * title into three lines and diverges from the approved product cards. */
+export const getProductDisplayName = (
+  product: Pick<ProductCardDto, "name" | "model" | "primary_code">,
+): string | null => {
+  const name = visibleText(product.name);
+  const model = visibleText(product.model);
+  const primaryCode = visibleText(product.primary_code);
+  if (!name) return null;
+
+  const suffix = primaryCode ?? model;
+  if (!suffix) return name;
+  const escapedSuffix = suffix.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  return name.replace(new RegExp(`\\s*-\\s*${escapedSuffix}(?:\\s*\\([^)]*\\))?\\s*$`, "iu"), "").trim() || name;
+};
+
 export const getPublicProducts = (
   products: ProductCardDto[] | undefined,
 ): ProductCardDto[] => (products ?? []).filter(isEligiblePublicProduct);

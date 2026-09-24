@@ -7,6 +7,7 @@ import {
   getCanonicalDomains,
   getAvailabilityLabel,
   getNextRenderedProductCount,
+  getProductDisplayName,
   getPublicProducts,
   getSearchMatchRank,
   getVisibleDetailSections,
@@ -148,6 +149,14 @@ describe("catalogue contract presentation", () => {
     expect(isPublicMediaUrl("not-a-public-url")).toBe(false);
     expect(MOBILE_TOUCH_TARGET_PX).toBeGreaterThanOrEqual(44);
     expect(shouldRefreshFromPull(10, 82, true)).toBe(true);
+  });
+
+  it("removes a repeated public item-code suffix from customer-facing titles", () => {
+    expect(getProductDisplayName(product("title", {
+      name: "Khoan búa dùng pin không chổi than - DCZC02-26 (EM/FK/H2K/Z)",
+      model: "DongCheng sê-ri DCZC",
+      primary_code: "DCZC02-26",
+    }))).toBe("Khoan búa dùng pin không chổi than");
   });
 
   it("maps a stale deep link to the safe Product Unavailable state", () => {

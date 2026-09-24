@@ -1,8 +1,9 @@
-import { useNavigate, useSnackbar } from "zmp-ui";
+import { useNavigate } from "zmp-ui";
 
 import {
   createProductDetailPath,
   getAvailabilityLabel,
+  getProductDisplayName,
   isEligiblePublicProduct,
   isPreorderAvailability,
   visibleText,
@@ -22,7 +23,6 @@ interface ProductCardProps {
 
 export const ProductCard = ({ product, returnPath = "/products", onOpen }: ProductCardProps) => {
   const navigate = useNavigate();
-  const { openSnackbar } = useSnackbar();
   const { savedIds, toggleSaved } = useProductLibrary();
   const { items: compared, toggle: toggleCompare } = useCompare();
   if (!isEligiblePublicProduct(product)) return null;
@@ -33,9 +33,7 @@ export const ProductCard = ({ product, returnPath = "/products", onOpen }: Produ
   const isSaved = savedIds.includes(product.product_id.toLowerCase());
   const isCompared = compared.some((item) => item.product_id === product.product_id);
   const onCompare = () => {
-    const outcome = toggleCompare(product);
-    if (outcome === "limit") openSnackbar({ text: "Chỉ so sánh tối đa 3 sản phẩm.", type: "warning", icon: true });
-    if (outcome === "category") openSnackbar({ text: "Chỉ so sánh sản phẩm cùng nhóm và danh mục.", type: "warning", icon: true });
+    toggleCompare(product);
   };
 
   return (
@@ -49,12 +47,17 @@ export const ProductCard = ({ product, returnPath = "/products", onOpen }: Produ
         }}
         aria-label={`Xem ${product.name}`}
       >
-        <PublicImage media={product.cover_media} alt={product.name} className="product-card__image" />
-        <span className={`availability-chip ${isPreorder ? "availability-chip--preorder" : ""}`}>{getAvailabilityLabel(product.availability)}</span>
+        <div className="product-card__media">
+          <PublicImage media={product.cover_media} alt={product.name} className="product-card__image" />
+          <span className={`availability-chip ${isPreorder ? "availability-chip--preorder" : ""}`}>
+            <UiIcon name={isPreorder ? "clock" : "checkCircle"} size={14} strokeWidth={2} />
+            {getAvailabilityLabel(product.availability)}
+          </span>
+        </div>
         {primaryCode || model ? (
           <span className="product-card__identity">{primaryCode ?? model}</span>
         ) : null}
-        <strong className="product-card__name">{visibleText(product.name)}</strong>
+        <strong className="product-card__name">{getProductDisplayName(product)}</strong>
         <span className="product-card__cta">Xem chi tiết <UiIcon name="arrowRight" size={17} /></span>
       </button>
       <footer className="product-card__actions" aria-label={`Thao tác với ${product.name}`}>
@@ -76,7 +79,7 @@ export const ProductCard = ({ product, returnPath = "/products", onOpen }: Produ
           onClick={onCompare}
         >
           <UiIcon name="gitCompare" size={20} />
-          <span>So sánh</span>
+          <span>{isCompared ? "Đã chọn" : "So sánh"}</span>
         </button>
       </footer>
     </article>

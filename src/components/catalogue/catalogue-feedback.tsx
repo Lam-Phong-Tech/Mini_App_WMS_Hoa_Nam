@@ -31,11 +31,13 @@ export const InfiniteLoadTrigger = ({
   hasMore,
   onLoadMore,
   failure = null,
+  renderedCount,
 }: {
   loading: boolean;
   hasMore: boolean;
   onLoadMore: () => Promise<void>;
   failure?: ApiFailure | null;
+  renderedCount?: number;
 }) => {
   const triggerRef = useRef<HTMLDivElement | null>(null);
 
@@ -57,10 +59,15 @@ export const InfiniteLoadTrigger = ({
     return () => observer.disconnect();
   }, [failure, hasMore, loading, onLoadMore]);
 
-  if (!hasMore) return null;
+  if (!hasMore) {
+    return typeof renderedCount === "number"
+      ? <p className="catalogue-progress">Đã hiển thị {renderedCount} sản phẩm</p>
+      : null;
+  }
 
   return (
     <div className="infinite-load" ref={triggerRef}>
+      {typeof renderedCount === "number" ? <p className="catalogue-progress">Đã hiển thị {renderedCount} sản phẩm</p> : null}
       {loading ? <Spinner /> : null}
       {failure ? <p className="infinite-load__error" role="status">Không thể tải thêm. Nội dung đã hiển thị vẫn được giữ lại.</p> : null}
       <Button variant="secondary" onClick={() => void onLoadMore()} disabled={loading}>

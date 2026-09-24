@@ -103,6 +103,7 @@ export const useProductResults = (
   api: PublicApiAdapter,
   query: ProductQuery,
   enabled = true,
+  initialRenderedCount = PROGRESSIVE_INITIAL_BATCH,
 ): ProductResultsState & { reload: () => Promise<void>; loadMore: () => Promise<void> } => {
   const normalizedQuery = normalizeProductQuery(query);
   const cacheKey = productQueryCacheKey(normalizedQuery);
@@ -154,10 +155,11 @@ export const useProductResults = (
     const nextState = createSuccessState(
       mergeUniqueProducts([], response.data),
       response.meta.next_cursor ?? null,
+      initialRenderedCount,
     );
     setProductListCache(cacheKey, toCacheEntry(nextState));
     setState(nextState);
-  }, [api, cacheKey, enabled]);
+  }, [api, cacheKey, enabled, initialRenderedCount]);
 
   useEffect(() => {
     void loadFirstPage();

@@ -38,6 +38,12 @@ const DOMAIN_PRESENTATION = {
   },
 } as const;
 
+const DOMAIN_TAB_LABELS = {
+  POWER_TOOLS: "Máy công cụ",
+  HAND_TOOLS: "Dụng cụ cầm tay",
+  ACCESSORIES: "Phụ kiện",
+} as const;
+
 type CategoryState =
   | { kind: "loading" | "success-empty"; categories: []; failure: null }
   | { kind: "success-data"; categories: CategoryDto[]; failure: null }
@@ -108,7 +114,7 @@ const CategoryPage = () => {
                 onClick={() => navigate(`/categories?domain=${domain.code}`, { animate: false })}
               >
                 <span className="category-browser__tab-icon"><UiIcon name={presentation.icon} size={23} /></span>
-                <span>{presentation.title}</span>
+                <span>{DOMAIN_TAB_LABELS[domain.code]}</span>
                 {active ? <UiIcon className="category-browser__tab-check" name="check" size={18} /> : null}
               </button>
             );

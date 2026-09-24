@@ -2,10 +2,10 @@
   "schema_version": "1.0",
   "stage": "UIUX-G5",
   "status": "BLOCKED",
-  "recorded_at": "2026-09-12T01:20:52+07:00",
+  "recorded_at": "2026-09-13T10:05:48+07:00",
   "target_base_sha": "411ba4d3ae4e287ef40626aba8ca6794924be1ef",
   "design_source_sha": "86079f965f2fcb43a7e3efbbc9467d119b47921f",
-  "implementation_head_sha": "b471a799854b654631a2d76ece6a3a2a6acbb41e",
+  "implementation_head_sha": "763da9965d0074e5a216004cbf039cab0d0c810c",
   "dirty_diff": {
     "preserved": "The existing uncommitted G1–G4 implementation, evidence and user-local .env*/.tmp files were preserved. The requested structural visual sync is recorded separately and does not revalidate the stale G1–G4 lineage.",
     "g5_changes": [
@@ -41,9 +41,9 @@
   ],
   "output_artifacts": [
     {"path": "docs/uiux-migration/g5/preflight-blockers.md", "sha256": "d4e223425c1994c05091549e9322b1c9ca63f622dc1247fc54a6502913f05659"},
-    {"path": "docs/uiux-migration/g5/visual-matrix-2026-09-11.md", "sha256": "dd66aa9b71ba978cbe5dec9807cb66a8a644b70bb8db5e601b874cf366826de8"},
-    {"path": "docs/uiux-migration/evidence/g5/android-xiaomi-2206122sc-routes-2026-09-12.md", "sha256": "d10a873064965fc73254264b93788baf744eeff33229d8620bd93f7c5f49f3fe"},
-    {"path": "docs/uiux-migration/gates/UIUX-G5.md", "sha256": "cf20e766d2d112c9c39d8763f6f0bbe8e240f8c25448e0c28a0237bb2bc4d7b3"},
+    {"path": "docs/uiux-migration/g5/visual-matrix-2026-09-11.md", "sha256": "ca3f1490b96d8db6413f160a3a9ebed270b9a152e0c3a02d3ea49a97cb5abb1b"},
+    {"path": "docs/uiux-migration/evidence/g5/android-xiaomi-2206122sc-routes-2026-09-12.md", "sha256": "3ac53a66d1551602e2c538969ed250e1a0626ecea90a490d05481227b7e12be4"},
+    {"path": "docs/uiux-migration/gates/UIUX-G5.md", "sha256": "65ba224cb8b9cd75f98b43f17ddef55334e8d0981270f3e479b6af4a37babe23"},
     {"path": "docs/uiux-migration/g5/live-designer-screen-audit-2026-09-10.md", "sha256": "1e081e722bb93643ea0265d694a69d3307153196bc284a4c6046e3a77bd98413"},
     {"path": "docs/uiux-migration/evidence/g5/android-xiaomi-2206122sc-2026-09-10.md", "sha256": "b96840a889777ac9e5c6b1096791fa495ecf8ef721d0cb2ab573de3dbc2543ab"}
   ],
@@ -69,25 +69,25 @@
     {
       "id": "physical-zalo-device-matrix",
       "expected": "At least one named Android and one named iPhone running Zalo provide IME, safe-area, native-back/resume and momentum evidence.",
-      "actual": "PARTIAL: Xiaomi 2206122SC (Android 13, Zalo 26.08.02) now passes Detail, Gallery, Quote entry, two-product Compare, Quote→Compare native Back and the route screenshots recorded on 2026-09-12. Resume reaches the Zalo task, but Compare-state preservation was not confirmed; an iPhone leg and full IME/resume evidence are still missing.",
+      "actual": "PARTIAL: Xiaomi 2206122SC (Android 13, Zalo 26.08.02) on Testing Version 34 passes Home native chrome, Catalogue, Detail, Gallery→Back, Quote entry, Vietnamese IME focus, two-product Compare, Compare→Quote, Quote→Compare native Back and Recent-Apps resume with `2/3 sản phẩm đã chọn` retained. Validation and submission were intentionally not triggered; a named iPhone running Zalo is still missing.",
       "status": "BLOCKED",
       "evidence_paths": ["docs/uiux-migration/g5/preflight-blockers.md", "docs/uiux-migration/evidence/g5/android-xiaomi-2206122sc-2026-09-10.md", "docs/uiux-migration/evidence/g5/android-xiaomi-2206122sc-routes-2026-09-12.md", "docs/uiux-migration/evidence/g5/android-xiaomi-2206122sc-home.png", "docs/uiux-migration/evidence/g5/android-xiaomi-2206122sc-catalogue-deep-scroll.png", "docs/uiux-migration/evidence/g5/android-xiaomi-2206122sc-eruda-console.png"],
-      "command": "ADB physical-device inspection and interaction on fbb9e686; Eruda Console/Network; no quote POST",
+      "command": "ADB physical-device inspection and interaction on fbb9e686 using Testing Version 34; Android Recent Apps resume; no quote POST",
       "exit_code": 0
     },
     {
       "id": "final-visual-motion-matrix",
       "expected": "Every mandatory PV/state/viewport/device case has reference, actual, diff and measurement evidence under an approved final visual/motion rule.",
-      "actual": "BLOCKED: a unified local acceptance target is defined as 375 x 812 CSS px at DPR 3, with .hn-page as the only scroll owner and hidden capture scrollbar. The current desktop computer-use runtime cannot create browser assets (kernel path error), so no truthful current reference/actual/diff capture set can be recorded. Physical iPhone/Zalo evidence is also still missing.",
+      "actual": "BLOCKED: Chrome DevTools Protocol produced same-viewport 375 x 812 / DPR 3 reference, actual and diff captures for Home, Catalogue, Detail, Search and Contact. All exceed the approved 2% mismatch budget (Home 11.290%, Catalogue 14.070%, Detail 11.756%, Search 13.466%, Contact 11.520%). Native iPhone/Zalo evidence is still missing.",
       "status": "BLOCKED",
       "evidence_paths": ["docs/uiux-migration/g5/preflight-blockers.md", "docs/uiux-migration/g5/visual-matrix-2026-09-11.md", "docs/uiux-migration/g2/designer-visual-comparison.md", "docs/uiux-migration/g3/revalidation-2026-09-10.md"],
-      "command": "computer-use browser capture attempt; npm run typecheck; npm run lint; npm test; npm run build; npm run build:dev-preview; npm run build:backend-preview",
+      "command": "Chrome DevTools Protocol iPhone responsive capture/diff; npm run typecheck; npm run lint; npm test; npm run build; npm run build:dev-preview; npm run build:backend-preview",
       "exit_code": 1
     }
   ],
   "unresolved_blockers": [
     "G5-B01: Revalidate and re-record stale G1–G4 lineage against the current working diff and decisions manifest.",
-    "G5-B02 / G5-A01: Repair the global quote-entry control so it does not overlap Zalo native chrome; rerun the blocked Android form/IME/resume cases and supply a named iPhone running Zalo.",
+    "G5-B02: Supply a named iPhone running Zalo and complete an approved validation scenario without entering personal data or submitting a quote.",
     "G5-B03: Capture the defined 375 x 812 CSS px / DPR 3 reference, actual and diff matrix after browser automation is restored; add a named iPhone running Zalo before claiming final visual or motion acceptance."
   ],
   "approved_decision_ids": ["D01", "D02", "D03", "D04", "D05", "D06", "D07", "D08", "D09", "D10", "D11", "D12", "D13"],

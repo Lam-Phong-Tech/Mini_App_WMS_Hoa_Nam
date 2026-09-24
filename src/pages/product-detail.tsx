@@ -82,6 +82,14 @@ const ProductDetailPage = () => {
   };
   const onToggleCompare = () => {
     const outcome = toggleCompare(product);
+    if (outcome === "added") {
+      openSnackbar({
+        text: "Đã thêm sản phẩm vào danh sách so sánh.",
+        type: "success",
+        icon: true,
+        action: { text: "Mở so sánh", close: true, onClick: () => navigate("/compare", { animate: false }) },
+      });
+    }
     if (outcome === "limit") openSnackbar({ text: "Chỉ so sánh tối đa 3 sản phẩm.", type: "warning", icon: true });
     if (outcome === "category") openSnackbar({ text: "Chỉ so sánh sản phẩm cùng nhóm và danh mục.", type: "warning", icon: true });
   };
@@ -96,6 +104,7 @@ const ProductDetailPage = () => {
         onOpenGallery={(variantId) => navigate(toGalleryPath(variantId), { animate: false })}
         onOpenProduct={(relatedSlug) => navigate(`/products/${relatedSlug}?from=${encodeURIComponent(productReturnPath)}`, { animate: false })}
         onRequestConsultation={(variantId) => navigate(toQuotePath(variantId), { animate: false })}
+        onRequestSpecification={() => navigate("/contact", { animate: false })}
         isSaved={savedIds.includes(product.product_id.toLowerCase())}
         onToggleSaved={() => toggleSaved(product.product_id)}
         isCompared={compared.some((item) => item.product_id === product.product_id)}

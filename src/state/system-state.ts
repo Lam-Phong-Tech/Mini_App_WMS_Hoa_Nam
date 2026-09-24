@@ -75,8 +75,8 @@ export const getSystemStateForFailure = (
     case "UPSTREAM_UNAVAILABLE":
       return {
         kind: "no-network",
-        title: "Không có kết nối mạng",
-        message: "Kiểm tra kết nối và thử lại để tải thông tin sản phẩm.",
+        title: "Chưa tải được nội dung",
+        message: "Vui lòng kiểm tra kết nối và thử lại.",
       };
     case "IDEMPOTENCY_CONFLICT":
       return {

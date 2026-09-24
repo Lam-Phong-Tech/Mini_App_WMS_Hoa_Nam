@@ -235,6 +235,9 @@ export interface PublicConfigDto {
 
 export interface HomeSectionDto {
   kind: "CATEGORY_HIGHLIGHTS" | "FEATURED_PRODUCTS" | "RECENTLY_UPDATED";
+  /** Raw Public Storefront section code, kept so Home can select FEATURED
+   * without treating a cursor catalogue page as a homepage section. */
+  source_code?: string | null;
   title: string;
   items: Array<CategoryDto | ProductCardDto>;
 }

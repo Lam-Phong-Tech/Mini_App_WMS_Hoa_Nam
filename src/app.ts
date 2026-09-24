@@ -10,7 +10,6 @@ import "@/css/hoa-nam-theme.scss";
 // React core
 import React from "react";
 import { createRoot } from "react-dom/client";
-import { getSystemInfo } from "zmp-sdk";
 
 // Mount the app
 import Layout from "@/components/layout";
@@ -26,12 +25,10 @@ if (!window.APP_CONFIG) {
 // WebView.  The browser preview must keep a zero-inset baseline so its 375px
 // measurements are not shifted by a guessed Android fallback.
 const isZaloHost = () => {
-  try {
-    const platform = getSystemInfo().platform;
-    return platform === "android" || platform === "iOS";
-  } catch {
-    return false;
-  }
+  const bridge = (window as Window & {
+    ZJSBridge?: { callCustomAction?: unknown };
+  }).ZJSBridge;
+  return typeof bridge?.callCustomAction === "function";
 };
 
 document.documentElement.dataset.host = isZaloHost() ? "zalo" : "browser";

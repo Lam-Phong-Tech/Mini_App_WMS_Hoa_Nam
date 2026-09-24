@@ -5,7 +5,7 @@ import {
   getPublicProducts,
   getVisibleCategories,
   getVisibleHomeSections,
-  visibleText,
+  PRODUCT_PAGE_LIMIT,
 } from "@/catalogue/catalogue-utils";
 import { CatalogueSkeleton, EmptyCatalogue } from "@/components/catalogue/catalogue-feedback";
 import { AvailabilityFilter, AvailabilityFilterValue } from "@/components/catalogue/availability-filter";
@@ -25,7 +25,7 @@ import { CategoryDto, ProductCardDto, isApiSuccess } from "@/types/public-api";
 const homeRoute = getFoundationRoute("home");
 
 const DOMAIN_ICONS: Record<"POWER_TOOLS" | "HAND_TOOLS" | "ACCESSORIES", UiIconName> = {
-  POWER_TOOLS: "hammer",
+  POWER_TOOLS: "drill",
   HAND_TOOLS: "wrench",
   ACCESSORIES: "zap",
 };
@@ -36,15 +36,25 @@ const DOMAIN_DESCRIPTIONS: Record<"POWER_TOOLS" | "HAND_TOOLS" | "ACCESSORIES", 
   ACCESSORIES: "Pin, sạc, mũi và lưỡi",
 };
 const DOMAIN_LABELS: Record<"POWER_TOOLS" | "HAND_TOOLS" | "ACCESSORIES", string> = {
-  POWER_TOOLS: "Máy và dụng cụ điện",
+  POWER_TOOLS: "Máy công cụ",
   HAND_TOOLS: "Dụng cụ cầm tay",
-  ACCESSORIES: "Phụ tùng và phụ kiện",
+  ACCESSORIES: "Phụ kiện",
 };
 
-const CATEGORY_ICONS: UiIconName[] = ["hammer", "sliders", "ruler", "wrench"];
+const HOME_CATEGORY_SHORTCUTS: ReadonlyArray<{
+  categoryCodes: readonly string[];
+  label: string;
+  icon: UiIconName;
+}> = [
+  { categoryCodes: ["CLAMPING_TOOLS", "DEV_CLAMPING"], label: "Dụng cụ kẹp giữ", icon: "hammer" },
+  { categoryCodes: ["PT_CONCRETE", "DEV_CONCRETE"], label: "Bê tông và xây dựng", icon: "sliders" },
+  { categoryCodes: ["CUTTING_TOOLS", "DEV_HAND_CUTTING"], label: "Dụng cụ cắt", icon: "ruler" },
+  { categoryCodes: ["PT_DRILL_DRIVER", "DEV_DRILL_FASTEN"], label: "Khoan và siết/vặn", icon: "drill" },
+];
 const HOME_CATEGORY_PREVIEW_LIMIT = 4;
-const HOME_RECENT_PREVIEW_LIMIT = 1;
-const HOME_CATALOGUE_PREVIEW_LIMIT = 7;
+const HOME_RECENT_PREVIEW_LIMIT = 4;
+const HOME_CATALOGUE_SOURCE_COUNT = PRODUCT_PAGE_LIMIT;
+const HERO_REFERENCE_DRILL_IMAGE = "https://duc-nguyen98.github.io/WMS_UIUX_HoaNamv2/preview/preview/product-detail-source.png";
 
 const isProductSectionItem = (
   item: CategoryDto | ProductCardDto,
@@ -60,7 +70,19 @@ const HomePage = () => {
 
   const sections = getVisibleHomeSections(home?.sections);
   const recentLibrary = useLibraryProducts(api, recentIds, reconcileMissing);
-  const catalogue = useProductResults(api, { sort: "featured" }, phase === "ready" && !systemState);
+  const catalogueEnabled = phase === "ready" && !systemState;
+  const powerToolResults = useProductResults(
+    api,
+    { sort: "featured", domain: "POWER_TOOLS", limit: PRODUCT_PAGE_LIMIT },
+    catalogueEnabled,
+    PRODUCT_PAGE_LIMIT,
+  );
+  const handToolResults = useProductResults(
+    api,
+    { sort: "featured", domain: "HAND_TOOLS", limit: PRODUCT_PAGE_LIMIT },
+    catalogueEnabled,
+    PRODUCT_PAGE_LIMIT,
+  );
   const homeCategoryHighlights = useMemo(() => sections.reduce<CategoryDto[]>((categories, section) => {
     if (section.kind !== "CATEGORY_HIGHLIGHTS") return categories;
     return categories.concat(getVisibleCategories(section.items.filter((item): item is CategoryDto => !isProductSectionItem(item))));
@@ -68,7 +90,7 @@ const HomePage = () => {
 
   useEffect(() => {
     let isActive = true;
-    if (phase !== "ready" || systemState || homeCategoryHighlights.length) {
+    if (phase !== "ready" || systemState) {
       setApiCategories([]);
       return () => { isActive = false; };
     }
@@ -80,15 +102,55 @@ const HomePage = () => {
     });
 
     return () => { isActive = false; };
-  }, [api, homeCategoryHighlights.length, phase, systemState]);
+  }, [api, phase, systemState]);
+
+  useEffect(() => {
+    if (
+      powerToolResults.kind === "success-data"
+      && powerToolResults.loadedCount < HOME_CATALOGUE_SOURCE_COUNT
+      && powerToolResults.nextCursor
+    ) {
+      void powerToolResults.loadMore();
+    }
+    if (
+      handToolResults.kind === "success-data"
+      && handToolResults.loadedCount < HOME_CATALOGUE_SOURCE_COUNT
+      && handToolResults.nextCursor
+    ) {
+      void handToolResults.loadMore();
+    }
+  }, [
+    handToolResults.kind,
+    handToolResults.loadMore,
+    handToolResults.loadedCount,
+    handToolResults.nextCursor,
+    powerToolResults.kind,
+    powerToolResults.loadMore,
+    powerToolResults.loadedCount,
+    powerToolResults.nextCursor,
+  ]);
 
   if (phase === "loading") {
     return (
       <AppShell route={homeRoute} onContentTouchStart={pullToRefresh.onTouchStart} onContentTouchEnd={pullToRefresh.onTouchEnd}>
-        <section className="hero-card hero-card--compact">
-          <p className="hero-card__eyebrow">HOA NAM TOOLS</p>
-          <h2>Tìm đúng dụng cụ.</h2>
-          <p>Đang kiểm tra dữ liệu công khai.</p>
+        <section className="hero-card home-hero" aria-busy="true">
+          <div className="hero-art" aria-hidden="true">
+            <span className="hero-sweep" />
+            <span className="hero-arc" />
+            <span className="hero-arc hero-arc--inner" />
+          </div>
+          <div className="hero-copy">
+            <p className="hero-card__eyebrow">DỤNG CỤ CHO MỌI CÔNG VIỆC</p>
+            <h1><span>Tìm đúng dụng cụ.</span><span>Làm tốt công việc.</span></h1>
+            <p>Khám phá sản phẩm phù hợp và xem tình trạng hàng trước khi liên hệ tư vấn.</p>
+            <UiButton onClick={() => navigate("/products", { animate: false })}>Khám phá sản phẩm <UiIcon name="arrowRight" size={20} /></UiButton>
+          </div>
+          <div className="hero-product" aria-hidden="true">
+            <span className="hero-product__crop">
+              <img src={HERO_REFERENCE_DRILL_IMAGE} alt="" draggable={false} />
+            </span>
+            <span className="hero-product__caption">Khoan búa dùng pin <strong>DCZC02-26</strong></span>
+          </div>
         </section>
         <CatalogueSkeleton />
       </AppShell>
@@ -103,30 +165,66 @@ const HomePage = () => {
     );
   }
 
-  const categoryHighlights = homeCategoryHighlights.length ? homeCategoryHighlights : apiCategories;
-  const sectionProducts = sections
-    .filter((section) => section.kind !== "CATEGORY_HIGHLIGHTS")
-    .reduce<ProductCardDto[]>((products, section) =>
-    products.concat(section.items.filter(isProductSectionItem)), []);
-  const heroMedia = sectionProducts
-    .map((product) => product.cover_media?.type === "IMAGE" ? product.cover_media.url : null)
-    .find((url): url is string => Boolean(url));
+  const categoriesByCode = new Map(
+    [...apiCategories, ...homeCategoryHighlights].map((category) => [category.code, category]),
+  );
+  const categoryHighlights = HOME_CATEGORY_SHORTCUTS.flatMap((shortcut) => {
+    const category = shortcut.categoryCodes
+      .map((code) => categoriesByCode.get(code))
+      .find((candidate): candidate is CategoryDto => Boolean(candidate));
+    return category ? [{ ...shortcut, category }] : [];
+  });
+  const featuredProducts = (() => {
+    const select = (products: ProductCardDto[], inStockCount: number, preorderCount: number) => {
+      const available = getPublicProducts(products);
+      const preferred = [
+        ...available.filter((product) => product.availability === "IN_STOCK").slice(0, inStockCount),
+        ...available.filter((product) => product.availability === "PREORDER").slice(0, preorderCount),
+      ];
+      const selectedIds = new Set(preferred.map((product) => product.product_id));
+      const targetCount = inStockCount + preorderCount;
+      return [
+        ...preferred,
+        ...available.filter((product) => !selectedIds.has(product.product_id)).slice(0, targetCount - preferred.length),
+      ];
+    };
+
+    // The approved home mix is 70% Power Tools and 30% Hand Tools. When a
+    // stock state has fewer candidates, fill the remaining slots from the
+    // same domain rather than showing fewer than the requested 20 products.
+    return [
+      ...select(powerToolResults.loadedProducts, 10, 4),
+      ...select(handToolResults.loadedProducts, 4, 2),
+    ];
+  })();
+  const visibleFeaturedProducts = featuredProducts.filter((product) =>
+    catalogueAvailability === "ALL" || product.availability === catalogueAvailability,
+  );
+  const catalogueLoading = powerToolResults.kind === "loading"
+    || handToolResults.kind === "loading"
+    || (powerToolResults.loadedCount < HOME_CATALOGUE_SOURCE_COUNT && Boolean(powerToolResults.nextCursor))
+    || (handToolResults.loadedCount < HOME_CATALOGUE_SOURCE_COUNT && Boolean(handToolResults.nextCursor));
   const recentProducts = getPublicProducts(recentLibrary.products).slice(0, HOME_RECENT_PREVIEW_LIMIT);
-  const catalogueProducts = getPublicProducts(catalogue.loadedProducts)
-    .filter((product) => catalogueAvailability === "ALL" || product.availability === catalogueAvailability);
-  const displayedCatalogueProducts = catalogueProducts.slice(0, HOME_CATALOGUE_PREVIEW_LIMIT);
 
   return (
     <AppShell route={homeRoute} onContentTouchStart={pullToRefresh.onTouchStart} onContentTouchEnd={pullToRefresh.onTouchEnd}>
       <section className="hero-card home-hero">
+        <div className="hero-art" aria-hidden="true">
+          <span className="hero-sweep" />
+          <span className="hero-arc" />
+          <span className="hero-arc hero-arc--inner" />
+        </div>
         <div className="hero-copy">
           <p className="hero-card__eyebrow">DỤNG CỤ CHO MỌI CÔNG VIỆC</p>
           <h1><span>Tìm đúng dụng cụ.</span><span>Làm tốt công việc.</span></h1>
           <p>Khám phá sản phẩm phù hợp và xem tình trạng hàng trước khi liên hệ tư vấn.</p>
-          <UiButton onClick={() => navigate("/products", { animate: false })}>Khám phá sản phẩm <UiIcon name="chevronRight" size={20} /></UiButton>
+          <UiButton onClick={() => navigate("/products", { animate: false })}>Khám phá sản phẩm <UiIcon name="arrowRight" size={20} /></UiButton>
         </div>
-        <div className={`hero-visual ${heroMedia ? "hero-visual--image" : ""}`} style={heroMedia ? { backgroundImage: `url("${heroMedia.replace(/"/g, "%22")}")` } : undefined} aria-hidden="true">
-          {heroMedia ? null : <><span className="hero-visual__ring hero-visual__ring--one"></span><span className="hero-visual__ring hero-visual__ring--two"></span><span className="hero-visual__tool"><UiIcon name="sparkles" size={42} /></span></>}
+        <div className="hero-product" aria-hidden="true">
+          <span className="hero-product__crop">
+            <img src={HERO_REFERENCE_DRILL_IMAGE} alt="" draggable={false} />
+          </span>
+          <span className="hero-product__caption">Khoan búa dùng pin <strong>DCZC02-26</strong></span>
         </div>
       </section>
 
@@ -159,15 +257,16 @@ const HomePage = () => {
             <button type="button" onClick={() => navigate("/categories", { animate: false })}>Xem tất cả <UiIcon name="chevronRight" size={20} /></button>
           </div>
           <div className="home-category-strip">
-            {categoryHighlights.slice(0, HOME_CATEGORY_PREVIEW_LIMIT).map((category, index) => (
+            {categoryHighlights.slice(0, HOME_CATEGORY_PREVIEW_LIMIT).map(({ category, icon, label }) => (
               <button
                 className="home-category-item"
                 key={category.code}
                 type="button"
                 onClick={() => navigate(`/products?domain=${category.domain}&category=${category.code}`, { animate: false })}
               >
-                <UiIcon name={CATEGORY_ICONS[index % CATEGORY_ICONS.length]} size={29} />
-                <span>{visibleText(category.display_name)}</span>
+                <UiIcon name={icon} size={24} strokeWidth={2} />
+                <span>{label}</span>
+                <UiIcon className="home-category-arrow" name="chevronRight" size={16} strokeWidth={2} />
               </button>
             ))}
           </div>
@@ -175,9 +274,9 @@ const HomePage = () => {
       ) : null}
 
       <section className="home-library-links" aria-label="Sản phẩm của bạn">
-        <button type="button" onClick={() => navigate("/recent", { animate: false })}><UiIcon name="clock" size={19} />Sản phẩm đã xem</button>
-        <button type="button" onClick={() => navigate("/saved", { animate: false })}><UiIcon name="bookmark" size={19} />Sản phẩm đã lưu</button>
-        <button type="button" onClick={() => navigate("/help", { animate: false })}><UiIcon name="helpCircle" size={19} />Hướng dẫn & câu hỏi</button>
+        <button type="button" onClick={() => navigate("/recent", { animate: false })}><UiIcon name="clock" size={19} strokeWidth={2} />Sản phẩm đã xem</button>
+        <button type="button" onClick={() => navigate("/saved", { animate: false })}><UiIcon name="heart" size={19} strokeWidth={2} />Sản phẩm đã lưu</button>
+        <button type="button" onClick={() => navigate("/help", { animate: false })}><UiIcon name="bookOpen" size={19} strokeWidth={2} />Hướng dẫn & câu hỏi</button>
       </section>
 
       <section className="content-section home-product-section home-recent-section" aria-labelledby="recent-products-title">
@@ -191,23 +290,21 @@ const HomePage = () => {
         {recentProducts.length ? <ProductGrid products={recentProducts} returnPath="/home" label="Sản phẩm vừa xem" loadedCount={recentProducts.length} /> : null}
       </section>
 
-      <section className="content-section home-product-section home-catalogue-section" aria-labelledby="category-products-title">
+      <section className="content-section home-product-section home-catalogue-section" aria-labelledby="featured-products-title">
         <div className="section-heading home-section-heading">
-          <h2 id="category-products-title">Sản phẩm trong danh mục</h2>
+          <h2 id="featured-products-title">Sản phẩm trong danh mục</h2>
         </div>
         <AvailabilityFilter value={catalogueAvailability} onChange={setCatalogueAvailability} />
-        <output className="home-product-count" aria-live="polite">{catalogueProducts.length} sản phẩm</output>
-        {catalogue.kind === "loading" ? <CatalogueSkeleton /> : null}
-        {catalogue.failure ? <p className="home-product-status" role="status">Chưa thể tải sản phẩm trong danh mục. Vui lòng thử lại sau.</p> : null}
-        {!catalogue.failure && catalogue.kind === "success-empty" ? <p className="home-product-status">Chưa có sản phẩm công khai trong danh mục này.</p> : null}
-        {displayedCatalogueProducts.length ? <>
-          <ProductGrid products={displayedCatalogueProducts} returnPath="/home" label="Sản phẩm trong danh mục" loadedCount={displayedCatalogueProducts.length} />
-          <p className="home-product-progress">Xem trước {displayedCatalogueProducts.length} sản phẩm</p>
+        {catalogueLoading ? <CatalogueSkeleton cards={4} /> : null}
+        {visibleFeaturedProducts.length ? <>
+          <ProductGrid products={visibleFeaturedProducts} returnPath="/home" label="Sản phẩm trong danh mục" loadedCount={visibleFeaturedProducts.length} />
+          <p className="home-product-progress">Đã hiển thị {visibleFeaturedProducts.length}/{featuredProducts.length} sản phẩm</p>
         </> : null}
+        {!catalogueLoading && !visibleFeaturedProducts.length ? <p className="catalogue-filter-empty">Chưa có sản phẩm phù hợp với trạng thái hàng đã chọn.</p> : null}
         <button className="home-catalogue-link" type="button" onClick={() => navigate("/products", { animate: false })}>Xem toàn bộ danh mục <UiIcon name="chevronRight" size={20} /></button>
       </section>
 
-      {!categoryHighlights.length && !sectionProducts.length && catalogue.kind === "success-empty" ? <EmptyCatalogue onRetry={() => void refresh()} /> : null}
+      {!categoryHighlights.length && !featuredProducts.length && !catalogueLoading ? <EmptyCatalogue onRetry={() => void refresh()} /> : null}
       {usingDevMock ? <p className="dev-fixture-note">DEMO DEV: dữ liệu mẫu chỉ để xem giao diện, không phải Catalogue UAT hoặc Production.</p> : null}
     </AppShell>
   );

@@ -51,8 +51,8 @@ const devPreviewCategory = (code: string, display_name: string, domain: DomainCo
 });
 
 const devPreviewCategories: CategoryDto[] = [
-  devPreviewCategory("DEV_DRILL_FASTEN", "Khoan & siết", "POWER_TOOLS", 1),
-  devPreviewCategory("DEV_CONCRETE", "Bê tông & xây nề", "POWER_TOOLS", 2),
+  devPreviewCategory("DEV_DRILL_FASTEN", "Khoan và siết/vặn", "POWER_TOOLS", 1),
+  devPreviewCategory("DEV_CONCRETE", "Bê tông và xây dựng", "POWER_TOOLS", 2),
   devPreviewCategory("DEV_GRINDING", "Mài & đánh bóng", "POWER_TOOLS", 3),
   devPreviewCategory("DEV_CUTTING", "Cưa & cắt", "POWER_TOOLS", 4),
   devPreviewCategory("DEV_MEASURING", "Đo lường & chiếu sáng", "POWER_TOOLS", 5),
@@ -81,7 +81,7 @@ const devPreviewProduct = (index: number, categoryCode: string, content: DevProd
   const category = devPreviewCategories.find((item) => item.code === categoryCode);
   if (!category) throw new Error(`Unknown DEV preview category: ${categoryCode}`);
   return {
-    product_id: `dev-ui-preview-product-${String(index).padStart(2, "0")}`,
+    product_id: `00000000-0000-4000-8000-${String(index).padStart(12, "0")}`,
     slug: `dev-preview-${content.model.toLocaleLowerCase()}`,
     name: content.name,
     model: content.model,
@@ -93,7 +93,9 @@ const devPreviewProduct = (index: number, categoryCode: string, content: DevProd
     cover_media: {
       media_id: `dev-wireframe-${content.mediaFile}`,
       type: "IMAGE",
-      url: `/dev-wireframe-media/${content.mediaFile}`,
+      // The DEV browser preview needs a locally served product asset. Runtime
+      // production data continues to supply each approved public media URL.
+      url: "/hero-drill-cutout.png",
       alt: `${content.name} — ảnh mẫu wireframe DEV`,
       sort_order: 0,
     },
@@ -158,7 +160,12 @@ const devPreviewFixture: DevFixture = {
       {
         kind: "CATEGORY_HIGHLIGHTS",
         title: "Danh mục nổi bật",
-        items: devPreviewCategories.slice(0, 4),
+        items: [
+          devPreviewCategories.find((category) => category.code === "DEV_CLAMPING")!,
+          devPreviewCategories.find((category) => category.code === "DEV_CONCRETE")!,
+          devPreviewCategories.find((category) => category.code === "DEV_HAND_CUTTING")!,
+          devPreviewCategories.find((category) => category.code === "DEV_DRILL_FASTEN")!,
+        ],
       },
       {
         kind: "FEATURED_PRODUCTS",

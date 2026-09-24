@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 
-import { getAvailabilityLabel, getProductMedia, getVisibleVariants, isPreorderAvailability, visibleText } from "@/catalogue/catalogue-utils";
+import { getAvailabilityLabel, getProductDisplayName, getProductMedia, getVisibleVariants, isPreorderAvailability, visibleText } from "@/catalogue/catalogue-utils";
 import { ContactActions } from "@/components/catalogue/contact-actions";
 import { ProductGallery } from "@/components/catalogue/product-gallery";
 import { ProductCard } from "@/components/catalogue/product-card";
@@ -25,6 +25,7 @@ interface ProductDetailTemplateProps {
   onOpenGallery: (variantId?: string) => void;
   onOpenProduct: (slug: string) => void;
   onRequestConsultation: (variantId?: string) => void;
+  onRequestSpecification: () => void;
   isSaved: boolean;
   onToggleSaved: () => void;
   isCompared: boolean;
@@ -53,6 +54,7 @@ export const ProductDetailTemplate = ({
   onOpenGallery,
   onOpenProduct,
   onRequestConsultation,
+  onRequestSpecification,
   isSaved,
   onToggleSaved,
   isCompared,
@@ -61,11 +63,8 @@ export const ProductDetailTemplate = ({
   const variants = useMemo(() => getVisibleVariants(product.variants), [product.variants]);
   const [selectedVariantId, setSelectedVariantId] = useState<string | null>(null);
   const selectedVariant = variants.find((variant) => variant.variant_id === selectedVariantId) ?? variants[0] ?? null;
-  const relatedLimitInitial = 6;
-  const [relatedLimit, setRelatedLimit] = useState(relatedLimitInitial);
   useEffect(() => {
     setSelectedVariantId((current) => variants.some((variant) => variant.variant_id === current) ? current : variants[0]?.variant_id ?? null);
-    setRelatedLimit(relatedLimitInitial);
   }, [product.product_id, variants]);
   const features = product.features
     ?.map((feature) => ({ code: feature.code, label: visibleText(feature.label) }))
@@ -84,14 +83,20 @@ export const ProductDetailTemplate = ({
   const packageContents = visibleText(product.package_contents);
   const category = visibleText(product.category.display_name);
   const primaryCode = visibleText(product.primary_code);
-  const displayAvailability = selectedVariant?.availability ?? product.availability;
+  // The catalogue status is the public customer promise. A PREORDER product
+  // must remain PREORDER on Detail even when a backend variant carries a
+  // stale/default IN_STOCK value; otherwise entering from the `Đặt trước`
+  // filter silently changes both the badge and CTA to `Sẵn hàng`.
+  const displayAvailability = isPreorderAvailability(product.availability)
+    ? product.availability
+    : selectedVariant?.availability ?? product.availability;
   const isPreorder = isPreorderAvailability(displayAvailability);
   const availabilityLabel = getAvailabilityLabel(displayAvailability);
   const requestLabel = isPreorder ? "Đặt trước" : "Yêu cầu tư vấn";
   const hasGalleryMedia = getProductMedia(product, selectedVariant).length > 0;
   const visibleBundleItems = product.bundle_items?.filter((item) => visibleText(item.label)) ?? [];
   const visibleCompatibility = product.compatibility?.filter((item) => visibleText(item.label)) ?? [];
-  const visibleRelated = relatedProducts.slice(0, relatedLimit);
+  const visibleRelated = relatedProducts;
   const relatedAreSameCategory = relatedProducts.length > 0 && relatedProducts.every((item) => item.category.code === product.category.code);
   const descriptionHighlights = description
     ?.split(/\r?\n+/)
@@ -120,7 +125,7 @@ export const ProductDetailTemplate = ({
         <ProductGallery product={product} variant={selectedVariant} />
         {hasGalleryMedia ? <button className="detail-template__zoom" type="button" onClick={() => onOpenGallery(selectedVariant?.variant_id)}>
           <UiIcon name="search" size={17} strokeWidth={2.2} />
-          Xem ảnh
+          Xem ảnh lớn
         </button> : null}
       </section>
 
@@ -130,7 +135,7 @@ export const ProductDetailTemplate = ({
           <span className="detail-template__domain">{DOMAIN_LABELS[product.domain]}</span>
         </div>
         {primaryCode ? <p className="detail-template__code">{primaryCode}</p> : null}
-        <h1>{visibleText(product.name)}</h1>
+        <h1>{getProductDisplayName(product)}</h1>
         {category ? <p className="detail-template__model">{category}</p> : null}
         <div className="detail-template__identity-actions">
           <button type="button" className={`detail-template__save ${isSaved ? "is-saved" : ""}`} aria-label={isSaved ? "Bỏ lưu sản phẩm" : "Lưu sản phẩm"} aria-pressed={isSaved} onClick={onToggleSaved}>
@@ -200,7 +205,10 @@ export const ProductDetailTemplate = ({
             </ul>
           </div>
         ) : null}
-        <p className="detail-template__consult-copy">Quan tâm đến sản phẩm này? Gửi yêu cầu để được tư vấn về sản phẩm và đặt hàng.</p>
+        <div className="detail-template__consult-card">
+          <span className="detail-template__consult-icon"><UiIcon name="message" size={20} /></span>
+          <p className="detail-template__consult-copy">Quan tâm đến sản phẩm này? Gửi yêu cầu để được tư vấn về sản phẩm và đặt hàng.</p>
+        </div>
       </section>
 
       <section className="detail-template__information" aria-label="Thông tin sản phẩm">
@@ -219,7 +227,7 @@ export const ProductDetailTemplate = ({
           </div>
         ))}
         <p className="detail-template__spec-note">Liên hệ để được tư vấn thông số phù hợp với công việc của bạn.</p>
-        <button type="button" className="detail-template__spec-help" onClick={() => onRequestConsultation(selectedVariant?.variant_id)}>Tư vấn thông số</button>
+        <button type="button" className="detail-template__spec-help" onClick={onRequestSpecification}>Tư vấn thông số <UiIcon name="arrowRight" size={18} /></button>
       </section>
 
       {relatedProducts.length ? (
@@ -231,7 +239,7 @@ export const ProductDetailTemplate = ({
               <ProductCard key={related.product_id} product={related} onOpen={() => onOpenProduct(related.slug)} />
             ))}
           </div>
-          {relatedLimit < relatedProducts.length ? <button className="detail-template__more-related" type="button" onClick={() => setRelatedLimit((current) => Math.min(relatedProducts.length, current + 2))}>Xem thêm sản phẩm liên quan</button> : null}
+          <p className="detail-template__related-progress">Đã hiển thị {visibleRelated.length} / {relatedProducts.length} sản phẩm</p>
         </section>
       ) : null}
 

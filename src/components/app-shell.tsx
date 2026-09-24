@@ -10,6 +10,8 @@ import { Page, useLocation, useNavigate } from "zmp-ui";
 
 import { BOTTOM_NAVIGATION, FoundationRoute, getBottomNavigationKey } from "@/routes";
 import { UiIcon, UiIconName } from "@/components/ui-icon";
+import { useCompare } from "@/state/compare-context";
+import { useProductLibrary } from "@/state/product-library-context";
 
 type BottomNavigationKey = (typeof BOTTOM_NAVIGATION)[number]["key"];
 
@@ -18,10 +20,11 @@ const MENU_DESTINATIONS = [
   { label: "Danh mục", path: "/categories", icon: "grid" },
   { label: "Tìm kiếm", path: "/search", icon: "search" },
   { label: "Đã xem", path: "/recent", icon: "clock" },
-  { label: "Đã lưu", path: "/saved", icon: "bookmark" },
-  { label: "Yêu cầu nhiều sản phẩm", path: "/selection", icon: "send" },
-  { label: "So sánh", path: "/compare", icon: "layers" },
-  { label: "Hướng dẫn", path: "/help", icon: "fileText" },
+  { label: "Đã lưu", path: "/saved", icon: "heart" },
+  { label: "So sánh", path: "/compare", icon: "gitCompare" },
+  { label: "Yêu cầu nhiều sản phẩm", path: "/selection", icon: "sliders" },
+  { label: "Yêu cầu đã gửi", path: "/requests", icon: "send" },
+  { label: "Hướng dẫn", path: "/help", icon: "bookOpen" },
   { label: "Liên hệ", path: "/contact", icon: "phone" },
 ] as const satisfies ReadonlyArray<{ label: string; path: string; icon: UiIconName }>;
 
@@ -46,6 +49,7 @@ interface AppShellProps {
   onSearchKeyDown?: (event: KeyboardEvent<HTMLInputElement>) => void;
   onSearchCompositionStart?: () => void;
   onSearchCompositionEnd?: () => void;
+  onSearchSubmit?: () => void;
 }
 
 /**
@@ -64,9 +68,12 @@ export const AppShell = ({
   onSearchKeyDown,
   onSearchCompositionStart,
   onSearchCompositionEnd,
+  onSearchSubmit,
 }: AppShellProps) => {
   const location = useLocation();
   const navigate = useNavigate();
+  const { recentIds, savedIds } = useProductLibrary();
+  const { notice: compareNotice, dismissNotice } = useCompare();
   const activeKey = getBottomNavigationKey(location.pathname);
   const [menuOpen, setMenuOpen] = useState(false);
   const menuButtonRef = useRef<HTMLButtonElement | null>(null);
@@ -134,6 +141,7 @@ export const AppShell = ({
     closeMenu();
     if (path !== location.pathname) navigate(path, { animate: false });
   };
+  const showCompareNotice = Boolean(compareNotice) && ["home", "categories", "products", "search"].includes(route.key);
 
   return (
     <Page
@@ -158,8 +166,10 @@ export const AppShell = ({
               <UiIcon name="menu" size={22} />
             </button>
             <button className="hn-wordmark" type="button" onClick={() => navigate("/home", { animate: false })} aria-label="Hoa Nam Tools, về Trang chủ">
-              <span className="hn-wordmark__brand" aria-hidden="true"><span>HOA<br />NAM</span></span>
-              <span className="hn-wordmark__copy">
+              <span className="hn-wordmark__logo" aria-hidden="true">
+                <img src="/hoa-nam-logo.png" alt="" />
+              </span>
+              <span className="hn-wordmark__copy" aria-hidden="true">
                 <span className="hn-wordmark__name">HOA NAM</span>
                 <span className="hn-wordmark__caption">TOOLS</span>
               </span>
@@ -168,7 +178,7 @@ export const AppShell = ({
               className="hn-header-action hn-header-action--quote"
               type="button"
               aria-label="Chọn sản phẩm để gửi yêu cầu tư vấn"
-              onClick={() => navigate("/selection", { animate: false })}
+              onClick={() => navigate("/quote", { animate: false })}
             >
               <UiIcon name="send" size={21} />
             </button>
@@ -190,7 +200,10 @@ export const AppShell = ({
                 autoComplete="off"
                 maxLength={160}
               />
-              {searchValue ? <button className="hn-topbar-search__clear" type="button" aria-label="Xóa tìm kiếm" onClick={() => onSearchChange?.("")}>Xóa</button> : null}
+              {searchValue ? <button className="hn-topbar-search__clear" type="button" aria-label="Xóa tìm kiếm" onClick={() => onSearchChange?.("")}><UiIcon name="x" size={16} /></button> : null}
+              <button className="hn-topbar-search__submit" type="button" aria-label="Thực hiện tìm kiếm" onClick={onSearchSubmit}>
+                <UiIcon name="arrowRight" size={20} />
+              </button>
             </div>
           ) : showTopbarSearch ? (
             <button className="hn-topbar-search" type="button" onClick={() => navigate("/search", { animate: false })}>
@@ -200,6 +213,17 @@ export const AppShell = ({
             </button>
           ) : null}
         </div>
+        {showCompareNotice && compareNotice ? (
+          <aside className="compare-notice" aria-live="polite">
+            <p>{compareNotice.message}</p>
+            {compareNotice.canOpenComparison ? (
+              <button type="button" onClick={() => navigate("/compare", { animate: false })}>Mở so sánh</button>
+            ) : null}
+            <button type="button" aria-label="Đóng thông báo so sánh" onClick={dismissNotice}>
+              <UiIcon name="x" size={20} />
+            </button>
+          </aside>
+        ) : null}
         <main className="hn-content" onTouchStart={onContentTouchStart} onTouchEnd={onContentTouchEnd}>{children}</main>
       </div>
 
@@ -216,22 +240,66 @@ export const AppShell = ({
             onKeyDown={trapMenuFocus}
           >
             <div className="hn-menu-dialog__heading">
-              <span>HOA NAM TOOLS</span>
-              <button type="button" aria-label="Đóng menu" onClick={closeMenu}><UiIcon name="chevronLeft" size={22} /></button>
+              <div>
+                <span className="hn-menu-dialog__eyebrow">HOA NAM TOOLS</span>
+                <h2>Tiện ích sản phẩm</h2>
+                <p>Tìm lại sản phẩm và chọn cách nhận tư vấn.</p>
+              </div>
+              <button type="button" aria-label="Đóng menu" onClick={closeMenu}><UiIcon name="x" size={22} /></button>
             </div>
             <div className="hn-menu-dialog__items">
-              {MENU_DESTINATIONS.map((item) => (
-                <button
-                  key={item.path}
-                  type="button"
-                  aria-current={location.pathname === item.path ? "page" : undefined}
-                  onClick={() => navigateFromMenu(item.path)}
-                >
-                  <UiIcon name={item.icon} size={21} />
-                  <span>{item.label}</span>
-                  <UiIcon name="chevronRight" size={19} />
-                </button>
-              ))}
+              <section aria-labelledby="hn-menu-review-title">
+                <h3 id="hn-menu-review-title">Xem lại</h3>
+                <div className="hn-menu-dialog__group-grid">
+                  {MENU_DESTINATIONS.filter((item) => item.path === "/recent" || item.path === "/saved").map((item) => (
+                    <button
+                      key={item.path}
+                      type="button"
+                      aria-label={item.path === "/recent" ? "Sản phẩm đã xem" : "Sản phẩm đã lưu"}
+                      aria-current={location.pathname === item.path ? "page" : undefined}
+                      onClick={() => navigateFromMenu(item.path)}
+                    >
+                      <UiIcon name={item.icon} size={21} />
+                      <span>{item.path === "/recent" ? "Đã xem" : "Đã lưu"}</span>
+                      <output>{item.path === "/recent" ? recentIds.length : savedIds.length}</output>
+                    </button>
+                  ))}
+                </div>
+              </section>
+              <section aria-labelledby="hn-menu-choice-title">
+                <h3 id="hn-menu-choice-title">Lựa chọn &amp; tư vấn</h3>
+                <div className="hn-menu-dialog__group-grid">
+                  {MENU_DESTINATIONS.filter((item) => item.path === "/compare" || item.path === "/selection").map((item) => (
+                    <button
+                      key={item.path}
+                      type="button"
+                      aria-label={item.path === "/compare" ? "So sánh sản phẩm" : item.label}
+                      aria-current={location.pathname === item.path ? "page" : undefined}
+                      onClick={() => navigateFromMenu(item.path)}
+                    >
+                      <UiIcon name={item.icon} size={21} />
+                      <span>{item.path === "/compare" ? "So sánh" : item.label}</span>
+                    </button>
+                  ))}
+                </div>
+              </section>
+              <section aria-labelledby="hn-menu-help-title">
+                <h3 id="hn-menu-help-title">Hỗ trợ</h3>
+                <div className="hn-menu-dialog__group-grid">
+                  {MENU_DESTINATIONS.filter((item) => item.path === "/requests" || item.path === "/help").map((item) => (
+                    <button
+                      key={item.path}
+                      type="button"
+                      aria-label={item.path === "/requests" ? "Yêu cầu đã gửi" : "Hướng dẫn & câu hỏi"}
+                      aria-current={location.pathname === item.path ? "page" : undefined}
+                      onClick={() => navigateFromMenu(item.path)}
+                    >
+                      <UiIcon name={item.icon} size={21} />
+                      <span>{item.path === "/requests" ? "Yêu cầu đã gửi" : "Hướng dẫn"}</span>
+                    </button>
+                  ))}
+                </div>
+              </section>
             </div>
           </div>
         </div>

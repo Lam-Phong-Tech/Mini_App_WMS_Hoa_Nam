@@ -141,7 +141,7 @@ export const FoundationScreen = ({ routeKey }: FoundationScreenProps) => {
                 <h2>Gửi yêu cầu đặt hàng</h2>
               </div>
               <p>Để lại sản phẩm và thông tin liên hệ để Hoa Nam tư vấn.</p>
-              <button className="contact-screen__button contact-screen__button--primary" type="button" onClick={() => navigate("/selection", { animate: false })}>
+              <button className="contact-screen__button contact-screen__button--primary" type="button" onClick={() => navigate("/quote", { animate: false })}>
                 Gửi yêu cầu <UiIcon name="arrowRight" size={19} />
               </button>
             </article>

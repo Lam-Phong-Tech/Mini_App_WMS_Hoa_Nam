@@ -41,7 +41,7 @@ const QuoteRequestPage = () => {
   const [acceptedRequestId, setAcceptedRequestId] = useState<string | null>(null);
   const idempotencyKeys = useRef(createQuoteIdempotencyKeyTracker());
   const guard = useRef(createQuoteSubmissionGuard());
-  const returnPath = getSafeReturnPath(location.search) ?? (slug ? `/products/${slug}` : "/selection");
+  const returnPath = getSafeReturnPath(location.search) ?? (slug ? `/products/${slug}` : "/home");
   const selectedVariantId = new URLSearchParams(location.search).get("variant_id");
   const variants = useMemo(() => getVisibleVariants(detail.product?.variants), [detail.product?.variants]);
   const selectedVariant: VariantDto | null = variants.find((variant) => variant.variant_id === selectedVariantId) ?? variants[0] ?? null;
@@ -134,10 +134,6 @@ const QuoteRequestPage = () => {
     return <AppShell route={route}><CatalogueSkeleton cards={1} /></AppShell>;
   }
 
-  if (!selectedItems.length) {
-    return <AppShell route={route}><SystemStatePanel state={{ kind: "empty", title: "Chưa chọn sản phẩm", message: "Chọn ít nhất một sản phẩm trước khi gửi yêu cầu tư vấn." }} /><button className="quote-submit" type="button" onClick={() => navigate("/selection", { animate: false })}>Chọn sản phẩm</button></AppShell>;
-  }
-
   const responseState = responseFailure ? getSystemStateForFailure(responseFailure) : null;
   const privacyReady = Boolean(config?.privacy_version && config?.privacy_policy_url);
   const snapshotsCoverSelection = selectedItems.every((item) => selectedProductSnapshots.some((product) => product.product_id === item.product_id));
@@ -155,37 +151,47 @@ const QuoteRequestPage = () => {
       <button type="button" className="quote-screen__back" onClick={() => navigate(returnPath, { animate: false })}><UiIcon name="arrowLeft" size={19} />Quay lại</button>
       <header className="quote-screen__heading">
         <span>TRAO ĐỔI NHU CẦU CỦA BẠN</span>
-        <h1 id="quote-screen-title">Gửi yêu cầu tư vấn</h1>
-        <p>Chọn sản phẩm và để lại thông tin để nhân viên Hoa Nam hỗ trợ bạn.</p>
+        <h1 id="quote-screen-title">Gửi yêu cầu đặt hàng</h1>
+        <p>Chọn sản phẩm và để lại thông tin để nhân viên tư vấn hỗ trợ bạn.</p>
       </header>
-      <div className="quote-screen__layout">
-      <aside className="quote-context">
+      <div className={`quote-screen__layout${selectedItems.length ? "" : " quote-screen__layout--form-only"}`}>
+      {selectedItems.length ? <aside className="quote-context">
       <h2>Sản phẩm của bạn</h2>
-      <p className="quote-context__count">{selectedItems.length} sản phẩm đã chọn</p>
-      <ul className="quote-selected-items">
-        {selectedItems.map((item) => {
-          const product = selectedProducts.products.find((candidate) => candidate.product_id === item.product_id);
-          const snapshot = selectedProductSnapshots.find((candidate) => candidate.product_id === item.product_id);
-          const label = product
-            ? (visibleText(product.model) ?? visibleText(product.name) ?? "Sản phẩm đã chọn")
-            : snapshot
-              ? (visibleText(snapshot.model) ?? visibleText(snapshot.name) ?? "Sản phẩm đã chọn")
-            : selectedProducts.phase === "loading"
-              ? "Đang kiểm tra sản phẩm…"
-              : "Sản phẩm không còn khả dụng";
-          return <li key={item.product_id}><span>{label}</span><button type="button" disabled={submitting} onClick={() => removeSelectedItem(item.product_id)} aria-label={`Bỏ sản phẩm ${label}`}>Bỏ</button></li>;
-        })}
-      </ul>
-      <button type="button" className="quote-edit-selection" disabled={submitting} onClick={() => navigate("/selection", { animate: false })}>Sửa danh sách sản phẩm</button>
+        <p className="quote-context__count">{selectedItems.length} sản phẩm đã chọn</p>
+        <ul className="quote-selected-items">
+          {selectedItems.map((item) => {
+            const product = selectedProducts.products.find((candidate) => candidate.product_id === item.product_id);
+            const snapshot = selectedProductSnapshots.find((candidate) => candidate.product_id === item.product_id);
+            const label = product
+              ? (visibleText(product.model) ?? visibleText(product.name) ?? "Sản phẩm đã chọn")
+              : snapshot
+                ? (visibleText(snapshot.model) ?? visibleText(snapshot.name) ?? "Sản phẩm đã chọn")
+                : selectedProducts.phase === "loading"
+                  ? "Đang kiểm tra sản phẩm…"
+                  : "Sản phẩm không còn khả dụng";
+            return <li key={item.product_id}><span>{label}</span><button type="button" disabled={submitting} onClick={() => removeSelectedItem(item.product_id)} aria-label={`Bỏ sản phẩm ${label}`}>Bỏ</button></li>;
+          })}
+        </ul>
+        <button type="button" className="quote-edit-selection" disabled={submitting} onClick={() => navigate("/selection", { animate: false })}>Sửa danh sách sản phẩm</button>
       {config?.privacy_policy_url ? <a className="privacy-link" href={config.privacy_policy_url}>Xem Chính sách sử dụng thông tin</a> : null}
-      </aside>
+      </aside> : null}
     {responseState ? <SystemStatePanel state={responseState} onRetry={() => setResponseFailure(null)} /> : null}
     {selectedProducts.failure && !snapshotsCoverSelection ? <SystemStatePanel state={getSystemStateForFailure(selectedProducts.failure)} onRetry={selectedProducts.reload} /> : null}
     {selectedProducts.failure && snapshotsCoverSelection ? <div className="quote-selection-note" role="status"><UiIcon name="info" size={16} /><span>Chưa thể kiểm tra lại sản phẩm vừa chọn. Thông tin hiện có vẫn được giữ để bạn tiếp tục gửi yêu cầu.</span><button type="button" onClick={() => void selectedProducts.reload()}>Thử lại</button></div> : null}
     <form className="quote-form" onSubmit={(event) => void handleSubmit(event)} noValidate>
       <div className="quote-form__heading"><h2>Thông tin liên hệ</h2><p>Các trường có dấu * cần được điền.</p></div>
-      <label>Họ và tên <span className="required-mark" aria-hidden="true">*</span><input value={form.full_name} onChange={(event) => update("full_name", event.target.value)} maxLength={100} autoComplete="name" disabled={submitting} aria-invalid={Boolean(inputError(fieldErrors, "full_name"))} placeholder="Nhập họ và tên của bạn" />{inputError(fieldErrors, "full_name") ? <span className="field-error">{inputError(fieldErrors, "full_name")}</span> : null}</label>
-      <label><span className="field-label">Số điện thoại <span className="required-mark" aria-hidden="true">*</span></span><input type="tel" value={form.phone} onChange={(event) => update("phone", event.target.value.slice(0, 30))} onBlur={(event) => { const error = getVietnamesePhoneValidationError(event.target.value); setFieldErrors((current) => ({ ...current, phone: error ? [error] : [] })); }} inputMode="tel" autoComplete="tel" maxLength={30} required disabled={submitting} aria-required="true" aria-invalid={Boolean(inputError(fieldErrors, "phone"))} />{inputError(fieldErrors, "phone") ? <span className="field-error">{inputError(fieldErrors, "phone")}</span> : null}</label>
+      <label><span className="field-label">Họ và tên <span className="required-mark" aria-hidden="true">*</span></span><input value={form.full_name} onChange={(event) => update("full_name", event.target.value)} maxLength={100} autoComplete="name" disabled={submitting} aria-invalid={Boolean(inputError(fieldErrors, "full_name"))} placeholder="Nhập họ và tên của bạn" />{inputError(fieldErrors, "full_name") ? <span className="field-error">{inputError(fieldErrors, "full_name")}</span> : null}</label>
+      <label><span className="field-label">Số điện thoại <span className="required-mark" aria-hidden="true">*</span></span><input type="tel" value={form.phone} onChange={(event) => update("phone", event.target.value.slice(0, 30))} onBlur={(event) => { const error = getVietnamesePhoneValidationError(event.target.value); setFieldErrors((current) => ({ ...current, phone: error ? [error] : [] })); }} inputMode="tel" autoComplete="tel" maxLength={30} required disabled={submitting} aria-required="true" aria-invalid={Boolean(inputError(fieldErrors, "phone"))} placeholder="Nhập số điện thoại của bạn" />{inputError(fieldErrors, "phone") ? <span className="field-error">{inputError(fieldErrors, "phone")}</span> : null}</label>
+      <section className="quote-form__product-picker" aria-labelledby="quote-product-picker-title">
+        <div>
+          <div className="quote-form__product-picker-copy">
+            <h3 id="quote-product-picker-title">Sản phẩm của bạn</h3>
+            <p>Chọn sản phẩm để gửi cùng yêu cầu của bạn.</p>
+          </div>
+          <output aria-live="polite">{selectedItems.length} sản phẩm</output>
+        </div>
+        <button type="button" disabled={submitting} onClick={() => navigate("/selection", { animate: false })}>{selectedItems.length ? "Sửa danh sách sản phẩm" : "Chọn sản phẩm"}</button>
+      </section>
       <label>Ghi chú (không bắt buộc)<textarea value={form.note} onChange={(event) => update("note", event.target.value)} maxLength={1000} rows={4} disabled={submitting} /><span className="field-hint">{form.note.length}/1000</span>{inputError(fieldErrors, "note") ? <span className="field-error">{inputError(fieldErrors, "note")}</span> : null}</label>
       <label className="consent-field"><input type="checkbox" checked={form.consent} onChange={(event) => update("consent", event.target.checked)} disabled={submitting} aria-invalid={Boolean(inputError(fieldErrors, "consent"))} /><span>Tôi đồng ý để Hoa Nam sử dụng họ tên, số điện thoại, sản phẩm quan tâm và ghi chú tôi cung cấp nhằm tiếp nhận yêu cầu và liên hệ tư vấn theo Chính sách sử dụng thông tin.</span>{inputError(fieldErrors, "consent") ? <span className="field-error">{inputError(fieldErrors, "consent")}</span> : null}</label>
       {!privacyReady ? <p className="field-error">Chính sách dữ liệu chưa sẵn sàng. Nội dung bạn nhập vẫn được giữ trên màn hình.</p> : null}
@@ -193,7 +199,7 @@ const QuoteRequestPage = () => {
       <p className="privacy-version">Phiên bản chính sách: {config?.privacy_version ?? "Chưa được cấu hình"}</p>
       {selectedProducts.phase === "loading" ? <p className="field-hint">Đang kiểm tra sản phẩm đã chọn…</p> : null}
       {selectedProductsUnavailable ? <p className="field-error" role="alert">Một hoặc nhiều sản phẩm đã chọn không còn khả dụng. Hãy sửa danh sách trước khi gửi yêu cầu.</p> : null}
-      <button className="quote-submit" type="submit" disabled={submitting || !privacyReady || !selectedProductsReady} aria-busy={submitting}>{submitting ? "Đang gửi yêu cầu…" : "Gửi yêu cầu tư vấn"}</button>
+      <button className="quote-submit" type="submit" disabled={submitting || !selectedItems.length || !privacyReady || !selectedProductsReady} aria-busy={submitting}>{submitting ? "Đang gửi yêu cầu…" : "Gửi yêu cầu đặt hàng"}</button>
     </form>
       </div>
     </section>

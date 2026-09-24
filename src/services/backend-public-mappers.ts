@@ -370,6 +370,7 @@ export const mapBackendHome = (value: unknown): HomeDto => {
     if (!items.length) return null;
     return {
       kind: toText(section.code) === "NEWEST" ? "RECENTLY_UPDATED" : "FEATURED_PRODUCTS",
+      source_code: toText(section.code),
       title,
       items,
     };

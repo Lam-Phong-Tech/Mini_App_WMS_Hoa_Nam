@@ -30,8 +30,46 @@ cannot truthfully produce the reference, actual and diff images. The physical
 iPhone-on-Zalo capture also remains absent. These are blocking evidence gaps,
 not a claim of a pixel comparison result.
 
-The 2026-09-12 Android route regression is recorded at
+The Android route regression was rerun on Zalo Testing Version 34 on
+2026-09-13 and is recorded at
 [`android-xiaomi-2206122sc-routes-2026-09-12.md`](evidence/g5/android-xiaomi-2206122sc-routes-2026-09-12.md).
-It passes Detail, Gallery, Quote and Compare route entry plus native Back. The
-resume case remains partial and the physical Android captures still cannot be
-paired with the locked 375×812 reference set for a valid diff.
+It passes Home native-chrome clearance, Detail, Gallery, Quote, Compare,
+native Back and Recent-Apps resume with Compare state preserved. The physical
+Android captures still cannot be paired with the locked 375×812 reference set
+for a valid diff.
+
+## Chrome iPhone responsive run — 2026-09-13
+
+Chrome DevTools Protocol was used with the agreed 375 × 812 CSS px viewport
+and DPR 3. The Browser Preview and local Backend Preview both reported the
+same viewport and DPR; the local document reported `data-host="browser"`, so
+the Zalo-only safe-area/capsule fallback was not applied.
+
+- Captured responsive reference/actual pairs: Home, Catalogue, Detail, Search,
+  Contact and request/selection.
+- Captured same-viewport diffs at a per-channel threshold of 24:
+
+  | State | Mismatch | Mean channel delta |
+  | --- | ---: | ---: |
+  | Home | **11.290%** | 13.667 |
+  | Catalogue | **14.070%** | 19.374 |
+  | Detail | **11.756%** | 17.245 |
+  | Search | **13.466%** | 19.315 |
+  | Contact | **11.520%** | 16.170 |
+
+  The Home result was remeasured after synchronising the browser/Zalo host
+  flag, the Hero public media source, and the group icon/card styling.
+
+This is an evidence-backed **FAIL** against the agreed 2% mismatch threshold,
+not a visual PASS. The remaining drift spans the Hero composition, shared
+top/bottom chrome, and route-specific content geometry. The reference uses
+its own approved mock catalogue data while the target uses the Green public
+catalogue; media/content variance is visible but does not by itself explain
+the full layout mismatch.
+
+## Android availability — 2026-09-13
+
+The attached Samsung SM-A305F (Android 11) has Chrome and Samsung Internet but
+does not have the Zalo package installed; both browsers also stopped at their
+first-run setup screens. It therefore cannot add a Zalo-native evidence leg.
+The earlier Xiaomi Zalo route evidence remains the valid Android native run.

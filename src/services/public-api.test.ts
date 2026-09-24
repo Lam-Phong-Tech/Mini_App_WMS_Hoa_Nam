@@ -33,7 +33,7 @@ describe("DEV public API adapter", () => {
     expect(isApiSuccess(categories) && categories.data).toHaveLength(15);
     expect(isApiSuccess(products) && products.data).toHaveLength(12);
     expect(isApiSuccess(products) && products.data.every((product) => (
-      product.primary_code === null && product.cover_media?.url.startsWith("/dev-wireframe-media/")
+      product.primary_code === null && product.cover_media?.url === "/hero-drill-cutout.png"
     ))).toBe(true);
     expect(isApiSuccess(facets) && facets.data[0]?.options).toHaveLength(15);
   });

@@ -52,8 +52,9 @@ export const BOTTOM_NAVIGATION = [
 
 export const getBottomNavigationKey = (pathname: string): string => {
   if (pathname === "/home" || pathname === "/") return "home";
-  if (pathname.startsWith("/contact") || pathname.startsWith("/system")) return "contact";
-  return "categories";
+  if (pathname.startsWith("/contact") || pathname.startsWith("/quote") || pathname.startsWith("/system")) return "contact";
+  if (pathname === "/categories" || pathname.startsWith("/products") || pathname.startsWith("/filters")) return "categories";
+  return "";
 };
 
 export const getFoundationRoute = (
