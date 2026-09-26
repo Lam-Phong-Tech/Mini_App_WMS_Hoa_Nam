@@ -1,6 +1,8 @@
 import { ReactNode, createContext, useCallback, useContext, useMemo, useState } from "react";
 
 import { QuoteRequestItemInput } from "@/types/public-api";
+import { getQuoteLimits } from "@/services/quote-service";
+import { useAppContext } from "@/state/app-context";
 
 export interface QuoteRamDraft {
   full_name: string;
@@ -30,6 +32,8 @@ interface QuoteWorkflowContextValue {
   selectedProductSnapshots: QuoteProductSnapshot[];
   draft: QuoteRamDraft;
   receipts: QuoteReceipt[];
+  maxItems: number;
+  maxQuantity: number | null;
   setSelectedItems: (items: QuoteRequestItemInput[]) => void;
   addSelectedItem: (item: QuoteRequestItemInput) => boolean;
   removeSelectedItem: (productId: string) => void;
@@ -40,20 +44,18 @@ interface QuoteWorkflowContextValue {
 }
 
 const EMPTY_DRAFT: QuoteRamDraft = { full_name: "", phone: "", note: "", consent: false };
-const MAX_QUOTE_ITEMS = 20;
-
 const normalizeItem = (item: QuoteRequestItemInput): QuoteRequestItemInput | null => {
   const productId = item.product_id.trim();
   if (!productId) return null;
   return { product_id: productId, variant_id: item.variant_id?.trim() || null, quantity: item.quantity ?? null };
 };
 
-const normalizeItems = (items: QuoteRequestItemInput[]) => {
+const normalizeItems = (items: QuoteRequestItemInput[], maxItems: number) => {
   const seen = new Set<string>();
   const normalized: QuoteRequestItemInput[] = [];
   items.forEach((item) => {
     const value = normalizeItem(item);
-    if (!value || seen.has(value.product_id) || normalized.length >= MAX_QUOTE_ITEMS) return;
+    if (!value || seen.has(value.product_id) || normalized.length >= maxItems) return;
     seen.add(value.product_id);
     normalized.push(value);
   });
@@ -72,28 +74,30 @@ const QuoteWorkflowContext = createContext<QuoteWorkflowContextValue | null>(nul
 
 /** PII draft and receipt live only in React RAM for the current app-open session. */
 export const QuoteWorkflowProvider = ({ children }: { children: ReactNode }) => {
+  const { config } = useAppContext();
+  const { maxItems, maxQuantity } = getQuoteLimits(config);
   const [selectedItems, setSelectedItemsState] = useState<QuoteRequestItemInput[]>([]);
   const [selectedProductSnapshots, setSelectedProductSnapshots] = useState<QuoteProductSnapshot[]>([]);
   const [draft, setDraft] = useState<QuoteRamDraft>(EMPTY_DRAFT);
   const [receipts, setReceipts] = useState<QuoteReceipt[]>([]);
 
   const setSelectedItems = useCallback((items: QuoteRequestItemInput[]) => {
-    const normalized = normalizeItems(items);
+    const normalized = normalizeItems(items, maxItems);
     const selectedIds = new Set(normalized.map((item) => item.product_id));
     setSelectedItemsState(normalized);
     setSelectedProductSnapshots((current) => current.filter((product) => selectedIds.has(product.product_id)));
-  }, []);
+  }, [maxItems]);
   const addSelectedItem = useCallback((item: QuoteRequestItemInput) => {
     const value = normalizeItem(item);
     if (!value) return false;
     let added = false;
     setSelectedItemsState((current) => {
-      if (current.some((entry) => entry.product_id === value.product_id) || current.length >= MAX_QUOTE_ITEMS) return current;
+      if (current.some((entry) => entry.product_id === value.product_id) || current.length >= maxItems) return current;
       added = true;
       return [...current, value];
     });
     return added;
-  }, []);
+  }, [maxItems]);
   const removeSelectedItem = useCallback((productId: string) => {
     setSelectedItemsState((current) => current.filter((item) => item.product_id !== productId));
     setSelectedProductSnapshots((current) => current.filter((product) => product.product_id !== productId));
@@ -116,6 +120,8 @@ export const QuoteWorkflowProvider = ({ children }: { children: ReactNode }) => 
     selectedProductSnapshots,
     draft,
     receipts,
+    maxItems,
+    maxQuantity,
     setSelectedItems,
     addSelectedItem,
     removeSelectedItem,
@@ -123,7 +129,7 @@ export const QuoteWorkflowProvider = ({ children }: { children: ReactNode }) => 
     setDraft,
     addReceipt,
     removeReceipt,
-  }), [addReceipt, addSelectedItem, draft, receipts, rememberSelectedProducts, removeReceipt, removeSelectedItem, selectedItems, selectedProductSnapshots, setSelectedItems]);
+  }), [addReceipt, addSelectedItem, draft, maxItems, maxQuantity, receipts, rememberSelectedProducts, removeReceipt, removeSelectedItem, selectedItems, selectedProductSnapshots, setSelectedItems]);
 
   return <QuoteWorkflowContext.Provider value={value}>{children}</QuoteWorkflowContext.Provider>;
 };

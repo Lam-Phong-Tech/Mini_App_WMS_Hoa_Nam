@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useLocation, useNavigate } from "zmp-ui";
 
 import {
@@ -11,10 +11,10 @@ import {
   serializeProductQuery,
   visibleText,
 } from "@/catalogue/catalogue-utils";
+import { getCatalogueCountCopy, getCategoryFilterLabel, getCategoryProductTotal } from "@/catalogue/catalogue-filter-utils";
 import {
   CatalogueFailure,
   CatalogueSkeleton,
-  EmptyCatalogue,
 } from "@/components/catalogue/catalogue-feedback";
 import { FilterSheet } from "@/components/catalogue/filter-sheet";
 import { AvailabilityFilter, AvailabilityFilterValue } from "@/components/catalogue/availability-filter";
@@ -23,6 +23,7 @@ import { AppShell } from "@/components/app-shell";
 import { SystemStatePanel } from "@/components/system-state-panel";
 import { UiIcon } from "@/components/ui-icon";
 import { useProductResults } from "@/hooks/use-product-results";
+import { useCatalogueCategories } from "@/hooks/use-catalogue-categories";
 import { useScrollRestoration } from "@/hooks/use-scroll-restoration";
 import { getFoundationRoute } from "@/routes";
 import { useAppContext } from "@/state/app-context";
@@ -41,28 +42,32 @@ const DOMAIN_FILTER_LABELS = {
   ACCESSORIES: "Phụ kiện",
 } as const;
 
-const CATEGORY_FILTER_LABELS: Record<string, string> = {
-  CLAMPING_TOOLS: "Dụng cụ kẹp giữ",
-  CUTTING_TOOLS: "Dụng cụ cắt",
-  ELECTRICAL_TOOLS: "Dụng cụ điện",
-  FASTENING_TOOLS: "Dụng cụ siết/vặn",
-  PT_DRILL_DRIVER: "Máy khoan & vặn vít",
-  PT_CONCRETE: "Dụng cụ bê tông & xây nề",
-};
-
 export const ProductListPage = ({ openFilter = false }: { openFilter?: boolean }) => {
   const location = useLocation();
   const navigate = useNavigate();
-  const { api, home, phase, systemState, refresh } = useAppContext();
+  const { api, home, phase, systemState, refresh, catalogueGeneration } = useAppContext();
   const [filterVisible, setFilterVisible] = useState(openFilter);
   const [availability, setAvailability] = useState<AvailabilityFilterValue>("ALL");
+  const dataEnabled = phase === "ready" && !systemState;
   const query = useMemo(() => parseProductQuery(location.search), [location.search]);
   const results = useProductResults(
     api,
     { ...query, limit: PRODUCT_PAGE_LIMIT },
-    true,
+    dataEnabled,
     PRODUCT_PAGE_LIMIT,
+    PRODUCT_PAGE_LIMIT,
+    "products",
+    catalogueGeneration,
   );
+  const categoryState = useCatalogueCategories(api, query.domain, dataEnabled);
+  const categoryRefresh = useRef({ generation: catalogueGeneration, enabled: dataEnabled });
+  useEffect(() => {
+    const previous = categoryRefresh.current;
+    categoryRefresh.current = { generation: catalogueGeneration, enabled: dataEnabled };
+    // Enabling already loads categories. A refresh while still enabled must
+    // also revalidate public category totals, without issuing a double load.
+    if (previous.enabled && dataEnabled && previous.generation !== catalogueGeneration) categoryState.reload();
+  }, [catalogueGeneration, categoryState.reload, dataEnabled]);
   const returnPath = createProductReturnPath(location.pathname, location.search);
   const scrollKey = `products:${productQueryCacheKey(query)}`;
   useScrollRestoration(scrollKey, results.kind === "success-data" || results.kind === "success-empty" || results.kind === "load-more-error");
@@ -73,11 +78,12 @@ export const ProductListPage = ({ openFilter = false }: { openFilter?: boolean }
      an empty PREORDER result when it falls on a later page. */
   useEffect(() => {
     const hasVisibleAvailability = availability === "ALL" || results.products.some((product) => product.availability === availability);
-    const canLoadMore = results.renderedCount < results.loadedCount || Boolean(results.nextCursor);
-    if (availability !== "ALL" && !hasVisibleAvailability && canLoadMore && results.kind === "success-data") {
+    const canLoadMore = results.renderedCount < results.loadedCount || results.hasMore;
+    if (availability !== "ALL" && !hasVisibleAvailability && canLoadMore
+      && (results.kind === "success-data" || results.kind === "success-empty")) {
       void results.loadMore();
     }
-  }, [availability, results.kind, results.loadedCount, results.loadMore, results.nextCursor, results.products, results.renderedCount]);
+  }, [availability, results.hasMore, results.kind, results.loadedCount, results.loadMore, results.products, results.renderedCount]);
 
   useEffect(() => {
     if (openFilter) setFilterVisible(true);
@@ -94,9 +100,16 @@ export const ProductListPage = ({ openFilter = false }: { openFilter?: boolean }
   const visibleProducts = results.products.filter((product) =>
     availability === "ALL" || product.availability === availability,
   );
+  const hasMore = results.renderedCount < results.loadedCount || results.hasMore;
+  const categoryTotal = categoryState.kind === "success-data" || categoryState.kind === "success-empty"
+    ? getCategoryProductTotal(query, categoryState.categories) : null;
+  const totalCount = availability === "ALL"
+    ? results.totalCount ?? categoryTotal
+    : !results.hasMore ? results.loadedProducts.filter((product) => product.availability === availability).length : null;
+  const countCopy = getCatalogueCountCopy(visibleProducts.length, totalCount, hasMore);
   const isLoadingAvailability = availability !== "ALL"
     && !visibleProducts.length
-    && (results.renderedCount < results.loadedCount || Boolean(results.nextCursor));
+    && (results.renderedCount < results.loadedCount || results.hasMore);
   const activeFilterCount = countActiveFilters(query) + Number(Boolean(query.domain));
   const clearAppliedFilters = () => {
     setAvailability("ALL");
@@ -123,13 +136,13 @@ export const ProductListPage = ({ openFilter = false }: { openFilter?: boolean }
           <button type="button" onClick={() => setFilterVisible(true)}>
             <UiIcon name="sliders" size={19} /> Bộ lọc & sắp xếp{activeFilterCount ? ` (${activeFilterCount})` : ""}
           </button>
-          <output aria-live="polite">{results.kind === "loading" ? "Đang tải…" : `${visibleProducts.length} sản phẩm`}</output>
+          <output aria-live="polite">{results.kind === "loading" ? "Đang tải…" : countCopy.result}</output>
         </div>
         <AvailabilityFilter value={availability} onChange={setAvailability} />
         {query.domain || query.category ? (
           <div className="catalogue-active-filters" aria-label="Bộ lọc đang áp dụng">
             {query.domain ? <button type="button" onClick={() => navigate(`/products${serializeProductQuery({ ...query, domain: undefined, category: undefined })}`, { replace: true, animate: false })}>{DOMAIN_FILTER_LABELS[query.domain]} <UiIcon name="x" size={14} /></button> : null}
-            {query.category ? <button type="button" onClick={() => navigate(`/products${serializeProductQuery({ ...query, category: undefined })}`, { replace: true, animate: false })}>{CATEGORY_FILTER_LABELS[query.category] ?? query.category} <UiIcon name="x" size={14} /></button> : null}
+            {query.category ? <button type="button" onClick={() => navigate(`/products${serializeProductQuery({ ...query, category: undefined })}`, { replace: true, animate: false })}>{getCategoryFilterLabel(query.category, categoryState.categories, results.loadedProducts)} <UiIcon name="x" size={14} /></button> : null}
             <button type="button" className="catalogue-active-filters__clear" onClick={clearAppliedFilters}>Xóa bộ lọc</button>
           </div>
         ) : null}
@@ -138,12 +151,24 @@ export const ProductListPage = ({ openFilter = false }: { openFilter?: boolean }
 
       {results.kind === "loading" ? <CatalogueSkeleton /> : null}
       {!hasProducts && results.failure ? <CatalogueFailure failure={results.failure} onRetry={() => void results.reload()} /> : null}
-      {results.kind === "success-empty" ? <EmptyCatalogue onRetry={() => void results.reload()} /> : null}
+      {results.kind === "success-empty" && !hasMore ? <section className="catalogue-empty-category" aria-label="Danh mục chưa có sản phẩm">
+        <span><UiIcon name="search" size={28} /></span>
+        <h2>Chưa tìm thấy sản phẩm phù hợp</h2>
+        <p>Thử từ khóa khác hoặc xóa bộ lọc để xem thêm sản phẩm.</p>
+        <div>
+          <button type="button" onClick={clearAppliedFilters}>Xem tất cả sản phẩm <UiIcon name="arrowRight" size={18} /></button>
+        </div>
+      </section> : null}
       {hasProducts && visibleProducts.length ? <ProductGrid products={visibleProducts} loadedCount={visibleProducts.length} returnPath={returnPath} label="Danh sách sản phẩm" /> : null}
       {hasProducts && !visibleProducts.length ? <p className="catalogue-filter-empty" role="status">{isLoadingAvailability ? "Đang tìm thêm sản phẩm theo trạng thái đã chọn…" : "Chưa có sản phẩm phù hợp với trạng thái hàng đã chọn."}</p> : null}
-      {hasProducts && visibleProducts.length ? (
+      {hasProducts || hasMore ? (
         <footer className="catalogue-list-footer">
-          <p>Đã hiển thị {visibleProducts.length}/{visibleProducts.length} sản phẩm</p>
+          <p aria-live="polite">{countCopy.progress}</p>
+          {results.kind === "load-more-error" ? <p className="infinite-load__error" role="status">Không thể tải thêm. Nội dung đã hiển thị vẫn được giữ lại.</p> : null}
+          {hasMore ? <button type="button" className="catalogue-list-footer__more" disabled={results.kind === "loading-more"} onClick={() => void results.loadMore()}>
+            {results.kind === "loading-more" ? "Đang tải thêm…" : results.kind === "load-more-error" ? "Thử tải lại" : "Xem thêm sản phẩm"}
+            <UiIcon name="arrowRight" size={18} />
+          </button> : null}
           <button type="button" onClick={() => navigate("/categories", { animate: false })}>
             Xem toàn bộ danh mục <UiIcon name="arrowRight" size={18} />
           </button>
@@ -156,7 +181,6 @@ export const ProductListPage = ({ openFilter = false }: { openFilter?: boolean }
         query={query}
         availability={availability}
         domains={home?.domains ?? []}
-        productCount={visibleProducts.length}
         onClose={() => {
           setFilterVisible(false);
           if (openFilter) navigate(`/products${serializeProductQuery(query)}`, { replace: true, animate: false });

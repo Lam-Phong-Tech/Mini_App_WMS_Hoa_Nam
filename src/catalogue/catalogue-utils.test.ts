@@ -19,6 +19,7 @@ import {
   isVirtualProductGridEligible,
   mergeUniqueProducts,
   normalizeSearchText,
+  productQueryCacheKey,
   parseProductQuery,
   resetProductFilters,
   serializeProductQuery,
@@ -96,6 +97,16 @@ describe("catalogue contract presentation", () => {
     expect(countActiveFilters(query)).toBe(4);
     expect(serializeProductQuery(resetProductFilters(query))).toBe("?q=test&domain=POWER_TOOLS");
     expect(serializeProductQuery(query)).toContain("sort=name_asc");
+  });
+
+  it("uses separate cache identities after query, filter, or sort changes", () => {
+    const keys = [
+      productQueryCacheKey({ q: "khoan", domain: "POWER_TOOLS", sort: "featured" }),
+      productQueryCacheKey({ q: "may cat", domain: "POWER_TOOLS", sort: "featured" }),
+      productQueryCacheKey({ q: "khoan", domain: "HAND_TOOLS", sort: "featured" }),
+      productQueryCacheKey({ q: "khoan", domain: "POWER_TOOLS", sort: "name_asc" }),
+    ];
+    expect(new Set(keys).size).toBe(4);
   });
 
   it("merges cursor pages without duplicate or unavailable products", () => {

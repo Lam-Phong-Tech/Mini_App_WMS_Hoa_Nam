@@ -3,10 +3,13 @@ import { describe, expect, it, vi } from "vitest";
 import { createSafeFailure } from "@/services/api-client";
 import {
   createQuoteIdempotencyKeyTracker,
+  DEFAULT_QUOTE_LIMITS,
+  getQuoteLimits,
   createQuoteSubmissionGuard,
   getQuoteFingerprint,
   getVietnamesePhoneValidationError,
   normalizeVietnamesePhone,
+  retryQuoteSubmission,
   submitQuoteWithRetry,
   validateQuoteDraft,
 } from "@/services/quote-service";
@@ -116,10 +119,11 @@ describe("G4 quote validation and submission", () => {
     expect(create).toHaveBeenCalledTimes(1);
   });
 
-  it("uses one key for a canonical product order and a new key when content changes", () => {
+  it("preserves item order in the payload fingerprint and assigns a different key after an order change", () => {
     const tracker = createQuoteIdempotencyKeyTracker(vi.fn()
       .mockReturnValueOnce("key-canonical-0001")
-      .mockReturnValueOnce("key-changed-000002"));
+      .mockReturnValueOnce("key-reordered-0002")
+      .mockReturnValueOnce("key-changed-000003"));
     const first = validateQuoteDraft({
       ...validDraft(),
       items: [
@@ -140,10 +144,10 @@ describe("G4 quote validation and submission", () => {
     }).value;
     if (!first || !reordered || !changed) throw new Error("Expected valid drafts");
 
-    expect(getQuoteFingerprint(first)).toBe(getQuoteFingerprint(reordered));
+    expect(getQuoteFingerprint(first)).not.toBe(getQuoteFingerprint(reordered));
     expect(tracker.getKey(first)).toBe("key-canonical-0001");
-    expect(tracker.getKey(reordered)).toBe("key-canonical-0001");
-    expect(tracker.getKey(changed)).toBe("key-changed-000002");
+    expect(tracker.getKey(reordered)).toBe("key-reordered-0002");
+    expect(tracker.getKey(changed)).toBe("key-changed-000003");
   });
 
   it("rejects duplicate products and accepts 1,000-character notes", () => {
@@ -168,5 +172,37 @@ describe("G4 quote validation and submission", () => {
       valid: false,
       errors: { items: expect.any(Array) },
     });
+  });
+
+  it("uses public quote limits from config while retaining the safe twenty-item default", () => {
+    expect(getQuoteLimits(null)).toEqual(DEFAULT_QUOTE_LIMITS);
+    const limits = getQuoteLimits({ quote_request: { max_items: 21, max_quantity: 3 } } as never);
+    const items = Array.from({ length: 21 }, (_, index) => ({ product_id: `product-${index + 1}`, quantity: 3 }));
+    expect(validateQuoteDraft({ ...validDraft(), items }, limits).valid).toBe(true);
+    expect(validateQuoteDraft({ ...validDraft(), items: [{ product_id: "product-1", quantity: 4 }] }, limits).errors).toMatchObject({
+      "items.0.quantity": expect.any(Array),
+    });
+  });
+
+  it("retries the exact validated payload with the same idempotency key", async () => {
+    const create = vi.fn().mockResolvedValueOnce(createSafeFailure("UPSTREAM_UNAVAILABLE")).mockResolvedValueOnce(accepted("req-replayed"));
+    const payload = validDraft();
+    await submitQuoteWithRetry(apiWith(create), payload, "key-replay-000001");
+    await submitQuoteWithRetry(apiWith(create), payload, "key-replay-000001");
+    expect(create).toHaveBeenNthCalledWith(1, expect.objectContaining({ items: payload.items, privacy_version: payload.privacy_version }), "key-replay-000001");
+    expect(create).toHaveBeenNthCalledWith(2, expect.objectContaining({ items: payload.items, privacy_version: payload.privacy_version }), "key-replay-000001");
+  });
+
+  it("replays the exact accepted payload without applying later quote limits", async () => {
+    const create = vi.fn().mockResolvedValue(accepted("req-replayed"));
+    const payload = validateQuoteDraft({
+      ...validDraft(),
+      items: Array.from({ length: 21 }, (_, index) => ({ product_id: `product-${index + 1}`, quantity: 3 })),
+    }, { maxItems: 21, maxQuantity: 3 }).value;
+    if (!payload) throw new Error("Expected a valid original payload");
+
+    const response = await retryQuoteSubmission(apiWith(create), payload, "key-replay-000001");
+    expect(response.success).toBe(true);
+    expect(create).toHaveBeenCalledWith(payload, "key-replay-000001");
   });
 });

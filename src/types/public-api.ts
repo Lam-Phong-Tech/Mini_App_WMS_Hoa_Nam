@@ -43,11 +43,19 @@ export type ApiErrorCode =
 export interface ApiMeta {
   request_id?: string;
   data_version?: string;
-  next_cursor?: string | null;
-  limit?: number;
+  /** Client transport failed before a HTTP response, not an API/server failure. */
+  transport_error?: boolean;
   retry_after_seconds?: number;
   estimated_end_at?: string;
   idempotent_replay?: boolean;
+}
+
+/** Pagination is part of the product response data contract, never HTTP meta. */
+export interface ProductPageInfo {
+  total?: number;
+  next_cursor: string | null;
+  has_more: boolean;
+  limit?: number;
 }
 
 export type FieldErrors = Record<string, string[]>;
@@ -57,6 +65,8 @@ export interface ApiSuccess<T> {
   message: string;
   data: T;
   meta: ApiMeta;
+  /** Present only for Products, Search, and Related list responses. */
+  page_info?: ProductPageInfo;
   error_code: null;
   errors: null;
 }
@@ -95,6 +105,8 @@ export interface CategoryDto {
   path: string[];
   icon?: string | null;
   sort_order: number;
+  /** Published product count for this category, not an inventory quantity. */
+  product_count?: number;
 }
 
 export interface MediaDto {
@@ -224,6 +236,10 @@ export interface PublicConfigDto {
   privacy_policy_url: string | null;
   /** Version of the exact privacy notice currently shown to the customer. */
   privacy_version: string | null;
+  quote_request?: {
+    max_items: number;
+    max_quantity: number | null;
+  };
   maintenance: {
     enabled: boolean;
     message: string | null;
@@ -267,7 +283,7 @@ export interface QuoteRequestItemInput {
 }
 
 export interface QuoteRequestInput {
-  /** The v1.1 canonical request shape. A single selected product is one item. */
+  /** The Public Storefront 1.2 request shape. A selected product is one item. */
   items: QuoteRequestItemInput[];
   full_name: string;
   phone: string;

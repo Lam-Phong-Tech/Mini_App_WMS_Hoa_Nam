@@ -57,10 +57,10 @@ describe("DEV public API adapter", () => {
     expect(isApiSuccess(exactModelSearch) && exactModelSearch.data.map((product) => product.model)).toEqual([
       "DCPL2045",
     ]);
-    expect(isApiSuccess(firstPage) && firstPage.meta.next_cursor).toBe("dev-preview-offset-2");
+    expect(isApiSuccess(firstPage) && firstPage.page_info?.next_cursor).toBe("dev-preview-offset-2");
 
-    if (!isApiSuccess(firstPage) || !firstPage.meta.next_cursor) throw new Error("Expected a DEV preview cursor");
-    const secondPage = await adapter.getProducts({ cursor: firstPage.meta.next_cursor, limit: 2 });
+    if (!isApiSuccess(firstPage) || !firstPage.page_info?.next_cursor) throw new Error("Expected a DEV preview cursor");
+    const secondPage = await adapter.getProducts({ cursor: firstPage.page_info.next_cursor, limit: 2 });
     expect(isApiSuccess(secondPage) && secondPage.data.map((product) => product.product_id)).not.toContain(
       firstPage.data[0]?.product_id,
     );

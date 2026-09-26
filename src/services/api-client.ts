@@ -47,7 +47,7 @@ export const createSafeFailure = (
 const errorCodeForStatus = (status: number): ApiErrorCode => {
   if (status === 429) return "RATE_LIMITED";
   if (status === 404) return "PRODUCT_NOT_FOUND";
-  if (status === 409) return "PRODUCT_NOT_AVAILABLE";
+  if (status === 409) return "IDEMPOTENCY_CONFLICT";
   if (status === 503) return "UPSTREAM_UNAVAILABLE";
   return "INTERNAL_ERROR";
 };
@@ -92,20 +92,22 @@ export const requestEnvelope = async <T>(
       ...(controller ? { signal: controller.signal } : {}),
     });
   } catch {
-    return createSafeFailure("UPSTREAM_UNAVAILABLE");
+    return createSafeFailure("UPSTREAM_UNAVAILABLE", { transport_error: true });
   } finally {
     if (timeout) clearTimeout(timeout);
   }
 
   const retryAfter = response.headers.get("Retry-After");
   const retryAfterSeconds = retryAfter ? Number.parseInt(retryAfter, 10) : undefined;
-  const fallbackMeta = Number.isFinite(retryAfterSeconds)
-    ? { retry_after_seconds: retryAfterSeconds }
-    : {};
+  const fallbackMeta: ApiMeta = Number.isFinite(retryAfterSeconds)
+    ? { retry_after_seconds: retryAfterSeconds, transport_error: false }
+    : { transport_error: false };
 
   try {
     const body: unknown = await response.json();
-    if (isApiEnvelope<T>(body)) return body;
+    if (isApiEnvelope<T>(body)) {
+      return body.success ? body : { ...body, meta: { ...body.meta, transport_error: false } };
+    }
   } catch {
     // The app intentionally replaces malformed/non-JSON upstream responses with a safe state.
   }

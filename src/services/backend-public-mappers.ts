@@ -14,6 +14,7 @@ import {
   ProductDetailDto,
   PublicAvailability,
   PublicConfigDto,
+  ProductPageInfo,
   QuoteAcceptedDto,
   SpecItemDto,
   VariantDto,
@@ -46,6 +47,8 @@ const repairUtf8Mojibake = (value: string): string => {
 const toText = (value: unknown): string | null =>
   typeof value === "string" && value.trim() ? repairUtf8Mojibake(value.trim()) : null;
 const toBoolean = (value: unknown): boolean => value === true;
+const toOptionalBoolean = (value: unknown): boolean | undefined =>
+  typeof value === "boolean" ? value : undefined;
 const toNumber = (value: unknown): number | undefined =>
   typeof value === "number" && Number.isFinite(value) ? value : undefined;
 const toScalarText = (value: unknown): string | null =>
@@ -190,7 +193,10 @@ const mapFeatures = (value: unknown): FeatureDto[] => {
 
 const mapSpecItem = (codeValue: unknown, value: unknown): SpecItemDto | null => {
   const code = toText(codeValue);
-  if (!code || PRIVATE_SPEC_CODE.test(code)) return null;
+  // Public power-source specifications are not importer/source provenance.
+  // Keep the private-field denylist, with only these two approved exceptions.
+  const publicPowerSource = code === "power_source" || code === "power_source_detail";
+  if (!code || (!publicPowerSource && PRIVATE_SPEC_CODE.test(code))) return null;
   const record = toRecord(value);
   const textValue = toScalarText(record.value) ?? toScalarText(value);
   const label = toSpecLabel(code, value);
@@ -303,6 +309,7 @@ export const mapBackendConfig = (value: unknown): PublicConfigDto => {
   const supportHours = toRecord(config.support_hours);
   const configuredHotline = toRecord(config.hotline);
   const configuredOa = toRecord(config.zalo_oa);
+  const quoteRequest = toRecord(config.quote_request);
   const weekday = toRecord(supportHours.weekday);
   const saturday = toRecord(supportHours.saturday);
   const intervals: NonNullable<PublicConfigDto["support_hours"]>["intervals"] = compactMap(supportHours.intervals, (candidate) => {
@@ -333,6 +340,8 @@ export const mapBackendConfig = (value: unknown): PublicConfigDto => {
     (result, [key, enabled]) => ({ ...result, [key]: toBoolean(enabled) }),
     {},
   );
+  const configuredMaxItems = toNumber(quoteRequest.max_items);
+  const configuredMaxQuantity = toNumber(quoteRequest.max_quantity);
 
   return {
     config_version: toText(config.config_version) ?? toText(config.contract_version) ?? "unknown",
@@ -341,6 +350,14 @@ export const mapBackendConfig = (value: unknown): PublicConfigDto => {
     support_hours: intervals.length ? { timezone: "Asia/Ho_Chi_Minh", intervals } : null,
     privacy_policy_url: toText(config.privacy_policy_url) ?? toText(privacy.url),
     privacy_version: toText(config.privacy_version) ?? toText(privacy.version),
+    quote_request: {
+      max_items: typeof configuredMaxItems === "number" && Number.isInteger(configuredMaxItems) && configuredMaxItems > 0
+        ? configuredMaxItems
+        : 20,
+      max_quantity: typeof configuredMaxQuantity === "number" && Number.isInteger(configuredMaxQuantity) && configuredMaxQuantity > 0
+        ? configuredMaxQuantity
+        : null,
+    },
     maintenance: {
       enabled: toBoolean(maintenance.enabled),
       message: toText(maintenance.message),
@@ -388,25 +405,43 @@ export const mapBackendCategories = (value: unknown): CategoryDto[] => {
     const displayName = toText(category.name) ?? toText(category.display_name);
     const domain = toDomainCode(category.domain);
     if (!code || !displayName || !domain) return null;
-    return { code, display_name: displayName, domain, parent_code: null, path: [domain, code], sort_order: index + 1 };
+    const productCount = toNumber(category.product_count);
+    return {
+      code,
+      display_name: displayName,
+      domain,
+      parent_code: null,
+      path: [domain, code],
+      sort_order: index + 1,
+      ...(typeof productCount === "number" && Number.isInteger(productCount) && productCount >= 0
+        ? { product_count: productCount }
+        : {}),
+    };
   });
 };
 
 export interface BackendProductPage {
   items: ProductCardDto[];
-  next_cursor: string | null;
-  limit?: number;
+  page_info: ProductPageInfo;
 }
 
 const mapBackendProductList = (value: unknown): BackendProductPage => {
   const data = toRecord(value);
   const pageInfo = toRecord(data.page_info);
+  const total = toNumber(pageInfo.total);
+  const nextCursor = toText(pageInfo.next_cursor);
+  const explicitHasMore = toOptionalBoolean(pageInfo.has_more);
+  const hasMore = (explicitHasMore ?? Boolean(nextCursor)) && Boolean(nextCursor);
   return {
     items: toArray(data.items)
       .map(mapBackendProduct)
       .filter((product): product is ProductCardDto => Boolean(product)),
-    next_cursor: toText(pageInfo.next_cursor),
-    limit: toNumber(pageInfo.limit),
+    page_info: {
+      next_cursor: hasMore ? nextCursor : null,
+      has_more: hasMore,
+      ...(typeof toNumber(pageInfo.limit) === "number" ? { limit: toNumber(pageInfo.limit) } : {}),
+      ...(typeof total === "number" && Number.isInteger(total) && total >= 0 ? { total } : {}),
+    },
   };
 };
 

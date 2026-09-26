@@ -1,8 +1,10 @@
 import { FormEvent, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useLocation, useNavigate, useParams } from "zmp-ui";
 
-import { getSafeReturnPath, getVisibleVariants, isEligiblePublicProduct, visibleText } from "@/catalogue/catalogue-utils";
+import { getProductDisplayName, getSafeReturnPath, getVisibleVariants, isEligiblePublicProduct, visibleText } from "@/catalogue/catalogue-utils";
+import { createProductSelectionSnapshot, getProductModelLabel } from "@/catalogue/product-identity";
 import { CatalogueSkeleton } from "@/components/catalogue/catalogue-feedback";
+import { PublicImage } from "@/components/catalogue/public-image";
 import { AppShell } from "@/components/app-shell";
 import { SystemStatePanel } from "@/components/system-state-panel";
 import { UiIcon } from "@/components/ui-icon";
@@ -13,7 +15,7 @@ import { createQuoteIdempotencyKeyTracker, createQuoteSubmissionGuard, getVietna
 import { useAppContext } from "@/state/app-context";
 import { QuoteRamDraft, useQuoteWorkflow } from "@/state/quote-workflow-context";
 import { createLoadingState, getSystemStateForFailure } from "@/state/system-state";
-import { ApiFailure, VariantDto, isApiSuccess } from "@/types/public-api";
+import { ApiFailure, QuoteRequestInput, VariantDto, isApiSuccess } from "@/types/public-api";
 
 const route = getFoundationRoute("quote-request");
 const inputError = (errors: Record<string, string[]>, field: string): string | null => errors[field]?.[0] ?? null;
@@ -22,7 +24,7 @@ const QuoteRequestPage = () => {
   const { slug } = useParams<{ slug: string }>();
   const location = useLocation();
   const navigate = useNavigate();
-  const { api, config, phase, systemState, refresh } = useAppContext();
+  const { api, config, phase, systemState, refresh, catalogueGeneration } = useAppContext();
   const detail = useProductDetail(api, slug);
   const {
     selectedItems,
@@ -33,6 +35,8 @@ const QuoteRequestPage = () => {
     draft: savedDraft,
     setDraft,
     addReceipt,
+    maxItems,
+    maxQuantity,
   } = useQuoteWorkflow();
   const [form, setForm] = useState<QuoteRamDraft>(savedDraft);
   const [fieldErrors, setFieldErrors] = useState<Record<string, string[]>>({});
@@ -41,6 +45,7 @@ const QuoteRequestPage = () => {
   const [acceptedRequestId, setAcceptedRequestId] = useState<string | null>(null);
   const idempotencyKeys = useRef(createQuoteIdempotencyKeyTracker());
   const guard = useRef(createQuoteSubmissionGuard());
+  const retryAttempt = useRef<{ payload: QuoteRequestInput; idempotencyKey: string } | null>(null);
   const returnPath = getSafeReturnPath(location.search) ?? (slug ? `/products/${slug}` : "/home");
   const selectedVariantId = new URLSearchParams(location.search).get("variant_id");
   const variants = useMemo(() => getVisibleVariants(detail.product?.variants), [detail.product?.variants]);
@@ -48,20 +53,14 @@ const QuoteRequestPage = () => {
   // Quote selection is RAM-only. A successful missing_ids result must not
   // mutate it silently; the customer explicitly removes an unavailable item.
   const ignoreMissingSelectionIds = useCallback(() => undefined, []);
-  const selectedProducts = useLibraryProducts(api, selectedItems.map((item) => item.product_id), ignoreMissingSelectionIds);
-  const directSelectionPending = Boolean(
-    slug
-    && detail.product
-    && isEligiblePublicProduct(detail.product)
-    && !selectedItems.some((item) => item.product_id === detail.product?.product_id),
-  );
+  const selectedProducts = useLibraryProducts(api, selectedItems.map((item) => item.product_id), ignoreMissingSelectionIds, catalogueGeneration);
 
   useEffect(() => setForm(savedDraft), [savedDraft]);
 
   useEffect(() => {
     if (!slug || !detail.product || !isEligiblePublicProduct(detail.product)) return;
     addSelectedItem({ product_id: detail.product.product_id, variant_id: selectedVariant?.variant_id ?? null, quantity: null });
-    rememberSelectedProducts([{ product_id: detail.product.product_id, name: detail.product.name, model: detail.product.model ?? null }]);
+    rememberSelectedProducts([createProductSelectionSnapshot(detail.product)]);
   }, [addSelectedItem, detail.product, rememberSelectedProducts, selectedVariant?.variant_id, slug]);
 
   const update = (field: keyof QuoteRamDraft, value: string | boolean) => {
@@ -70,6 +69,7 @@ const QuoteRequestPage = () => {
     setDraft(next);
     setFieldErrors((current) => ({ ...current, [field]: [] }));
     setResponseFailure(null);
+    retryAttempt.current = null;
   };
 
   const draft: QuoteDraftInput = {
@@ -81,25 +81,28 @@ const QuoteRequestPage = () => {
     privacy_version: config?.privacy_version ?? "",
   };
 
-  const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
-    if (submitting || acceptedRequestId) return;
-    const validation = validateQuoteDraft(draft);
-    setFieldErrors(validation.errors);
-    if (!validation.valid || !validation.value || !config?.privacy_policy_url || !selectedProductsReady) return;
+  const submitAttempt = async (
+    attempt: { payload: QuoteRequestInput; idempotencyKey: string },
+    mode: "new" | "retry" = "new",
+  ) => {
     setSubmitting(true);
     setResponseFailure(null);
-    const response = await guard.current.submit(api, draft, idempotencyKeys.current.getKey(validation.value));
+    const response = mode === "retry"
+      ? await guard.current.retry(api, attempt.payload, attempt.idempotencyKey)
+      : await guard.current.submit(api, attempt.payload, attempt.idempotencyKey, { maxItems, maxQuantity });
     setSubmitting(false);
     if (isApiSuccess(response) && response.data.status === "RECEIVED" && response.data.request_id) {
+      retryAttempt.current = null;
       addReceipt({
         request_id: response.data.request_id,
         status: response.data.status,
-        items: validation.value.items,
-        products: selectedItems.map((item) => {
+        items: attempt.payload.items,
+        products: attempt.payload.items.map((item) => {
           const product = selectedProducts.products.find((candidate) => candidate.product_id === item.product_id)
             ?? selectedProductSnapshots.find((candidate) => candidate.product_id === item.product_id);
-          return { product_id: item.product_id, name: product?.name ?? "Sản phẩm đã chọn", model: product?.model ?? null };
+          return product
+            ? createProductSelectionSnapshot(product)
+            : { product_id: item.product_id, name: "Sản phẩm đã chọn", model: null };
         }),
       });
       setAcceptedRequestId(response.data.request_id);
@@ -109,6 +112,23 @@ const QuoteRequestPage = () => {
       if (response.errors) setFieldErrors(response.errors);
       setResponseFailure(response);
     }
+  };
+
+  const retryLastAttempt = () => {
+    const attempt = retryAttempt.current;
+    if (!attempt || submitting) return;
+    void submitAttempt(attempt, "retry");
+  };
+
+  const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    if (submitting || acceptedRequestId) return;
+    const validation = validateQuoteDraft(draft, { maxItems, maxQuantity });
+    setFieldErrors(validation.errors);
+    if (!validation.valid || !validation.value || !config?.privacy_policy_url || !selectedProductsReady) return;
+    const attempt = { payload: validation.value, idempotencyKey: idempotencyKeys.current.getKey(validation.value) };
+    retryAttempt.current = attempt;
+    await submitAttempt(attempt);
   };
 
   if (phase === "loading") return <AppShell route={route}><SystemStatePanel state={createLoadingState()} /></AppShell>;
@@ -130,10 +150,8 @@ const QuoteRequestPage = () => {
     </AppShell>;
   }
 
-  if (!selectedItems.length && directSelectionPending) {
-    return <AppShell route={route}><CatalogueSkeleton cards={1} /></AppShell>;
-  }
-
+  // An empty selection after pressing X is a valid form state, including on
+  // a direct product quote URL. Detail loading has already been gated above.
   const responseState = responseFailure ? getSystemStateForFailure(responseFailure) : null;
   const privacyReady = Boolean(config?.privacy_version && config?.privacy_policy_url);
   const snapshotsCoverSelection = selectedItems.every((item) => selectedProductSnapshots.some((product) => product.product_id === item.product_id));
@@ -154,43 +172,50 @@ const QuoteRequestPage = () => {
         <h1 id="quote-screen-title">Gửi yêu cầu đặt hàng</h1>
         <p>Chọn sản phẩm và để lại thông tin để nhân viên tư vấn hỗ trợ bạn.</p>
       </header>
-      <div className={`quote-screen__layout${selectedItems.length ? "" : " quote-screen__layout--form-only"}`}>
-      {selectedItems.length ? <aside className="quote-context">
-      <h2>Sản phẩm của bạn</h2>
+      <div className="quote-screen__layout">
+      <aside className="quote-context" aria-labelledby="quote-context-title">
+      <h2 id="quote-context-title">Sản phẩm của bạn</h2>
+      {selectedItems.length ? <>
         <p className="quote-context__count">{selectedItems.length} sản phẩm đã chọn</p>
         <ul className="quote-selected-items">
           {selectedItems.map((item) => {
             const product = selectedProducts.products.find((candidate) => candidate.product_id === item.product_id);
             const snapshot = selectedProductSnapshots.find((candidate) => candidate.product_id === item.product_id);
             const label = product
-              ? (visibleText(product.model) ?? visibleText(product.name) ?? "Sản phẩm đã chọn")
+              ? getProductModelLabel(product)
               : snapshot
-                ? (visibleText(snapshot.model) ?? visibleText(snapshot.name) ?? "Sản phẩm đã chọn")
+                ? getProductModelLabel(snapshot)
                 : selectedProducts.phase === "loading"
                   ? "Đang kiểm tra sản phẩm…"
                   : "Sản phẩm không còn khả dụng";
-            return <li key={item.product_id}><span>{label}</span><button type="button" disabled={submitting} onClick={() => removeSelectedItem(item.product_id)} aria-label={`Bỏ sản phẩm ${label}`}>Bỏ</button></li>;
+            const name = product ? getProductDisplayName(product) : visibleText(snapshot?.name);
+            return <li key={item.product_id}>
+              {product ? <PublicImage media={product.cover_media} alt={product.name} className="quote-selected-item__image" /> : null}
+              <span className="quote-selected-item__copy"><strong>{label}</strong>{name && name !== label ? <small>{name}</small> : null}</span>
+              <button type="button" disabled={submitting} onClick={() => removeSelectedItem(item.product_id)} aria-label={`Bỏ sản phẩm ${label}`}><UiIcon name="x" size={18} /></button>
+            </li>;
           })}
         </ul>
         <button type="button" className="quote-edit-selection" disabled={submitting} onClick={() => navigate("/selection", { animate: false })}>Sửa danh sách sản phẩm</button>
       {config?.privacy_policy_url ? <a className="privacy-link" href={config.privacy_policy_url}>Xem Chính sách sử dụng thông tin</a> : null}
-      </aside> : null}
-    {responseState ? <SystemStatePanel state={responseState} onRetry={() => setResponseFailure(null)} /> : null}
+      </> : <p className="quote-context__empty">Chọn sản phẩm để gửi cùng yêu cầu của bạn.</p>}
+      </aside>
+    {responseState ? <SystemStatePanel state={responseState} onRetry={retryLastAttempt} /> : null}
     {selectedProducts.failure && !snapshotsCoverSelection ? <SystemStatePanel state={getSystemStateForFailure(selectedProducts.failure)} onRetry={selectedProducts.reload} /> : null}
     {selectedProducts.failure && snapshotsCoverSelection ? <div className="quote-selection-note" role="status"><UiIcon name="info" size={16} /><span>Chưa thể kiểm tra lại sản phẩm vừa chọn. Thông tin hiện có vẫn được giữ để bạn tiếp tục gửi yêu cầu.</span><button type="button" onClick={() => void selectedProducts.reload()}>Thử lại</button></div> : null}
     <form className="quote-form" onSubmit={(event) => void handleSubmit(event)} noValidate>
       <div className="quote-form__heading"><h2>Thông tin liên hệ</h2><p>Các trường có dấu * cần được điền.</p></div>
       <label><span className="field-label">Họ và tên <span className="required-mark" aria-hidden="true">*</span></span><input value={form.full_name} onChange={(event) => update("full_name", event.target.value)} maxLength={100} autoComplete="name" disabled={submitting} aria-invalid={Boolean(inputError(fieldErrors, "full_name"))} placeholder="Nhập họ và tên của bạn" />{inputError(fieldErrors, "full_name") ? <span className="field-error">{inputError(fieldErrors, "full_name")}</span> : null}</label>
-      <label><span className="field-label">Số điện thoại <span className="required-mark" aria-hidden="true">*</span></span><input type="tel" value={form.phone} onChange={(event) => update("phone", event.target.value.slice(0, 30))} onBlur={(event) => { const error = getVietnamesePhoneValidationError(event.target.value); setFieldErrors((current) => ({ ...current, phone: error ? [error] : [] })); }} inputMode="tel" autoComplete="tel" maxLength={30} required disabled={submitting} aria-required="true" aria-invalid={Boolean(inputError(fieldErrors, "phone"))} placeholder="Nhập số điện thoại của bạn" />{inputError(fieldErrors, "phone") ? <span className="field-error">{inputError(fieldErrors, "phone")}</span> : null}</label>
+      <label><span className="field-label">Số điện thoại <span className="required-mark" aria-hidden="true">*</span></span><input type="tel" value={form.phone} onChange={(event) => update("phone", event.target.value.slice(0, 30))} onBlur={(event) => { const error = getVietnamesePhoneValidationError(event.target.value); setFieldErrors((current) => ({ ...current, phone: error ? [error] : [] })); }} inputMode="tel" autoComplete="tel" maxLength={30} required disabled={submitting} aria-required="true" aria-invalid={Boolean(inputError(fieldErrors, "phone"))} placeholder="Nhập số điện thoại liên hệ" />{inputError(fieldErrors, "phone") ? <span className="field-error">{inputError(fieldErrors, "phone")}</span> : null}</label>
       <section className="quote-form__product-picker" aria-labelledby="quote-product-picker-title">
         <div>
           <div className="quote-form__product-picker-copy">
-            <h3 id="quote-product-picker-title">Sản phẩm của bạn</h3>
-            <p>Chọn sản phẩm để gửi cùng yêu cầu của bạn.</p>
+            <h3 id="quote-product-picker-title">Sản phẩm quan tâm <span className="required-mark" aria-hidden="true">*</span></h3>
           </div>
-          <output aria-live="polite">{selectedItems.length} sản phẩm</output>
+          <output aria-live="polite">{selectedItems.length}/{maxItems} sản phẩm</output>
         </div>
         <button type="button" disabled={submitting} onClick={() => navigate("/selection", { animate: false })}>{selectedItems.length ? "Sửa danh sách sản phẩm" : "Chọn sản phẩm"}</button>
+        {inputError(fieldErrors, "items") ? <span className="field-error">{inputError(fieldErrors, "items")}</span> : null}
       </section>
       <label>Ghi chú (không bắt buộc)<textarea value={form.note} onChange={(event) => update("note", event.target.value)} maxLength={1000} rows={4} disabled={submitting} /><span className="field-hint">{form.note.length}/1000</span>{inputError(fieldErrors, "note") ? <span className="field-error">{inputError(fieldErrors, "note")}</span> : null}</label>
       <label className="consent-field"><input type="checkbox" checked={form.consent} onChange={(event) => update("consent", event.target.checked)} disabled={submitting} aria-invalid={Boolean(inputError(fieldErrors, "consent"))} /><span>Tôi đồng ý để Hoa Nam sử dụng họ tên, số điện thoại, sản phẩm quan tâm và ghi chú tôi cung cấp nhằm tiếp nhận yêu cầu và liên hệ tư vấn theo Chính sách sử dụng thông tin.</span>{inputError(fieldErrors, "consent") ? <span className="field-error">{inputError(fieldErrors, "consent")}</span> : null}</label>

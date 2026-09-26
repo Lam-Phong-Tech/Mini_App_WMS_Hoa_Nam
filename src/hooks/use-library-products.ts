@@ -24,6 +24,7 @@ export const useLibraryProducts = (
   api: PublicApiAdapter,
   ids: string[],
   onMissing: (productIds: string[]) => void,
+  catalogueGeneration = 0,
 ) => {
   const idsKey = ids.join("|");
   const [state, setState] = useState<LibraryProductsState>({ phase: "ready", products: [], failure: null });
@@ -71,7 +72,7 @@ export const useLibraryProducts = (
     });
 
     return () => { active = false; };
-  }, [api, idsKey, onMissing, refreshToken]);
+  }, [api, idsKey, onMissing, refreshToken, catalogueGeneration]);
 
   const reload = useCallback(() => setRefreshToken((current) => current + 1), []);
 

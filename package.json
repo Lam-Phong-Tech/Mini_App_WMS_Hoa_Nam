@@ -16,7 +16,8 @@
   ],
   "scripts": {
     "login": "zmp-cli login",
-    "start": "zmp-cli start",
+    "start": "zmp-cli start --mode backend-preview",
+    "start:dev-preview": "zmp-cli start --mode dev-preview",
     "deploy": "zmp-cli deploy",
     "start:backend-preview": "zmp-cli start --mode backend-preview",
     "build:dev-preview": "zmp-cli build --mode dev-preview",

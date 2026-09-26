@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 import {
   createContactUnavailableState,
   createEmptyState,
+  createNoNetworkState,
   getBootstrapSystemState,
   getSystemStateForFailure,
   isUpdateRequired,
@@ -62,5 +63,15 @@ describe("safe system states", () => {
     expect(createContactUnavailableState().title).toContain("liên hệ");
     expect(createEmptyState().title).toContain("sản phẩm");
     expect(createEmptyState().message).not.toMatch(/publish|duyệt/i);
+  });
+
+  it("uses the approved offline copy but does not relabel server errors as offline", () => {
+    expect(createNoNetworkState()).toEqual({
+      kind: "no-network",
+      title: "Chưa tải được nội dung",
+      message: "Vui lòng kiểm tra kết nối và thử lại.",
+    });
+    expect(getSystemStateForFailure({ ...failure("UPSTREAM_UNAVAILABLE"), meta: { transport_error: false } }).kind).toBe("api-error");
+    expect(getSystemStateForFailure({ ...failure("UPSTREAM_UNAVAILABLE"), meta: { transport_error: true } }).kind).toBe("no-network");
   });
 });

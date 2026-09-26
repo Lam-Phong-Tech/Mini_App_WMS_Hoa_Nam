@@ -1,20 +1,15 @@
-import { ReactNode, createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
+import { ReactNode, createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
 
 import { runtimeSettings } from "@/config/runtime";
+import { advanceCatalogueGeneration, getCatalogueGeneration } from "@/catalogue/catalogue-session";
+import { createSafeFailure } from "@/services/api-client";
 import { createPublicApiAdapter, PublicApiAdapter } from "@/services/public-api";
-import { getBootstrapSystemState, SafeSystemState } from "@/state/system-state";
-import { ApiFailure, HomeDto, PublicConfigDto, isApiSuccess } from "@/types/public-api";
-
-interface BootstrapState {
-  phase: "loading" | "ready";
-  config: PublicConfigDto | null;
-  home: HomeDto | null;
-  systemState: SafeSystemState | null;
-  usingDevMock: boolean;
-}
+import { BootstrapState, markBootstrapOffline, resolveBootstrapState } from "@/state/bootstrap-state";
+import { HomeDto, PublicConfigDto, isApiSuccess } from "@/types/public-api";
 
 interface AppContextValue extends BootstrapState {
   api: PublicApiAdapter;
+  catalogueGeneration: number;
   refresh: () => Promise<void>;
 }
 
@@ -79,14 +74,7 @@ const writeBootstrapCache = (config: PublicConfigDto | null, home: HomeDto) => {
 
 const AppContext = createContext<AppContextValue | null>(null);
 
-/**
- * /config and /home are intentionally independent in the public contract.
- * A temporary contact/config failure must not hide an otherwise usable
- * catalogue; unavailable contact actions keep their safe fallback state.
- */
-const getBootstrapFailure = (
-  homeResult: Awaited<ReturnType<PublicApiAdapter["getHome"]>>,
-): ApiFailure | null => (!isApiSuccess(homeResult) ? homeResult : null);
+const isBrowserOnline = () => typeof navigator === "undefined" || navigator.onLine !== false;
 
 interface AppProviderProps {
   children: ReactNode;
@@ -95,42 +83,74 @@ interface AppProviderProps {
 
 export const AppProvider = ({ children, adapter }: AppProviderProps) => {
   const api = useMemo(() => adapter ?? createPublicApiAdapter(), [adapter]);
-  const [state, setState] = useState<BootstrapState>(() => readBootstrapCache() ?? initialState);
+  const requestGeneration = useRef(0);
+  const [catalogueGeneration, setCatalogueGeneration] = useState(getCatalogueGeneration);
+  const [state, setState] = useState<BootstrapState>(() => {
+    const cached = readBootstrapCache() ?? initialState;
+    return isBrowserOnline() ? cached : markBootstrapOffline(cached);
+  });
 
   const refresh = useCallback(async () => {
+    const generation = ++requestGeneration.current;
+    if (!isBrowserOnline()) {
+      setState(markBootstrapOffline);
+      return;
+    }
+
     setState((current) => ({
       ...current,
-      phase: current.home ? "ready" : "loading",
-      systemState: null,
+      // Keep the error surface until revalidation succeeds. In particular,
+      // Retry/online must not briefly reveal stale Home data while pending.
+      phase: current.home || current.systemState ? "ready" : "loading",
     }));
 
-    const [configResult, homeResult] = await Promise.all([api.getConfig(), api.getHome()]);
-    setState((current) => {
-      const config = isApiSuccess(configResult) ? configResult.data : current.config;
-      const home = isApiSuccess(homeResult) ? homeResult.data : current.home;
-      const failure = home ? null : getBootstrapFailure(homeResult);
+    const transportFailure = () => createSafeFailure("UPSTREAM_UNAVAILABLE", { transport_error: true });
+    const [configResult, homeResult] = await Promise.all([
+      Promise.resolve().then(() => api.getConfig()).catch(transportFailure),
+      Promise.resolve().then(() => api.getHome()).catch(transportFailure),
+    ]);
+    // Going offline, retrying, changing adapters or unmounting invalidates the
+    // previous request; a late success must not restore old catalogue content.
+    if (generation !== requestGeneration.current) return;
 
-      if (home && isApiSuccess(homeResult)) {
-        writeBootstrapCache(config, home);
+    // Successful refresh/reconnect publishes exactly one catalogue refresh.
+    // This state is not a dependency of refresh, so it cannot start a loop.
+    if (isApiSuccess(homeResult) && isBrowserOnline()) {
+      setCatalogueGeneration(advanceCatalogueGeneration());
+    }
+
+    setState((current) => {
+      if (generation !== requestGeneration.current) return current;
+      const next = resolveBootstrapState(current, configResult, homeResult, runtimeSettings.appVersion, isBrowserOnline());
+
+      if (next.home && !next.systemState && isApiSuccess(homeResult)) {
+        writeBootstrapCache(next.config, next.home);
       }
 
-      return {
-        phase: "ready",
-        config,
-        home,
-        systemState: getBootstrapSystemState(config, failure, runtimeSettings.appVersion),
-        usingDevMock: runtimeSettings.useDevMock,
-      };
+      return next;
     });
   }, [api]);
 
   useEffect(() => {
+    const onOffline = () => {
+      requestGeneration.current += 1;
+      setState(markBootstrapOffline);
+    };
+    const onOnline = () => { void refresh(); };
+    window.addEventListener("offline", onOffline);
+    window.addEventListener("online", onOnline);
     void refresh();
+
+    return () => {
+      requestGeneration.current += 1;
+      window.removeEventListener("offline", onOffline);
+      window.removeEventListener("online", onOnline);
+    };
   }, [refresh]);
 
   const value = useMemo<AppContextValue>(
-    () => ({ ...state, api, refresh }),
-    [api, refresh, state],
+    () => ({ ...state, api, catalogueGeneration, refresh }),
+    [api, catalogueGeneration, refresh, state],
   );
 
   return <AppContext.Provider value={value}>{children}</AppContext.Provider>;

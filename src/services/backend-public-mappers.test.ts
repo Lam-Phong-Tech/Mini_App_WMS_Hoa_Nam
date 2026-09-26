@@ -30,6 +30,13 @@ const backendProduct = {
 };
 
 describe("public storefront backend mappers", () => {
+  it("keeps public power-source specs without exposing importer provenance", () => {
+    const product = mapBackendProductDetail({
+      ...backendProduct,
+      specifications: { power_source: "Pin", power_source_detail: "Pin 20V", voltage: "20V", source_file: "private.pdf", internal_source: "private", barcode: "12345" },
+    });
+    expect(product?.spec_groups?.flatMap((group) => group.items.map((item) => item.code))).toEqual(["power_source", "power_source_detail", "voltage"]);
+  });
   it("maps the pushed public config without making up an OA target", () => {
     const config = mapBackendConfig({
       contact: { hotline: "1900 1234", zalo_oa_id: null, zalo_oa_url: null },
@@ -39,6 +46,7 @@ describe("public storefront backend mappers", () => {
         saturday: { open: "08:00", close: "12:00" },
       },
       privacy: { url: "https://hoanam.vn/chinh-sach-bao-mat", version: "1.0.0" },
+      quote_request: { max_items: 21, max_quantity: 12 },
       maintenance: { enabled: false, message: "Bảo trì" },
       feature_flags: { quote_request: true },
       contract_version: "1.0.0",
@@ -52,6 +60,19 @@ describe("public storefront backend mappers", () => {
       privacy_version: "1.0.0",
     });
     expect(config.support_hours?.intervals).toHaveLength(2);
+    expect(config.quote_request).toEqual({ max_items: 21, max_quantity: 12 });
+  });
+
+  it("keeps the privacy version separate from the Public Storefront contract version", () => {
+    const config = mapBackendConfig({
+      contract_version: "1.2.0",
+      privacy: { version: "1.0.0", url: "https://hoanam.vn/chinh-sach-bao-mat" },
+      quote_request: { max_items: 20, max_quantity: 9999 },
+    });
+
+    expect(config.config_version).toBe("1.2.0");
+    expect(config.privacy_version).toBe("1.0.0");
+    expect(config.quote_request).toEqual({ max_items: 20, max_quantity: 9999 });
   });
 
   it("prefers the v1.1 public config fields while retaining legacy fallbacks", () => {
@@ -83,7 +104,7 @@ describe("public storefront backend mappers", () => {
       page_info: { limit: 20, has_more: true, next_cursor: "opaque-cursor" },
     });
 
-    expect(page).toMatchObject({ next_cursor: "opaque-cursor", limit: 20 });
+    expect(page.page_info).toMatchObject({ next_cursor: "opaque-cursor", has_more: true, limit: 20 });
     expect(page.items).toHaveLength(1);
     expect(page.items[0]).toMatchObject({
       product_id: backendProduct.id,
@@ -104,6 +125,22 @@ describe("public storefront backend mappers", () => {
 
     expect(preorder.items).toHaveLength(1);
     expect(preorder.items[0]).toMatchObject({ product_id: "preorder", availability: "PREORDER" });
+  });
+
+  it("treats a missing cursor as the end even if an invalid page says it has more", () => {
+    expect(mapBackendProductPage({ items: [], page_info: { has_more: true, next_cursor: null } }).page_info).toEqual({
+      has_more: false,
+      next_cursor: null,
+    });
+  });
+
+  it("preserves optional public totals without manufacturing missing counts", () => {
+    expect(mapBackendCategories({ items: [{ code: "MEASURING_TOOLS", name: "Dụng cụ đo lường", domain: "HAND_TOOLS", product_count: 59 }] })[0].product_count).toBe(59);
+    expect(mapBackendCategories({ items: [{ code: "PUMP", name: "Máy bơm", domain: "POWER_TOOLS", product_count: -1 }] })[0].product_count).toBeUndefined();
+    expect(mapBackendProductPage({ items: [], page_info: { total: 59, next_cursor: "next-page", has_more: true } }).page_info.total).toBe(59);
+    expect(mapBackendProductPage({ items: [], page_info: { total: 0, next_cursor: null, has_more: false } }).page_info.total).toBe(0);
+    expect(mapBackendProductPage({ items: [], page_info: { next_cursor: "next-page", has_more: true } }).page_info.total).toBeUndefined();
+    expect(mapBackendProductPage({ items: [], page_info: { total: -1, next_cursor: null, has_more: false } }).page_info.total).toBeUndefined();
   });
 
   it("maps home, categories, detail, facets, health, and quote success to the app contract", () => {

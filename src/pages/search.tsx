@@ -3,6 +3,8 @@ import { useLocation, useNavigate } from "zmp-ui";
 
 import {
   SEARCH_DEBOUNCE_MS,
+  PROGRESSIVE_INITIAL_BATCH,
+  PROGRESSIVE_BATCH_SIZE,
   createProductReturnPath,
   countActiveFilters,
   normalizeProductQuery,
@@ -18,7 +20,7 @@ import {
   InfiniteLoadTrigger,
 } from "@/components/catalogue/catalogue-feedback";
 import { FilterSheet } from "@/components/catalogue/filter-sheet";
-import { ProductGrid } from "@/components/catalogue/product-grid";
+import { SearchResultList } from "@/components/catalogue/search-result-list";
 import { AvailabilityFilter, AvailabilityFilterValue } from "@/components/catalogue/availability-filter";
 import { AppShell } from "@/components/app-shell";
 import { SystemStatePanel } from "@/components/system-state-panel";
@@ -35,7 +37,7 @@ const searchRoute = getFoundationRoute("search");
 const SearchPage = () => {
   const location = useLocation();
   const navigate = useNavigate();
-  const { api, home, phase, systemState, refresh } = useAppContext();
+  const { api, home, phase, systemState, refresh, catalogueGeneration } = useAppContext();
   const initialQuery = useMemo(() => parseProductQuery(location.search), [location.search]);
   const [filters, setFilters] = useState(initialQuery);
   const [searchInput, setSearchInput] = useState(initialQuery.q ?? "");
@@ -48,7 +50,7 @@ const SearchPage = () => {
     [debouncedSearch, filters],
   );
   const hasSearch = Boolean(visibleText(debouncedSearch));
-  const results = useProductResults(api, query);
+  const results = useProductResults(api, query, phase === "ready" && !systemState, PROGRESSIVE_INITIAL_BATCH, PROGRESSIVE_BATCH_SIZE, "search", catalogueGeneration);
   const scrollKey = `search:${productQueryCacheKey(query)}`;
   useScrollRestoration(scrollKey, results.kind === "success-data" || results.kind === "success-empty" || results.kind === "load-more-error");
   const returnPath = createProductReturnPath(
@@ -63,11 +65,11 @@ const SearchPage = () => {
 
   useEffect(() => {
     const hasVisibleAvailability = availability === "ALL" || results.products.some((product) => product.availability === availability);
-    const canLoadMore = results.renderedCount < results.loadedCount || Boolean(results.nextCursor);
+    const canLoadMore = results.renderedCount < results.loadedCount || results.hasMore;
     if (availability !== "ALL" && !hasVisibleAvailability && canLoadMore && results.kind === "success-data") {
       void results.loadMore();
     }
-  }, [availability, results.kind, results.loadedCount, results.loadMore, results.nextCursor, results.products, results.renderedCount]);
+  }, [availability, results.hasMore, results.kind, results.loadedCount, results.loadMore, results.products, results.renderedCount]);
 
   const handleSearchChange = (value: string) => setSearchInput(value);
   const handleCompositionStart = () => setIsComposing(true);
@@ -99,9 +101,11 @@ const SearchPage = () => {
   );
   const isLoadingAvailability = availability !== "ALL"
     && !visibleProducts.length
-    && (results.renderedCount < results.loadedCount || Boolean(results.nextCursor));
+    && (results.renderedCount < results.loadedCount || results.hasMore);
   const activeFilterCount = countActiveFilters(query) + Number(Boolean(query.domain));
   const queryPending = !isComposing && searchInput !== debouncedSearch;
+  const hasMoreResults = results.renderedCount < results.loadedCount || results.hasMore;
+  const displayedTotal = results.totalCount ?? visibleProducts.length;
 
   return (
     <AppShell route={searchRoute} scrollKey={scrollKey} {...searchBarProps}>
@@ -115,7 +119,7 @@ const SearchPage = () => {
         <button type="button" onClick={() => setFilterVisible(true)}>
           <UiIcon name="sliders" size={18} /> Bộ lọc & sắp xếp{activeFilterCount ? ` (${activeFilterCount})` : ""}
         </button>
-        <output aria-live="polite">{results.kind === "loading" ? "Đang tìm…" : `${visibleProducts.length} sản phẩm đang hiển thị`}</output>
+        <output aria-live="polite">{results.kind === "loading" ? "Đang tìm…" : `${displayedTotal} sản phẩm`}</output>
       </section>
       <AvailabilityFilter value={availability} onChange={setAvailability} />
 
@@ -124,9 +128,12 @@ const SearchPage = () => {
       {hasSearch && results.kind === "success-empty" ? (
         <EmptyCatalogue title="Không tìm thấy sản phẩm" message="Kiểm tra lại model, mã hàng hoặc thử từ khóa ngắn hơn." onRetry={() => void results.reload()} />
       ) : null}
-      {hasProducts && visibleProducts.length ? <ProductGrid products={visibleProducts} returnPath={returnPath} label="Kết quả tìm kiếm" loadedCount={visibleProducts.length} /> : null}
+      {hasProducts && visibleProducts.length ? <SearchResultList products={visibleProducts} returnPath={returnPath} /> : null}
       {hasProducts && !visibleProducts.length ? <p className="catalogue-filter-empty" role="status">{isLoadingAvailability ? "Đang tìm thêm sản phẩm theo trạng thái đã chọn…" : "Chưa có sản phẩm phù hợp với trạng thái hàng đã chọn."}</p> : null}
-      {hasProducts ? <InfiniteLoadTrigger loading={results.kind === "loading-more"} failure={results.kind === "load-more-error" ? results.failure : null} hasMore={results.renderedCount < results.loadedCount || Boolean(results.nextCursor)} renderedCount={visibleProducts.length} onLoadMore={results.loadMore} /> : null}
+      {hasProducts ? <>
+        <InfiniteLoadTrigger loading={results.kind === "loading-more"} failure={results.kind === "load-more-error" ? results.failure : null} hasMore={hasMoreResults} onLoadMore={results.loadMore} />
+        {!hasMoreResults ? <p className="search-screen__progress">Đã hiển thị {visibleProducts.length} / {displayedTotal} sản phẩm</p> : null}
+      </> : null}
 
       <FilterSheet
         api={api}

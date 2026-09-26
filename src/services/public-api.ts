@@ -11,6 +11,7 @@ import {
   ProductCardDto,
   ProductDetailDto,
   ProductIdLookupDto,
+  ProductPageInfo,
   ProductQuery,
   PublicConfigDto,
   QuoteAcceptedDto,
@@ -139,6 +140,7 @@ const devPreviewFixture: DevFixture = {
     support_hours: null,
     privacy_policy_url: null,
     privacy_version: null,
+    quote_request: { max_items: 20, max_quantity: null },
     maintenance: {
       enabled: false,
       message: null,
@@ -331,11 +333,7 @@ export class HttpPublicApiAdapter implements PublicApiAdapter {
     return {
       ...envelope,
       data: page.items,
-      meta: {
-        ...envelope.meta,
-        next_cursor: page.next_cursor,
-        ...(page.limit ? { limit: page.limit } : {}),
-      },
+      page_info: page.page_info,
     };
   }
 
@@ -365,11 +363,7 @@ export class HttpPublicApiAdapter implements PublicApiAdapter {
     return {
       ...envelope,
       data: page.items,
-      meta: {
-        ...envelope.meta,
-        next_cursor: page.next_cursor,
-        ...(page.limit ? { limit: page.limit } : {}),
-      },
+      page_info: page.page_info,
     };
   }
 
@@ -483,10 +477,13 @@ const getDevProductPage = (
   const pageLimit = getDevPageLimit(limit);
   const data = products.slice(offset, offset + pageLimit);
   const nextOffset = offset + data.length;
-  return asSuccess(data, {
-    next_cursor: nextOffset < products.length ? `dev-preview-offset-${nextOffset}` : null,
+  const pageInfo: ProductPageInfo = {
+    total: products.length,
     limit: pageLimit,
-  });
+    next_cursor: nextOffset < products.length ? `dev-preview-offset-${nextOffset}` : null,
+    has_more: nextOffset < products.length,
+  };
+  return { ...asSuccess(data), page_info: pageInfo };
 };
 
 export class DevMockPublicApiAdapter implements PublicApiAdapter {
@@ -502,7 +499,10 @@ export class DevMockPublicApiAdapter implements PublicApiAdapter {
     const categories = domain
       ? devPreviewFixture.categories.filter((category) => category.domain === domain)
       : devPreviewFixture.categories;
-    return Promise.resolve(asSuccess(categories));
+    return Promise.resolve(asSuccess(categories.map((category) => ({
+      ...category,
+      product_count: devPreviewFixture.products.filter((product) => product.category.code === category.code).length,
+    }))));
   }
 
   getProducts(query?: ProductQuery): Promise<ApiEnvelope<ProductCardDto[]>> {

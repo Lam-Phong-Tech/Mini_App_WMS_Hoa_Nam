@@ -4,6 +4,7 @@ import {
   ApiEnvelope,
   ApiFailure,
   QuoteAcceptedDto,
+  PublicConfigDto,
   QuoteRequestInput,
   QuoteRequestItemInput,
 } from "@/types/public-api";
@@ -18,6 +19,22 @@ export interface QuoteDraftInput {
 }
 
 export type QuoteFieldErrors = Record<string, string[]>;
+
+export interface QuoteLimits {
+  maxItems: number;
+  maxQuantity: number | null;
+}
+
+export const DEFAULT_QUOTE_LIMITS: QuoteLimits = { maxItems: 20, maxQuantity: null };
+
+export const getQuoteLimits = (config: PublicConfigDto | null | undefined): QuoteLimits => {
+  const maxItems = config?.quote_request?.max_items;
+  const maxQuantity = config?.quote_request?.max_quantity;
+  return {
+    maxItems: typeof maxItems === "number" && Number.isInteger(maxItems) && maxItems > 0 ? maxItems : DEFAULT_QUOTE_LIMITS.maxItems,
+    maxQuantity: typeof maxQuantity === "number" && Number.isInteger(maxQuantity) && maxQuantity > 0 ? maxQuantity : null,
+  };
+};
 
 export interface QuoteValidationResult {
   valid: boolean;
@@ -67,9 +84,7 @@ const normalizeQuoteItems = (items: QuoteRequestItemInput[]): QuoteRequestItemIn
       product_id: item.product_id.trim(),
       variant_id: item.variant_id?.trim() || null,
       quantity: item.quantity ?? null,
-    }))
-    // Presentation order must not change the request meaning or its key.
-    .sort((left, right) => `${left.product_id}\u0000${left.variant_id ?? ""}`.localeCompare(`${right.product_id}\u0000${right.variant_id ?? ""}`));
+    }));
 
 /** A canonical, non-sensitive representation used only in memory for idempotency. */
 export const getQuoteFingerprint = (input: QuoteRequestInput): string => JSON.stringify({
@@ -81,7 +96,10 @@ export const getQuoteFingerprint = (input: QuoteRequestInput): string => JSON.st
   privacy_version: input.privacy_version.trim(),
 });
 
-export const validateQuoteDraft = (draft: QuoteDraftInput): QuoteValidationResult => {
+export const validateQuoteDraft = (
+  draft: QuoteDraftInput,
+  limits: QuoteLimits = DEFAULT_QUOTE_LIMITS,
+): QuoteValidationResult => {
   const errors: QuoteFieldErrors = {};
   const fullName = draft.full_name.trim();
   const normalizedPhone = normalizeVietnamesePhone(draft.phone);
@@ -90,15 +108,16 @@ export const validateQuoteDraft = (draft: QuoteDraftInput): QuoteValidationResul
   const items = normalizeQuoteItems(draft.items);
   const itemProductIds = new Set<string>();
 
-  if (!items.length || items.length > 20) errors.items = ["Chọn từ 1 đến 20 sản phẩm."];
+  if (!items.length || items.length > limits.maxItems) errors.items = [`Chọn từ 1 đến ${limits.maxItems} sản phẩm.`];
   items.forEach((item, index) => {
     if (!item.product_id) errors[`items.${index}.product_id`] = ["Thiếu sản phẩm cần tư vấn."];
     if (item.product_id && itemProductIds.has(item.product_id)) {
       errors.items = ["Không thể chọn trùng sản phẩm trong một yêu cầu."];
     }
     itemProductIds.add(item.product_id);
-    if (item.quantity !== null && item.quantity !== undefined && (!Number.isInteger(item.quantity) || item.quantity < 1 || item.quantity > 9_999)) {
-      errors[`items.${index}.quantity`] = ["Số lượng cần là số nguyên từ 1 đến 9.999."];
+    const maxQuantity = limits.maxQuantity ?? 9_999;
+    if (item.quantity !== null && item.quantity !== undefined && (!Number.isInteger(item.quantity) || item.quantity < 1 || item.quantity > maxQuantity)) {
+      errors[`items.${index}.quantity`] = [`Số lượng cần là số nguyên từ 1 đến ${maxQuantity.toLocaleString("vi-VN")}.`];
     }
   });
   if (fullName.length < 1 || fullName.length > 100) errors.full_name = ["Họ tên cần từ 1 đến 100 ký tự."];
@@ -156,36 +175,75 @@ export const submitQuoteWithRetry = async (
   api: PublicApiAdapter,
   draft: QuoteDraftInput,
   idempotencyKey: string,
+  limits: QuoteLimits = DEFAULT_QUOTE_LIMITS,
 ): Promise<ApiEnvelope<QuoteAcceptedDto>> => {
-  const validation = validateQuoteDraft(draft);
+  const validation = validateQuoteDraft(draft, limits);
   if (!validation.valid || !validation.value) return validationFailure(validation.errors);
   if (!/^[A-Za-z0-9._~-]{16,128}$/.test(idempotencyKey)) {
     return validationFailure({ idempotency_key: ["Idempotency-Key chưa hợp lệ."] });
   }
 
+  return sendQuotePayload(api, validation.value, idempotencyKey);
+};
+
+/**
+ * Sends a previously validated submission again without rebuilding it from the
+ * current form or config.  This is deliberately separate from
+ * `submitQuoteWithRetry`: a customer retry after a timeout must retain the
+ * original item order, privacy version and Idempotency-Key, even if the
+ * public config changed while the first response was in flight.
+ */
+export const retryQuoteSubmission = async (
+  api: PublicApiAdapter,
+  payload: QuoteRequestInput,
+  idempotencyKey: string,
+): Promise<ApiEnvelope<QuoteAcceptedDto>> => {
+  if (!/^[A-Za-z0-9._~-]{16,128}$/.test(idempotencyKey)) {
+    return validationFailure({ idempotency_key: ["Idempotency-Key chưa hợp lệ."] });
+  }
+  return sendQuotePayload(api, payload, idempotencyKey);
+};
+
+const sendQuotePayload = async (
+  api: PublicApiAdapter,
+  payload: QuoteRequestInput,
+  idempotencyKey: string,
+): Promise<ApiEnvelope<QuoteAcceptedDto>> => {
   try {
-    return await api.createQuoteRequest(validation.value, idempotencyKey);
+    return await api.createQuoteRequest(payload, idempotencyKey);
   } catch {
-    return createSafeFailure("UPSTREAM_UNAVAILABLE");
+    return createSafeFailure("UPSTREAM_UNAVAILABLE", { transport_error: true });
   }
 };
 
 export const createQuoteSubmissionGuard = () => {
   let inFlight: Promise<ApiEnvelope<QuoteAcceptedDto>> | null = null;
 
+  const run = (request: () => Promise<ApiEnvelope<QuoteAcceptedDto>>) => {
+    if (inFlight) return inFlight;
+    inFlight = request();
+    inFlight.then(
+      () => { inFlight = null; },
+      () => { inFlight = null; },
+    );
+    return inFlight;
+  };
+
   return {
     submit: (
       api: PublicApiAdapter,
       draft: QuoteDraftInput,
       idempotencyKey: string,
+      limits: QuoteLimits = DEFAULT_QUOTE_LIMITS,
     ): Promise<ApiEnvelope<QuoteAcceptedDto>> => {
-      if (inFlight) return inFlight;
-      inFlight = submitQuoteWithRetry(api, draft, idempotencyKey);
-      inFlight.then(
-        () => { inFlight = null; },
-        () => { inFlight = null; },
-      );
-      return inFlight;
+      return run(() => submitQuoteWithRetry(api, draft, idempotencyKey, limits));
+    },
+    retry: (
+      api: PublicApiAdapter,
+      payload: QuoteRequestInput,
+      idempotencyKey: string,
+    ): Promise<ApiEnvelope<QuoteAcceptedDto>> => {
+      return run(() => retryQuoteSubmission(api, payload, idempotencyKey));
     },
   };
 };

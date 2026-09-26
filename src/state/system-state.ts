@@ -44,6 +44,12 @@ export const isUpdateRequired = (
   minimumVersion: string | null,
 ): boolean => Boolean(minimumVersion && compareVersions(appVersion, minimumVersion) < 0);
 
+export const createNoNetworkState = (): SafeSystemState => ({
+  kind: "no-network",
+  title: "Chưa tải được nội dung",
+  message: "Vui lòng kiểm tra kết nối và thử lại.",
+});
+
 export const getSystemStateForFailure = (
   failure: ApiFailure,
 ): SafeSystemState => {
@@ -73,11 +79,13 @@ export const getSystemStateForFailure = (
         message: "Bạn có thể xem danh mục khác hoặc liên hệ Hoa Nam khi cấu hình đã sẵn sàng.",
       };
     case "UPSTREAM_UNAVAILABLE":
-      return {
-        kind: "no-network",
-        title: "Chưa tải được nội dung",
-        message: "Vui lòng kiểm tra kết nối và thử lại.",
-      };
+      // A server response is not proof that the device has lost connectivity.
+      // Older adapters without this client marker keep the existing fallback.
+      return failure.meta.transport_error === false ? {
+        kind: "api-error",
+        title: "Không thể tải dữ liệu",
+        message: "Vui lòng thử lại sau ít phút.",
+      } : createNoNetworkState();
     case "IDEMPOTENCY_CONFLICT":
       return {
         kind: "api-error",
