@@ -11,6 +11,7 @@ const category = (code: string, product_count?: number, domain: CategoryDto["dom
   sort_order: 1,
   product_count,
 });
+
 describe("catalogue filter labels and exact public counts", () => {
   const categories = [category("MEASURING_TOOLS", 59), category("CLAMPING_TOOLS", 71), category("DRILL", 10, "POWER_TOOLS")];
 

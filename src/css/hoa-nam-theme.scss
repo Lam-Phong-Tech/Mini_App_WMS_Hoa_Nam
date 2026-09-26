@@ -3,7 +3,7 @@
   font-style: normal;
   font-weight: 400;
   font-display: swap;
-  src: url("/fonts/public-sans-400.ttf") format("truetype");
+  src: url("../assets/fonts/public-sans-400.ttf") format("truetype");
 }
 
 @font-face {
@@ -11,7 +11,7 @@
   font-style: normal;
   font-weight: 500;
   font-display: swap;
-  src: url("/fonts/public-sans-500.ttf") format("truetype");
+  src: url("../assets/fonts/public-sans-500.ttf") format("truetype");
 }
 
 @font-face {
@@ -19,7 +19,7 @@
   font-style: normal;
   font-weight: 600;
   font-display: swap;
-  src: url("/fonts/public-sans-600.ttf") format("truetype");
+  src: url("../assets/fonts/public-sans-600.ttf") format("truetype");
 }
 
 @font-face {
@@ -27,7 +27,7 @@
   font-style: normal;
   font-weight: 700;
   font-display: swap;
-  src: url("/fonts/public-sans-700.ttf") format("truetype");
+  src: url("../assets/fonts/public-sans-700.ttf") format("truetype");
 }
 
 @font-face {
@@ -35,7 +35,7 @@
   font-style: normal;
   font-weight: 800;
   font-display: swap;
-  src: url("/fonts/public-sans-800.ttf") format("truetype");
+  src: url("../assets/fonts/public-sans-800.ttf") format("truetype");
 }
 
 /*
@@ -1343,9 +1343,9 @@ body,
   }
 
   .hn-bottom-navigation {
-    height: 64px !important;
-    min-height: 64px !important;
-    padding: 4px 16px !important;
+    height: auto;
+    min-height: calc(64px + var(--hn-safe-bottom));
+    padding: 4px 16px max(4px, var(--hn-safe-bottom));
   }
 }
 

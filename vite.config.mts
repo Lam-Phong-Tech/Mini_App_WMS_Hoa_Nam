@@ -20,7 +20,10 @@ export default ({ mode }: { mode: string }) => {
     base: "",
     plugins: [zaloMiniApp(), react()],
     build: {
-      assetsInlineLimit: 0,
+      // The native host rewrites stylesheet asset paths. Embed only the
+      // approved font bytes so text does not depend on a separate font URL;
+      // keep all other assets external exactly as before.
+      assetsInlineLimit: (filePath) => /\/src\/assets\/fonts\/[^/]+\.(?:ttf|woff2)$/i.test(filePath.replace(/\\/g, "/")),
     },
     server: {
       // Local QA stores Chrome profiles and captured evidence beneath .tmp.

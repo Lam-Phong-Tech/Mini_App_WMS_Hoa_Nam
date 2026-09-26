@@ -6,6 +6,24 @@ import "@/css/tailwind.scss";
 import "@/css/app.scss";
 // Locked Hoa Nam Preview tokens and G2 shell overrides.
 import "@/css/hoa-nam-theme.scss";
+// One final, scoped reference layer for the UAT components; avoids legacy
+// migration rules silently undoing verified mobile geometry.
+import "@/css/uat-reference.scss";
+import "@/css/uat-quote-contact.scss";
+import "@/css/uat-detail-reference.scss";
+// Native chrome clearance must win without changing the browser reference.
+import "@/css/uat-native-safe-area.scss";
+import "@/css/native-keyboard.scss";
+// UAT_Dev_6 TC_UI_03 action controls are intentionally isolated from the
+// shared migration layer so other card geometry remains unchanged.
+import "@/css/uat-dev6-tc-ui03.scss";
+import "@/css/uat-dev6-tc-ui04.scss";
+import "@/css/uat-dev6-tc-ui05.scss";
+import "@/css/uat-dev6-tc-ui06.scss";
+import "@/css/uat-dev6-tc-ui07.scss";
+import "@/css/uat-dev6-tc-ui08.scss";
+import "@/css/uat-dev6-tc-ui16.scss";
+import "@/css/uat-dev6-tc-ui17.scss";
 
 // React core
 import React from "react";
@@ -32,6 +50,9 @@ const isZaloHost = () => {
 };
 
 document.documentElement.dataset.host = isZaloHost() ? "zalo" : "browser";
+// ZMP's local wrapper paints its own status bar/capsule over the iframe.
+// Reserve that DEV-only chrome without treating the browser as a native SDK.
+document.documentElement.dataset.previewFrame = import.meta.env.DEV && window.parent !== window ? "zmp" : "none";
 
 const root = createRoot(document.getElementById("app")!);
 root.render(React.createElement(Layout));

@@ -1,0 +1,114 @@
+/* UAT_Dev_v6 TC_UI_06 — an empty comparison starts with a category selector
+ * and concrete first-model choices, matching the approved compare flow. */
+.compare-screen {
+  width: min(100%, 960px);
+  max-width: 960px;
+}
+
+.compare-picker {
+  display: grid;
+  gap: 16px;
+  padding: 20px;
+  border: 1px solid var(--hn-border);
+  border-radius: 16px;
+  background: var(--hn-surface);
+}
+
+.compare-picker > label,
+.compare-picker h2 {
+  margin: 0;
+  color: var(--hn-text-primary);
+  font-size: 18px;
+  font-weight: 700;
+  line-height: 1.35;
+}
+
+.compare-picker > label {
+  font-size: 14px;
+}
+
+.compare-picker > select {
+  width: 100%;
+  min-height: 48px;
+  padding: 10px 42px 10px 14px;
+  color: var(--hn-primary);
+  font: inherit;
+  font-size: 16px;
+  font-weight: 700;
+  border: 1px solid var(--hn-border);
+  border-radius: 10px;
+  background: var(--hn-surface);
+}
+
+.compare-picker__list {
+  display: grid;
+  gap: 10px;
+}
+
+.compare-picker__list > button {
+  display: grid;
+  width: 100%;
+  min-height: 88px;
+  grid-template-columns: 68px minmax(0, 1fr) 28px;
+  align-items: center;
+  gap: 14px;
+  padding: 12px 14px;
+  color: var(--hn-primary);
+  text-align: left;
+  cursor: pointer;
+  border: 1px solid var(--hn-border);
+  border-radius: 12px;
+  background: var(--hn-surface);
+}
+
+.compare-picker__list > button:is(:hover, :active) {
+  border-color: var(--hn-primary);
+  background: var(--hn-primary-a06);
+}
+
+.compare-picker__list .public-image {
+  width: 68px;
+  height: 56px;
+  overflow: hidden;
+  border-radius: 8px;
+}
+
+.compare-picker__list .public-image img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+.compare-picker__list > button > span {
+  display: grid;
+  min-width: 0;
+  gap: 4px;
+}
+
+.compare-picker__list strong {
+  overflow: hidden;
+  font-size: 16px;
+  line-height: 1.3;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.compare-picker__list small,
+.compare-picker__empty {
+  color: var(--hn-text-secondary);
+  font-size: 14px;
+  line-height: 1.45;
+}
+
+.compare-picker__empty {
+  margin: 0;
+  padding: 12px 0;
+}
+
+@media (max-width: 700px) {
+  .compare-picker {
+    gap: 14px;
+    padding: 16px;
+    border-radius: 14px;
+  }
+}

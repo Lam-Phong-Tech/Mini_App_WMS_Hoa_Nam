@@ -121,30 +121,32 @@ export const ProductDetailTemplate = ({
         <UiIcon name="chevronLeft" size={19} strokeWidth={2.1} />
         Quay lại sản phẩm
       </button>
+      <div className="detail-template__layout">
       <section className="detail-template__gallery" aria-label="Hình ảnh sản phẩm">
         <ProductGallery product={product} variant={selectedVariant} />
         {hasGalleryMedia ? <button className="detail-template__zoom" type="button" onClick={() => onOpenGallery(selectedVariant?.variant_id)}>
-          <UiIcon name="search" size={17} strokeWidth={2.2} />
+          <UiIcon name="zoomIn" size={17} strokeWidth={2} />
           Xem ảnh lớn
         </button> : null}
       </section>
 
+      <div className="detail-template__summary">
       <section className="detail-template__identity">
         <div className="detail-template__badges">
-          <span className={`availability-chip ${isPreorder ? "availability-chip--preorder" : ""}`}>{availabilityLabel}</span>
+          <span className={`availability-chip ${isPreorder ? "availability-chip--preorder" : ""}`}><UiIcon name={isPreorder ? "clock" : "checkCircle"} size={14} />{availabilityLabel}</span>
           <span className="detail-template__domain">{DOMAIN_LABELS[product.domain]}</span>
         </div>
         {primaryCode ? <p className="detail-template__code">{primaryCode}</p> : null}
         <h1>{getProductDisplayName(product)}</h1>
-        {category ? <p className="detail-template__model">{category}</p> : null}
         <div className="detail-template__identity-actions">
           <button type="button" className={`detail-template__save ${isSaved ? "is-saved" : ""}`} aria-label={isSaved ? "Bỏ lưu sản phẩm" : "Lưu sản phẩm"} aria-pressed={isSaved} onClick={onToggleSaved}>
-            <UiIcon name="bookmark" size={19} /><span>{isSaved ? "Đã lưu" : "Lưu"}</span>
+            <UiIcon name="heart" size={19} /><span>{isSaved ? "Đã lưu" : "Lưu"}</span>
           </button>
           <button type="button" className={`detail-template__save ${isCompared ? "is-saved" : ""}`} aria-label={isCompared ? "Bỏ khỏi so sánh" : "So sánh sản phẩm"} aria-pressed={isCompared} onClick={onToggleCompare}>
-            <UiIcon name="layers" size={19} /><span>{isCompared ? "Đang so sánh" : "So sánh"}</span>
+            <UiIcon name="gitCompare" size={19} /><span>{isCompared ? "Đã chọn" : "So sánh"}</span>
           </button>
         </div>
+        {category ? <p className="detail-template__model">{category}</p> : null}
         {variants.length > 1 ? (
           <div className="detail-template__variants" aria-label="Chọn phiên bản">
             <span>Phiên bản</span>
@@ -211,10 +213,16 @@ export const ProductDetailTemplate = ({
         </div>
       </section>
 
+      </div>
+      </div>
+
+      <div className="detail-template__information-grid">
       <section className="detail-template__information" aria-label="Thông tin sản phẩm">
         <h2>Thông tin sản phẩm</h2>
         <dl className="detail-template__classification">
-          {productFacts.map((fact) => <div key={fact.label}><dt>{fact.label}</dt><dd className={fact.state}>{fact.value}</dd></div>)}
+          {productFacts.map((fact) => <div key={fact.label}><dt>{fact.label}</dt><dd className={fact.state}>
+            {fact.state ? <span className="detail-template__availability"><UiIcon name={fact.state === "is-preorder" ? "clock" : "checkCircle"} size={16} />{fact.value}</span> : fact.value}
+          </dd></div>)}
         </dl>
       </section>
 
@@ -230,6 +238,8 @@ export const ProductDetailTemplate = ({
         <button type="button" className="detail-template__spec-help" onClick={onRequestSpecification}>Tư vấn thông số <UiIcon name="arrowRight" size={18} /></button>
       </section>
 
+      </div>
+
       {relatedProducts.length ? (
         <section className="detail-template__related" aria-label="Sản phẩm liên quan">
           <h2>Sản phẩm liên quan</h2>
@@ -244,6 +254,10 @@ export const ProductDetailTemplate = ({
       ) : null}
 
       <section className="detail-template__conversion" aria-label="Yêu cầu sản phẩm">
+        <div className="detail-template__conversion-summary">
+          <strong>{primaryCode ?? visibleText(product.model) ?? getProductDisplayName(product)}</strong>
+          <span>{getProductDisplayName(product)}</span>
+        </div>
         <button type="button" className="detail-template__request" onClick={() => onRequestConsultation(selectedVariant?.variant_id)}>{requestLabel === "Đặt trước" ? "Gửi yêu cầu đặt trước" : "Gửi yêu cầu đặt hàng"}</button>
         <ContactActions config={config} compact showUnavailable className="detail-template__contact-actions" />
       </section>

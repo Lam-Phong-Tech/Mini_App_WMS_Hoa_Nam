@@ -1,0 +1,58 @@
+/* UAT_Dev_6 / TC_UI_03 — each library action is an independent rounded
+ * control.  Legacy rules made the actions a single split bar with a vertical
+ * divider, unlike the approved mobile reference. */
+.product-card__actions {
+  display: flex;
+  min-height: 0;
+  gap: 6px;
+  padding: 7px 8px 8px;
+  border-top: 0;
+  background: var(--hn-surface);
+}
+
+.product-card__actions > button,
+.product-card__actions > button + button {
+  min-width: 0;
+  min-height: 38px;
+  flex: 1 1 0;
+  gap: 5px;
+  padding: 8px 6px;
+  color: var(--hn-text-muted);
+  font-size: 12px;
+  font-weight: 600;
+  border: 0;
+  border-radius: 8px;
+  background: var(--hn-near-white);
+}
+
+.product-card__actions > button svg {
+  width: 16px;
+  height: 16px;
+}
+
+.product-card__actions > button:is(.is-saved, .is-compared) {
+  color: #087b91;
+  background: #e5f6f8;
+}
+
+.product-card__actions > button.is-saved svg {
+  fill: currentColor;
+}
+
+@media (max-width: 359px) {
+  .product-card__actions {
+    gap: 4px;
+    padding-inline: 6px;
+  }
+
+  .product-card__actions > :is(.product-card__save, .product-card__compare) {
+    gap: 2px;
+    padding-inline: 4px;
+    font-size: 10px !important;
+  }
+
+  .product-card__actions > :is(.product-card__save, .product-card__compare) svg {
+    width: 15px !important;
+    height: 15px !important;
+  }
+}

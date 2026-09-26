@@ -1,24 +1,23 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useMemo } from "react";
 import { useLocation, useNavigate } from "zmp-ui";
 
 import {
-  getVisibleCategories,
   getCanonicalDomains,
   parseProductQuery,
   serializeProductQuery,
   visibleText,
 } from "@/catalogue/catalogue-utils";
+import { getCategoryIcon } from "@/catalogue/category-icons";
 import { CatalogueFailure, CatalogueSkeleton } from "@/components/catalogue/catalogue-feedback";
 import { AppShell } from "@/components/app-shell";
 import { SystemStatePanel } from "@/components/system-state-panel";
 import { UiIcon } from "@/components/ui-icon";
+import { useCatalogueCategories } from "@/hooks/use-catalogue-categories";
 import { getFoundationRoute } from "@/routes";
 import { useAppContext } from "@/state/app-context";
 import { createLoadingState } from "@/state/system-state";
-import { ApiFailure, CategoryDto, isApiSuccess } from "@/types/public-api";
 
 const categoryRoute = getFoundationRoute("categories");
-const CATEGORY_ICONS = ["hammer", "drill", "ruler", "sliders"] as const;
 
 const DOMAIN_PRESENTATION = {
   POWER_TOOLS: {
@@ -29,12 +28,12 @@ const DOMAIN_PRESENTATION = {
   HAND_TOOLS: {
     icon: "wrench",
     title: "Dụng cụ cầm tay",
-    description: "Lắp ráp, đo đạc, sửa chữa",
+    description: "Kẹp, siết, đo, cắt",
   },
   ACCESSORIES: {
     icon: "zap",
     title: "Phụ tùng và phụ kiện",
-    description: "Phụ kiện tương thích cho công việc",
+    description: "Pin, sạc, mũi và lưỡi",
   },
 } as const;
 
@@ -43,11 +42,6 @@ const DOMAIN_TAB_LABELS = {
   HAND_TOOLS: "Dụng cụ cầm tay",
   ACCESSORIES: "Phụ kiện",
 } as const;
-
-type CategoryState =
-  | { kind: "loading" | "success-empty"; categories: []; failure: null }
-  | { kind: "success-data"; categories: CategoryDto[]; failure: null }
-  | { kind: "error"; categories: []; failure: ApiFailure };
 
 const CategoryPage = () => {
   const location = useLocation();
@@ -58,28 +52,7 @@ const CategoryPage = () => {
   const selectedDomain = canonicalDomains.some((domain) => domain.code === requestedDomain)
     ? requestedDomain
     : canonicalDomains[0]?.code;
-  const [categoryState, setCategoryState] = useState<CategoryState>({ kind: "loading", categories: [], failure: null });
-
-  const loadCategories = useCallback(async () => {
-    if (!selectedDomain) {
-      setCategoryState({ kind: "success-empty", categories: [], failure: null });
-      return;
-    }
-    setCategoryState({ kind: "loading", categories: [], failure: null });
-    const response = await api.getCategories(selectedDomain);
-    if (isApiSuccess(response)) {
-      const categories = getVisibleCategories(response.data);
-      setCategoryState(categories.length
-        ? { kind: "success-data", categories, failure: null }
-        : { kind: "success-empty", categories: [], failure: null });
-    } else {
-      setCategoryState({ kind: "error", categories: [], failure: response });
-    }
-  }, [api, selectedDomain]);
-
-  useEffect(() => {
-    void loadCategories();
-  }, [loadCategories]);
+  const categoryState = useCatalogueCategories(api, selectedDomain, Boolean(selectedDomain));
 
   if (phase === "loading") {
     return <AppShell route={categoryRoute}><SystemStatePanel state={createLoadingState()} /></AppShell>;
@@ -159,7 +132,7 @@ const CategoryPage = () => {
                       onClick={() => navigate(`/products${serializeProductQuery({ domain: category.domain, category: category.code })}`, { animate: false })}
                     >
                       <span className={`category-browser__directory-icon category-browser__directory-icon--${(category.sort_order - 1) % 4}`}>
-                        <UiIcon name={CATEGORY_ICONS[(category.sort_order - 1) % CATEGORY_ICONS.length]} size={20} />
+                        <UiIcon name={getCategoryIcon(category.code)} size={20} />
                       </span>
                       <span>{visibleText(category.display_name)}</span>
                       <UiIcon name="chevronRight" size={20} />
@@ -173,13 +146,15 @@ const CategoryPage = () => {
       </section>
 
       {categoryState.kind === "loading" ? <CatalogueSkeleton /> : null}
-      {categoryState.failure ? <CatalogueFailure failure={categoryState.failure} onRetry={() => void loadCategories()} /> : null}
+      {categoryState.failure ? <CatalogueFailure failure={categoryState.failure} onRetry={categoryState.reload} /> : null}
       {categoryState.kind === "success-empty" ? <>
         <section className="category-browser__empty">
-          <span><UiIcon name="packageX" size={26} /></span>
+          <span><UiIcon name="packageOpen" size={26} /></span>
           <h3>Chưa có danh mục để hiển thị</h3>
-          <p>Liên hệ để được tư vấn sản phẩm phù hợp với công việc của bạn.</p>
-          <button type="button" onClick={() => navigate("/contact", { animate: false })}>Tư vấn sản phẩm <UiIcon name="arrowRight" size={18} /></button>
+          <p>{selectedDomain === "ACCESSORIES"
+            ? "Liên hệ để được tư vấn phụ kiện phù hợp với dụng cụ của bạn."
+            : "Liên hệ để được tư vấn sản phẩm phù hợp với công việc của bạn."}</p>
+          <button type="button" onClick={() => navigate("/contact", { animate: false })}>{selectedDomain === "ACCESSORIES" ? "Tư vấn phụ kiện" : "Tư vấn sản phẩm"} <UiIcon name="arrowRight" size={18} /></button>
         </section>
       </> : null}
       <aside className="category-browser__help" aria-label="Hỗ trợ chọn sản phẩm">

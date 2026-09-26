@@ -1,0 +1,202 @@
+/* UAT_Dev_v6 TC_UI_07 — recent products uses the approved browser-library
+ * layout, progress copy and in-app confirmation rather than window.confirm. */
+.library-back {
+  display: inline-flex;
+  width: fit-content;
+  min-height: 40px;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 0;
+  color: var(--hn-primary);
+  font: inherit;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+  border: 0;
+  background: transparent;
+}
+
+.library-heading--recent {
+  display: block;
+}
+
+.library-heading--recent h1 {
+  margin-top: 8px;
+  font-size: 32px;
+}
+
+.library-storage-note--recent {
+  display: block;
+  margin: 0;
+  padding: 16px 18px;
+  color: var(--hn-text-secondary);
+  font-size: 15px;
+  line-height: 1.55;
+  border: 0;
+  border-radius: 14px;
+  background: #eef4f4;
+}
+
+.library-heading__actions--recent {
+  width: 100%;
+  justify-content: space-between;
+}
+
+.library-clear {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+}
+
+.library-progress {
+  margin: 4px 0 0;
+  color: var(--hn-text-muted);
+  font-size: 14px;
+  line-height: 1.45;
+  text-align: center;
+}
+
+.library-empty {
+  display: grid;
+  justify-items: center;
+  gap: 14px;
+  padding: 52px 24px;
+  color: var(--hn-text-secondary);
+  text-align: center;
+  border: 1px solid var(--hn-border);
+  border-radius: 16px;
+  background: var(--hn-surface);
+}
+
+.library-empty > svg {
+  color: var(--hn-text-secondary);
+}
+
+.library-empty h2,
+.library-empty p {
+  margin: 0;
+}
+
+.library-empty h2 {
+  color: var(--hn-text-primary);
+  font-size: 22px;
+  line-height: 1.3;
+}
+
+.library-empty p {
+  font-size: 15px;
+  line-height: 1.55;
+}
+
+.library-empty button,
+.library-clear-dialog__card > div > button:last-child {
+  display: inline-flex;
+  min-height: 48px;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 12px 18px;
+  color: var(--hn-surface);
+  font: inherit;
+  font-size: 15px;
+  font-weight: 700;
+  cursor: pointer;
+  border: 1px solid var(--hn-primary);
+  border-radius: 10px;
+  background: var(--hn-gradient-primary);
+}
+
+.library-clear-dialog {
+  position: fixed;
+  z-index: 100;
+  inset: 0;
+  display: grid;
+  align-items: end;
+}
+
+.library-clear-dialog__backdrop {
+  position: absolute;
+  inset: 0;
+  cursor: default;
+  border: 0;
+  background: rgb(12 34 55 / 28%);
+  backdrop-filter: blur(3px);
+}
+
+.library-clear-dialog__card {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  gap: 18px;
+  max-width: 560px;
+  margin: 0 auto;
+  padding: 24px;
+  border-radius: 24px 24px 0 0;
+  background: var(--hn-surface);
+}
+
+.library-clear-dialog__card > button {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  display: grid;
+  width: 44px;
+  height: 44px;
+  place-items: center;
+  color: var(--hn-primary);
+  cursor: pointer;
+  border: 1px solid var(--hn-border);
+  border-radius: 12px;
+  background: var(--hn-surface);
+}
+
+.library-clear-dialog__card h2,
+.library-clear-dialog__card p {
+  margin: 0;
+}
+
+.library-clear-dialog__card h2 {
+  padding-right: 52px;
+  color: var(--hn-text-primary);
+  font-size: 24px;
+  line-height: 1.25;
+}
+
+.library-clear-dialog__card p {
+  color: var(--hn-text-secondary);
+  font-size: 16px;
+  line-height: 1.5;
+}
+
+.library-clear-dialog__card > div {
+  display: grid;
+  grid-template-columns: minmax(0, .65fr) minmax(0, 1fr);
+  gap: 12px;
+}
+
+.library-clear-dialog__card > div > button:first-child {
+  min-height: 48px;
+  color: var(--hn-primary);
+  font: inherit;
+  font-size: 15px;
+  font-weight: 700;
+  cursor: pointer;
+  border: 1px solid var(--hn-primary);
+  border-radius: 10px;
+  background: var(--hn-surface);
+}
+
+@media (max-width: 700px) {
+  .library-heading--recent h1 {
+    font-size: 30px;
+  }
+
+  .library-storage-note--recent {
+    padding: 16px;
+    font-size: 14px;
+  }
+
+  .library-empty {
+    padding: 44px 20px;
+  }
+}

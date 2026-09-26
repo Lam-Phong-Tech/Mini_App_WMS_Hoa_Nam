@@ -4,9 +4,12 @@ import { useEffect, useMemo, useState } from "react";
 import {
   getFacetOptions,
   normalizeProductQuery,
+  productQueryCacheKey,
   visibleText,
 } from "@/catalogue/catalogue-utils";
 import { AvailabilityFilter, AvailabilityFilterValue } from "@/components/catalogue/availability-filter";
+import { getCategoryProductTotal } from "@/catalogue/catalogue-filter-utils";
+import { useCatalogueCategories } from "@/hooks/use-catalogue-categories";
 import { PublicApiAdapter } from "@/services/public-api";
 import {
   ApiFailure,
@@ -35,10 +38,11 @@ const SORT_OPTIONS: Array<{ value: ProductSort; label: string }> = [
   { value: "name_asc", label: "Tên sản phẩm A–Z" },
 ];
 
-type FacetLoadState =
+type FacetLoadState = (
   | { kind: "idle" | "loading" | "success-empty"; facets: []; failure: null }
   | { kind: "success-data"; facets: FacetDto[]; failure: null }
-  | { kind: "error"; facets: []; failure: ApiFailure };
+  | { kind: "error"; facets: []; failure: ApiFailure }
+) & { queryKey?: string };
 
 /** The approved reference only exposes the catalogue default and A–Z order.
  * Keep legacy updated_desc URLs valid in the data contract, but normalize this
@@ -52,7 +56,6 @@ export const FilterSheet = ({
   query,
   availability,
   domains,
-  productCount,
   onClose,
   onApply,
 }: FilterSheetProps) => {
@@ -60,6 +63,8 @@ export const FilterSheet = ({
   const [draftAvailability, setDraftAvailability] = useState<AvailabilityFilterValue>(availability);
   const [facetState, setFacetState] = useState<FacetLoadState>({ kind: "idle", facets: [], failure: null });
   const [reloadToken, setReloadToken] = useState(0);
+  const draftQueryKey = productQueryCacheKey(draft);
+  const draftCategories = useCatalogueCategories(api, draft.domain, visible);
 
   useEffect(() => {
     setDraft(toReferenceQuery(query));
@@ -69,20 +74,20 @@ export const FilterSheet = ({
   useEffect(() => {
     let current = true;
     if (!visible) return () => { current = false; };
-    setFacetState({ kind: "loading", facets: [], failure: null });
-    void api.getFacets(normalizeProductQuery(query)).then((response) => {
+    setFacetState({ kind: "loading", facets: [], failure: null, queryKey: draftQueryKey });
+    void api.getFacets(normalizeProductQuery({ ...draft, cursor: undefined })).then((response) => {
       if (!current) return;
       if (isApiSuccess(response)) {
         const facets = response.data.filter((facet) => getFacetOptions(facet).length);
         setFacetState(facets.length
-          ? { kind: "success-data", facets, failure: null }
-          : { kind: "success-empty", facets: [], failure: null });
+          ? { kind: "success-data", facets, failure: null, queryKey: draftQueryKey }
+          : { kind: "success-empty", facets: [], failure: null, queryKey: draftQueryKey });
       } else {
-        setFacetState({ kind: "error", facets: [], failure: response });
+        setFacetState({ kind: "error", facets: [], failure: response, queryKey: draftQueryKey });
       }
     });
     return () => { current = false; };
-  }, [api, query, reloadToken, visible]);
+  }, [api, draft, draftQueryKey, reloadToken, visible]);
 
   useEffect(() => {
     const page = document.querySelector<HTMLElement>(".hn-page");
@@ -102,11 +107,19 @@ export const FilterSheet = ({
   }, [onClose, visible]);
 
   const categoryFacet = useMemo(
-    () => facetState.kind === "success-data" ? facetState.facets.find((facet) => facet.type === "CATEGORY") ?? null : null,
-    [facetState],
+    () => facetState.queryKey === draftQueryKey && facetState.kind === "success-data"
+      ? facetState.facets.find((facet) => facet.type === "CATEGORY") ?? null : null,
+    [draftQueryKey, facetState],
   );
   const categoryOptions = categoryFacet ? getFacetOptions(categoryFacet) : [];
-  const applyLabel = typeof productCount === "number" ? `Áp dụng · ${productCount} sản phẩm` : "Áp dụng";
+  const updatingFacets = facetState.queryKey !== draftQueryKey || facetState.kind === "loading";
+  const draftCount = draftAvailability === "ALL"
+    && (draftCategories.kind === "success-data" || draftCategories.kind === "success-empty")
+    ? getCategoryProductTotal(draft, draftCategories.categories)
+    : null;
+  const applyLabel = updatingFacets
+    ? "Đang cập nhật…"
+    : draftCount === null ? "Áp dụng" : `Áp dụng · ${draftCount} sản phẩm`;
   const clearFilters = () => {
     setDraft(normalizeProductQuery({ q: query.q, sort: "featured" }));
     setDraftAvailability("ALL");
@@ -132,6 +145,9 @@ export const FilterSheet = ({
                 ...current,
                 domain,
                 category: undefined,
+                power_source: undefined,
+                feature: undefined,
+                spec: undefined,
               }));
             }}
           >
@@ -144,10 +160,12 @@ export const FilterSheet = ({
           <span>Danh mục</span>
           <select
             value={draft.category ?? ""}
-            disabled={facetState.kind === "loading"}
+            disabled={updatingFacets}
             onChange={(event) => setDraft((current) => normalizeProductQuery({
               ...current,
               category: event.target.value || undefined,
+              feature: undefined,
+              spec: undefined,
             }))}
           >
             <option value="">Tất cả danh mục</option>
@@ -168,12 +186,12 @@ export const FilterSheet = ({
           </select>
         </label>
 
-        {facetState.kind === "loading" ? <CatalogueSkeleton cards={1} /> : null}
+        {updatingFacets ? <CatalogueSkeleton cards={1} /> : null}
         {facetState.failure ? <CatalogueFailure failure={facetState.failure} onRetry={() => setReloadToken((current) => current + 1)} /> : null}
 
         <footer className="filter-sheet__footer">
           <Button variant="secondary" onClick={clearFilters}>Xóa bộ lọc</Button>
-          <Button variant="primary" onClick={() => onApply(toReferenceQuery(draft), draftAvailability)}>{applyLabel}</Button>
+          <Button variant="primary" disabled={updatingFacets} onClick={() => onApply(toReferenceQuery(draft), draftAvailability)}>{applyLabel}</Button>
         </footer>
       </div>
     </Sheet>

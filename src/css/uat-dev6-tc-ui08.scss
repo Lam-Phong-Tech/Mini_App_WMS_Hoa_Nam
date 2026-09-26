@@ -1,0 +1,26 @@
+/* UAT_Dev_v6 TC_UI_08 — search uses the approved one-column result list and
+ * unambiguous progress copy rather than catalogue product cards. */
+.search-screen__progress {
+  margin: 2px 0 0;
+  color: var(--hn-text-muted);
+  font-size: 14px;
+  line-height: 1.45;
+  text-align: center;
+}
+
+@media (max-width: 700px) {
+  .search-screen__toolbar {
+    gap: 10px;
+  }
+
+  .search-screen__toolbar > button {
+    min-height: 44px;
+    padding-right: 10px;
+    padding-left: 10px;
+    font-size: 13px;
+  }
+
+  .search-screen__toolbar output {
+    font-size: 13px;
+  }
+}

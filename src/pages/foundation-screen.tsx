@@ -1,4 +1,5 @@
-import { Button, useSnackbar } from "zmp-ui";
+import { useEffect, useState } from "react";
+import { Button } from "zmp-ui";
 import { useNavigate } from "zmp-ui";
 
 import { AppShell } from "@/components/app-shell";
@@ -100,10 +101,16 @@ const copyPhoneNumber = async (value: string): Promise<boolean> => {
 
 export const FoundationScreen = ({ routeKey }: FoundationScreenProps) => {
   const navigate = useNavigate();
-  const { openSnackbar } = useSnackbar();
+  const [copyFeedback, setCopyFeedback] = useState<{ message: string; copied: boolean } | null>(null);
   const route = getFoundationRoute(routeKey);
   const { phase, config, systemState, refresh } = useAppContext();
   const copy = screenCopy[routeKey];
+
+  useEffect(() => {
+    if (!copyFeedback) return;
+    const timer = window.setTimeout(() => setCopyFeedback(null), 3200);
+    return () => window.clearTimeout(timer);
+  }, [copyFeedback]);
 
   if (phase === "loading") {
     return (
@@ -170,10 +177,9 @@ export const FoundationScreen = ({ routeKey }: FoundationScreenProps) => {
                       type="button"
                       aria-label="Sao chép số điện thoại"
                       onClick={() => {
-                        void copyPhoneNumber(hotline.display).then((copied) => openSnackbar({
-                          text: copied ? "Đã sao chép số điện thoại." : "Không thể sao chép số điện thoại.",
-                          type: copied ? "success" : "warning",
-                          icon: true,
+                        void copyPhoneNumber(hotline.display).then((copied) => setCopyFeedback({
+                          message: copied ? "Đã sao chép số điện thoại." : "Không thể sao chép số điện thoại.",
+                          copied,
                         }));
                       }}
                     >
@@ -223,6 +229,9 @@ export const FoundationScreen = ({ routeKey }: FoundationScreenProps) => {
           ) : null}
 
           <button className="contact-screen__browse" type="button" onClick={() => navigate("/products", { animate: false })}>Tiếp tục xem sản phẩm <UiIcon name="arrowRight" size={19} /></button>
+          <div className="contact-screen__feedback" role="status" aria-live="polite" aria-atomic="true">
+            {copyFeedback ? <div className="contact-screen__toast"><UiIcon name={copyFeedback.copied ? "checkCircle" : "info"} size={18} /><span>{copyFeedback.message}</span></div> : null}
+          </div>
         </section>
       </AppShell>
     );

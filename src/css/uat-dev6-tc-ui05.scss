@@ -1,0 +1,24 @@
+/* UAT_Dev_v6 TC_UI_05 — the cross-category comparison feedback is a
+ * pale-blue guidance notice in the approved reference, not a white card. */
+.compare-notice {
+  background: #eef4f4;
+}
+
+@media (max-width: 700px) {
+  .compare-notice {
+    gap: 6px;
+    padding: 10px 12px;
+    border-radius: 10px;
+  }
+
+  .compare-notice p,
+  .compare-notice > button {
+    font-size: 13px;
+  }
+
+  .compare-notice > button:not(:last-child) {
+    min-height: 34px;
+    padding-right: 2px;
+    padding-left: 2px;
+  }
+}

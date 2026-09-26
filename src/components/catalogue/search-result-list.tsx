@@ -24,8 +24,7 @@ export const SearchResultList = ({ products, returnPath }: SearchResultListProps
   const navigate = useNavigate();
 
   return (
-    <section className="search-suggestion-results" aria-labelledby="search-results-heading">
-      <h2 id="search-results-heading" className="search-suggestion-results__heading">Khám phá sản phẩm</h2>
+    <section className="search-suggestion-results" aria-label="Kết quả tìm kiếm">
       <div className="search-suggestion-results__list">
         {products.map((product) => {
           const displayName = getProductDisplayName(product) ?? product.name;

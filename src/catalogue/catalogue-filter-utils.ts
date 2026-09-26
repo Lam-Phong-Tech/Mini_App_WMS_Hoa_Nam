@@ -27,6 +27,7 @@ export const getCategoryProductTotal = (
   const unique = new Map(matching.map((category) => [`${category.domain}:${category.code}`, category]));
   return [...unique.values()].reduce((total, category) => total + (category.product_count ?? 0), 0);
 };
+
 /** Labels come from public taxonomy, including newly added categories. A raw
  * backend code is not customer-facing copy, even during loading or failure. */
 export const getCategoryFilterLabel = (

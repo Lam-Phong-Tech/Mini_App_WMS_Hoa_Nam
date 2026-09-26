@@ -32,7 +32,10 @@ export const CompareProvider = ({ children }: { children: ReactNode }) => {
       setNotice({ message: "Bạn có thể so sánh tối đa 3 sản phẩm. Hãy bỏ một sản phẩm để chọn thêm.", canOpenComparison: true });
     }
     if (result.outcome === "category") {
-      setNotice({ message: "Chỉ so sánh sản phẩm cùng nhóm và danh mục.", canOpenComparison: false });
+      setNotice({
+        message: "Hãy chọn các sản phẩm cùng danh mục để so sánh. Bạn có thể xóa lựa chọn hiện tại để đổi danh mục.",
+        canOpenComparison: true,
+      });
     }
     return result.outcome;
   }, [items]);

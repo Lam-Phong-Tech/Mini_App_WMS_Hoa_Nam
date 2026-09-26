@@ -1,7 +1,8 @@
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "zmp-ui";
 
-import { getAvailabilityLabel, isPreorderAvailability, visibleText } from "@/catalogue/catalogue-utils";
+import { getAvailabilityLabel, getPublicProducts, getVisibleCategories, isPreorderAvailability, visibleText } from "@/catalogue/catalogue-utils";
+import { createProductSelectionSnapshot, getProductModelLabel } from "@/catalogue/product-identity";
 import { AppShell } from "@/components/app-shell";
 import { CatalogueSkeleton } from "@/components/catalogue/catalogue-feedback";
 import { PublicImage } from "@/components/catalogue/public-image";
@@ -12,7 +13,7 @@ import { useAppContext } from "@/state/app-context";
 import { useCompare } from "@/state/compare-context";
 import { useQuoteWorkflow } from "@/state/quote-workflow-context";
 import { getSystemStateForFailure } from "@/state/system-state";
-import { ApiFailure, ProductDetailDto, isApiSuccess } from "@/types/public-api";
+import { ApiFailure, CategoryDto, ProductCardDto, ProductDetailDto, isApiSuccess } from "@/types/public-api";
 
 const route = getFoundationRoute("compare");
 
@@ -35,12 +36,6 @@ type CompareSpecGroup = {
   rows: CompareSpecRow[];
 };
 
-const getCompareModelLabel = (product: ProductDetailDto): string =>
-  // `model` may describe an entire product series (for example "DongCheng
-  // sê-ri DCPL") shared by several selected products. Prefer the public
-  // primary code so that each column/row remains an identifiable model.
-  visibleText(product.primary_code) ?? visibleText(product.model) ?? visibleText(product.name) ?? "Model sản phẩm";
-
 const getComparisonUsages = (products: ProductDetailDto[]): CompareUsage[] =>
   products.map((product) => {
     const featureLabels = (product.features ?? [])
@@ -49,7 +44,7 @@ const getComparisonUsages = (products: ProductDetailDto[]): CompareUsage[] =>
 
     return {
       productId: product.product_id,
-      modelLabel: getCompareModelLabel(product),
+      modelLabel: getProductModelLabel(product),
       // `usage` is dedicated public catalogue copy. The public description is
       // a safe fallback for catalogues which have not populated it yet.
       usage: visibleText(product.usage) ?? visibleText(product.description),
@@ -96,9 +91,18 @@ const ComparePage = () => {
   const { items, clear, toggle } = useCompare();
   const { setSelectedItems, rememberSelectedProducts } = useQuoteWorkflow();
   const [phase, setPhase] = useState<"loading" | "ready">("ready");
-  const [products, setProducts] = useState<ProductDetailDto[]>([]);
+  const [loadedProducts, setProducts] = useState<ProductDetailDto[]>([]);
+  // A removed model disappears in the same render as the selection counter;
+  // do not leave its old facts/cards on screen while remaining details reload.
+  const products = useMemo(() => loadedProducts.filter((product) =>
+    items.some((item) => item.product_id === product.product_id)), [items, loadedProducts]);
   const [failure, setFailure] = useState<ApiFailure | null>(null);
   const [reloadToken, setReloadToken] = useState(0);
+  const [pickerCategories, setPickerCategories] = useState<CategoryDto[]>([]);
+  const [pickerCategoryCode, setPickerCategoryCode] = useState("");
+  const [pickerCandidates, setPickerCandidates] = useState<ProductCardDto[]>([]);
+  const [pickerLoading, setPickerLoading] = useState(false);
+  const [pickerFailure, setPickerFailure] = useState<ApiFailure | null>(null);
 
   useEffect(() => {
     let active = true;
@@ -123,6 +127,59 @@ const ComparePage = () => {
     return () => { active = false; };
   }, [api, items, reloadToken]);
 
+  // The approved empty comparison screen is a useful starting point rather
+  // than a dead end: choose a category, then choose the first model directly.
+  useEffect(() => {
+    let active = true;
+    if (items.length) return () => { active = false; };
+
+    setPickerLoading(true);
+    setPickerFailure(null);
+    void api.getCategories().then((response) => {
+      if (!active) return;
+      if (!isApiSuccess(response)) {
+        setPickerCategories([]);
+        setPickerCategoryCode("");
+        setPickerFailure(response);
+        setPickerLoading(false);
+        return;
+      }
+      const categories = getVisibleCategories(response.data);
+      setPickerCategories(categories);
+      setPickerCategoryCode((current) => categories.some((category) => category.code === current) ? current : (categories[0]?.code ?? ""));
+      setPickerLoading(false);
+    });
+    return () => { active = false; };
+  }, [api, items.length]);
+
+  const pickerCategory = useMemo(
+    () => pickerCategories.find((category) => category.code === pickerCategoryCode) ?? null,
+    [pickerCategories, pickerCategoryCode],
+  );
+
+  useEffect(() => {
+    let active = true;
+    if (items.length || !pickerCategory) {
+      setPickerCandidates([]);
+      return () => { active = false; };
+    }
+
+    setPickerLoading(true);
+    setPickerFailure(null);
+    void api.getProducts({ domain: pickerCategory.domain, category: pickerCategory.code, limit: 50 }).then((response) => {
+      if (!active) return;
+      if (!isApiSuccess(response)) {
+        setPickerCandidates([]);
+        setPickerFailure(response);
+        setPickerLoading(false);
+        return;
+      }
+      setPickerCandidates(getPublicProducts(response.data));
+      setPickerLoading(false);
+    });
+    return () => { active = false; };
+  }, [api, items.length, pickerCategory]);
+
   const categoryName = useMemo(
     () => visibleText(products[0]?.category.display_name) ?? "Danh mục sản phẩm",
     [products],
@@ -136,11 +193,7 @@ const ComparePage = () => {
 
   const requestConsultation = (chosenProducts: ProductDetailDto[]) => {
     setSelectedItems(chosenProducts.map((product) => ({ product_id: product.product_id, variant_id: null, quantity: null })));
-    rememberSelectedProducts(chosenProducts.map((product) => ({
-      product_id: product.product_id,
-      name: product.name,
-      model: product.model ?? null,
-    })));
+    rememberSelectedProducts(chosenProducts.map(createProductSelectionSnapshot));
     navigate("/quote", { animate: false });
   };
 
@@ -165,14 +218,38 @@ const ComparePage = () => {
           ) : null}
         </div>
 
-        {phase === "loading" ? <CatalogueSkeleton cards={2} /> : null}
+        {phase === "loading" && !products.length ? <CatalogueSkeleton cards={2} /> : null}
         {failure ? <SystemStatePanel state={getSystemStateForFailure(failure)} onRetry={() => setReloadToken((current) => current + 1)} /> : null}
 
         {!items.length ? (
-          <section className="compare-empty" aria-label="Chưa chọn sản phẩm để so sánh">
-            <UiIcon name="info" size={22} />
-            <strong>Chưa chọn sản phẩm để so sánh</strong>
-            <p>Thêm sản phẩm từ thẻ hoặc trang chi tiết.</p>
+          <section className="compare-picker" aria-labelledby="compare-picker-heading">
+            <label htmlFor="compare-picker-category">Danh mục so sánh</label>
+            <select
+              id="compare-picker-category"
+              value={pickerCategoryCode}
+              disabled={pickerLoading || !pickerCategories.length}
+              onChange={(event) => setPickerCategoryCode(event.target.value)}
+            >
+              {pickerCategories.map((category) => <option key={category.code} value={category.code}>{category.display_name}</option>)}
+            </select>
+            <h2 id="compare-picker-heading">Chọn model đầu tiên</h2>
+            {pickerLoading ? <CatalogueSkeleton cards={2} /> : null}
+            {pickerFailure ? <SystemStatePanel state={getSystemStateForFailure(pickerFailure)} onRetry={() => setReloadToken((current) => current + 1)} /> : null}
+            {!pickerLoading && !pickerFailure && !pickerCandidates.length ? <p className="compare-picker__empty">Chưa có model để so sánh trong danh mục này.</p> : null}
+            {!pickerLoading && !pickerFailure ? (
+              <div className="compare-picker__list" aria-label="Danh sách model có thể so sánh">
+                {pickerCandidates.map((product) => (
+                  <button key={product.product_id} type="button" onClick={() => toggle(product)} aria-label={`Thêm ${getProductModelLabel(product)} vào so sánh`}>
+                    <PublicImage media={product.cover_media} alt={product.name} />
+                    <span>
+                      <strong>{getProductModelLabel(product)}</strong>
+                      <small>{product.name}</small>
+                    </span>
+                    <UiIcon name="sliders" size={22} />
+                  </button>
+                ))}
+              </div>
+            ) : null}
           </section>
         ) : null}
 
@@ -186,17 +263,18 @@ const ComparePage = () => {
             <div className="compare-roster" aria-label="Sản phẩm đang so sánh">
               {products.map((product) => {
                 const preorder = isPreorderAvailability(product.availability);
+                const modelLabel = getProductModelLabel(product);
                 return (
                   <article className="compare-card" key={product.product_id}>
                     <button
                       className="compare-open"
                       type="button"
                       onClick={() => navigate(`/products/${encodeURIComponent(product.slug)}`, { animate: false })}
-                      aria-label={`Xem chi tiết ${product.name}`}
+                      aria-label={`Xem chi tiết ${modelLabel}`}
                     >
                       <PublicImage media={product.cover_media} alt={product.name} />
                       <span className="compare-card-copy">
-                        <strong>{visibleText(product.model) ?? product.name}</strong>
+                        <strong>{modelLabel}</strong>
                         <span>{product.name}</span>
                         <span className={`compare-stock${preorder ? " is-preorder" : ""}`}>
                           <UiIcon name={preorder ? "clock" : "checkCircle"} size={14} />
@@ -204,7 +282,7 @@ const ComparePage = () => {
                         </span>
                       </span>
                     </button>
-                    <button className="compare-remove" type="button" onClick={() => toggle(product)} aria-label={`Bỏ ${product.name} khỏi so sánh`}>
+                    <button className="compare-remove" type="button" onClick={() => toggle(product)} aria-label={`Bỏ ${modelLabel} khỏi so sánh`}>
                       <UiIcon name="x" size={22} />
                     </button>
                     <button className="compare-one-request" type="button" onClick={() => requestConsultation([product])}>
@@ -217,7 +295,7 @@ const ComparePage = () => {
 
             {items.length < 3 ? (
               <button className="compare-add" type="button" onClick={() => navigate(addModelPath, { animate: false })}>
-                <UiIcon name="sliders" size={20} /> Thêm model thứ ba
+                <UiIcon name="sliders" size={20} /> {items.length === 1 ? "Thêm model thứ hai" : "Thêm model thứ ba"}
               </button>
             ) : null}
 
@@ -253,7 +331,7 @@ const ComparePage = () => {
                             <div className="compare-spec-values">
                               {products.map((product) => (
                                 <div key={product.product_id}>
-                                  <span>{getCompareModelLabel(product)}</span>
+                                  <span>{getProductModelLabel(product)}</span>
                                   <b>{row.values.get(product.product_id) ?? "—"}</b>
                                 </div>
                               ))}

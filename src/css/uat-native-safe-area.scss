@@ -1,0 +1,49 @@
+/* UAT_Dev_v5 native retest, Android 2206122SC / density 560: the host capsule
+ * occupies about 93 CSS px from the right edge, wider than the former 90px
+ * reservation. Add breathing room without changing the browser reference.
+ * ZMP SDK 2.53 does not expose a typed capsule-bounds API; this is a measured
+ * conservative native fallback, separate from the hardware safe-area inset. */
+@media (max-width: 700px) {
+  [data-host="zalo"] .hn-header.hn-header--zalo-capsule-safe {
+    padding-right: calc(104px + env(safe-area-inset-right, 0px));
+  }
+
+  /* Zalo Testing renders a floating native debug affordance at the lower
+     right. Keep the expected X remove action on comparison cards, but give it
+     a wider right rail so its icon centre is outside that host-only overlay. */
+  [data-host="zalo"] .compare-card {
+    grid-template-columns: minmax(0, 1fr) 72px;
+  }
+
+  [data-host="zalo"] .compare-roster .compare-remove {
+    width: 72px;
+  }
+}
+
+/* At 320px the two 44px actions and capsule rail leave a 104px logo track.
+ * Let the image shrink inside it; never shrink the action touch targets or
+ * let the fixed-width legacy wordmark spill into either button. */
+@media (max-width: 380px) {
+  [data-host="zalo"] .hn-header--zalo-capsule-safe .hn-wordmark {
+    width: 100%;
+    min-width: 0;
+    gap: 5px;
+  }
+
+  [data-host="zalo"] .hn-header--zalo-capsule-safe .hn-wordmark__logo {
+    width: 60px;
+    min-width: 36px;
+    height: 40px;
+    flex: 0 1 60px;
+  }
+
+  [data-host="zalo"] .hn-header--zalo-capsule-safe .hn-wordmark__copy {
+    flex: 0 0 auto;
+  }
+}
+
+@media (max-width: 340px) {
+  [data-host="zalo"] .hn-header--zalo-capsule-safe .hn-wordmark {
+    gap: 3px;
+  }
+}

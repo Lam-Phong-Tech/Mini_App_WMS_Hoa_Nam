@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "zmp-ui";
 
 import {
@@ -7,6 +7,7 @@ import {
   getVisibleHomeSections,
   PRODUCT_PAGE_LIMIT,
 } from "@/catalogue/catalogue-utils";
+import { HomeCatalogueDomain, needsHomeDomainCandidates, selectHomeCatalogue } from "@/catalogue/home-catalogue";
 import { CatalogueSkeleton, EmptyCatalogue } from "@/components/catalogue/catalogue-feedback";
 import { AvailabilityFilter, AvailabilityFilterValue } from "@/components/catalogue/availability-filter";
 import { ProductGrid } from "@/components/catalogue/product-grid";
@@ -16,7 +17,7 @@ import { SystemStatePanel } from "@/components/system-state-panel";
 import { UiIcon, UiIconName } from "@/components/ui-icon";
 import { useLibraryProducts } from "@/hooks/use-library-products";
 import { usePullToRefresh } from "@/hooks/use-pull-to-refresh";
-import { useProductResults } from "@/hooks/use-product-results";
+import { ProductResultsState, useProductResults } from "@/hooks/use-product-results";
 import { getFoundationRoute } from "@/routes";
 import { useAppContext } from "@/state/app-context";
 import { useProductLibrary } from "@/state/product-library-context";
@@ -53,7 +54,9 @@ const HOME_CATEGORY_SHORTCUTS: ReadonlyArray<{
 ];
 const HOME_CATEGORY_PREVIEW_LIMIT = 4;
 const HOME_RECENT_PREVIEW_LIMIT = 4;
-const HOME_CATALOGUE_SOURCE_COUNT = PRODUCT_PAGE_LIMIT;
+// Two first pages plus at most four further pages per domain. Continue only
+// with an explicit customer action if real stock candidates are still absent.
+const HOME_CATALOGUE_SCAN_PAGE_BUDGET = 4;
 const HERO_REFERENCE_DRILL_IMAGE = "https://duc-nguyen98.github.io/WMS_UIUX_HoaNamv2/preview/preview/product-detail-source.png";
 
 const isProductSectionItem = (
@@ -62,26 +65,37 @@ const isProductSectionItem = (
 
 const HomePage = () => {
   const navigate = useNavigate();
-  const { api, phase, home, systemState, usingDevMock, refresh } = useAppContext();
+  const { api, phase, home, systemState, usingDevMock, refresh, catalogueGeneration } = useAppContext();
   const { recentIds, reconcileMissing } = useProductLibrary();
   const pullToRefresh = usePullToRefresh(refresh);
   const [apiCategories, setApiCategories] = useState<CategoryDto[]>([]);
   const [catalogueAvailability, setCatalogueAvailability] = useState<AvailabilityFilterValue>("ALL");
+  const [catalogueScanBudget, setCatalogueScanBudget] = useState(HOME_CATALOGUE_SCAN_PAGE_BUDGET);
+  const catalogueScannedCursors = useRef<Record<HomeCatalogueDomain, Set<string>>>({
+    POWER_TOOLS: new Set(),
+    HAND_TOOLS: new Set(),
+  });
 
   const sections = getVisibleHomeSections(home?.sections);
-  const recentLibrary = useLibraryProducts(api, recentIds, reconcileMissing);
+  const recentLibrary = useLibraryProducts(api, recentIds, reconcileMissing, catalogueGeneration);
   const catalogueEnabled = phase === "ready" && !systemState;
   const powerToolResults = useProductResults(
     api,
     { sort: "featured", domain: "POWER_TOOLS", limit: PRODUCT_PAGE_LIMIT },
     catalogueEnabled,
     PRODUCT_PAGE_LIMIT,
+    PRODUCT_PAGE_LIMIT,
+    "home",
+    catalogueGeneration,
   );
   const handToolResults = useProductResults(
     api,
     { sort: "featured", domain: "HAND_TOOLS", limit: PRODUCT_PAGE_LIMIT },
     catalogueEnabled,
     PRODUCT_PAGE_LIMIT,
+    PRODUCT_PAGE_LIMIT,
+    "home",
+    catalogueGeneration,
   );
   const homeCategoryHighlights = useMemo(() => sections.reduce<CategoryDto[]>((categories, section) => {
     if (section.kind !== "CATEGORY_HIGHLIGHTS") return categories;
@@ -102,31 +116,43 @@ const HomePage = () => {
     });
 
     return () => { isActive = false; };
-  }, [api, phase, systemState]);
+  }, [api, catalogueGeneration, phase, systemState]);
 
   useEffect(() => {
-    if (
-      powerToolResults.kind === "success-data"
-      && powerToolResults.loadedCount < HOME_CATALOGUE_SOURCE_COUNT
-      && powerToolResults.nextCursor
-    ) {
-      void powerToolResults.loadMore();
-    }
-    if (
-      handToolResults.kind === "success-data"
-      && handToolResults.loadedCount < HOME_CATALOGUE_SOURCE_COUNT
-      && handToolResults.nextCursor
-    ) {
-      void handToolResults.loadMore();
-    }
+    const scanSource = (results: typeof powerToolResults, domain: HomeCatalogueDomain) => {
+      const scanned = catalogueScannedCursors.current[domain];
+      if (!catalogueEnabled || results.kind === "loading") scanned.clear();
+      if (!catalogueEnabled
+        || (results.kind !== "success-data" && results.kind !== "success-empty")
+        || !results.hasMore
+        || !results.nextCursor
+        || !needsHomeDomainCandidates(results.loadedProducts, domain)
+        || scanned.size >= catalogueScanBudget
+        || scanned.has(results.nextCursor)) return;
+
+      // The shared hook may first reveal records cached by another screen.
+      // Count only actual cursor requests, not in-memory reveal operations.
+      if (results.renderedCount >= results.loadedCount) scanned.add(results.nextCursor);
+      void results.loadMore();
+    };
+    scanSource(powerToolResults, "POWER_TOOLS");
+    scanSource(handToolResults, "HAND_TOOLS");
   }, [
+    catalogueEnabled,
+    catalogueScanBudget,
     handToolResults.kind,
+    handToolResults.hasMore,
     handToolResults.loadMore,
     handToolResults.loadedCount,
+    handToolResults.loadedProducts,
+    handToolResults.renderedCount,
     handToolResults.nextCursor,
     powerToolResults.kind,
+    powerToolResults.hasMore,
     powerToolResults.loadMore,
     powerToolResults.loadedCount,
+    powerToolResults.loadedProducts,
+    powerToolResults.renderedCount,
     powerToolResults.nextCursor,
   ]);
 
@@ -174,36 +200,36 @@ const HomePage = () => {
       .find((candidate): candidate is CategoryDto => Boolean(candidate));
     return category ? [{ ...shortcut, category }] : [];
   });
-  const featuredProducts = (() => {
-    const select = (products: ProductCardDto[], inStockCount: number, preorderCount: number) => {
-      const available = getPublicProducts(products);
-      const preferred = [
-        ...available.filter((product) => product.availability === "IN_STOCK").slice(0, inStockCount),
-        ...available.filter((product) => product.availability === "PREORDER").slice(0, preorderCount),
-      ];
-      const selectedIds = new Set(preferred.map((product) => product.product_id));
-      const targetCount = inStockCount + preorderCount;
-      return [
-        ...preferred,
-        ...available.filter((product) => !selectedIds.has(product.product_id)).slice(0, targetCount - preferred.length),
-      ];
-    };
-
-    // The approved home mix is 70% Power Tools and 30% Hand Tools. When a
-    // stock state has fewer candidates, fill the remaining slots from the
-    // same domain rather than showing fewer than the requested 20 products.
-    return [
-      ...select(powerToolResults.loadedProducts, 10, 4),
-      ...select(handToolResults.loadedProducts, 4, 2),
-    ];
-  })();
+  const featuredProducts = selectHomeCatalogue(powerToolResults.loadedProducts, handToolResults.loadedProducts);
   const visibleFeaturedProducts = featuredProducts.filter((product) =>
     catalogueAvailability === "ALL" || product.availability === catalogueAvailability,
   );
-  const catalogueLoading = powerToolResults.kind === "loading"
-    || handToolResults.kind === "loading"
-    || (powerToolResults.loadedCount < HOME_CATALOGUE_SOURCE_COUNT && Boolean(powerToolResults.nextCursor))
-    || (handToolResults.loadedCount < HOME_CATALOGUE_SOURCE_COUNT && Boolean(handToolResults.nextCursor));
+  const sourcePending = (results: ProductResultsState, domain: HomeCatalogueDomain) =>
+    results.hasMore && Boolean(results.nextCursor) && needsHomeDomainCandidates(results.loadedProducts, domain);
+  const sourceLoading = (results: ProductResultsState, domain: HomeCatalogueDomain) => {
+    if (results.kind === "idle" || results.kind === "loading" || results.kind === "loading-more") return true;
+    const scanned = catalogueScannedCursors.current[domain];
+    return !results.failure && sourcePending(results, domain)
+      && scanned.size < catalogueScanBudget && !scanned.has(results.nextCursor!);
+  };
+  const catalogueLoading = sourceLoading(powerToolResults, "POWER_TOOLS") || sourceLoading(handToolResults, "HAND_TOOLS");
+  const cataloguePending = sourcePending(powerToolResults, "POWER_TOOLS") || sourcePending(handToolResults, "HAND_TOOLS");
+  const catalogueFailure = Boolean(powerToolResults.failure || handToolResults.failure);
+  const continueCatalogueScan = () => {
+    setCatalogueScanBudget((current) => current + HOME_CATALOGUE_SCAN_PAGE_BUDGET);
+    const retrySource = (results: typeof powerToolResults, domain: HomeCatalogueDomain) => {
+      if (results.kind === "load-more-error") {
+        if (results.nextCursor) catalogueScannedCursors.current[domain].delete(results.nextCursor);
+        void results.loadMore();
+      } else if (results.failure || (sourcePending(results, domain) && results.nextCursor
+        && catalogueScannedCursors.current[domain].has(results.nextCursor))) {
+        // A repeated cursor must not spin forever; retry the source explicitly.
+        void results.reload();
+      }
+    };
+    retrySource(powerToolResults, "POWER_TOOLS");
+    retrySource(handToolResults, "HAND_TOOLS");
+  };
   const recentProducts = getPublicProducts(recentLibrary.products).slice(0, HOME_RECENT_PREVIEW_LIMIT);
 
   return (
@@ -294,17 +320,25 @@ const HomePage = () => {
         <div className="section-heading home-section-heading">
           <h2 id="featured-products-title">Sản phẩm trong danh mục</h2>
         </div>
-        <AvailabilityFilter value={catalogueAvailability} onChange={setCatalogueAvailability} />
-        {catalogueLoading ? <CatalogueSkeleton cards={4} /> : null}
+        <div className="home-catalogue-toolbar">
+          <AvailabilityFilter value={catalogueAvailability} onChange={setCatalogueAvailability} />
+          {visibleFeaturedProducts.length ? <p className="home-product-count" aria-live="polite">{visibleFeaturedProducts.length} sản phẩm</p> : null}
+        </div>
+        {catalogueLoading && !visibleFeaturedProducts.length ? <CatalogueSkeleton cards={4} /> : null}
+        {catalogueLoading && visibleFeaturedProducts.length ? <p className="home-product-status" role="status">Đang tải thêm sản phẩm theo trạng thái hàng…</p> : null}
         {visibleFeaturedProducts.length ? <>
           <ProductGrid products={visibleFeaturedProducts} returnPath="/home" label="Sản phẩm trong danh mục" loadedCount={visibleFeaturedProducts.length} />
-          <p className="home-product-progress">Đã hiển thị {visibleFeaturedProducts.length}/{featuredProducts.length} sản phẩm</p>
+          <p className="home-product-progress">Đã hiển thị {visibleFeaturedProducts.length}/{visibleFeaturedProducts.length} sản phẩm</p>
         </> : null}
-        {!catalogueLoading && !visibleFeaturedProducts.length ? <p className="catalogue-filter-empty">Chưa có sản phẩm phù hợp với trạng thái hàng đã chọn.</p> : null}
+        {!catalogueLoading && (catalogueFailure || cataloguePending) ? <>
+          <p className="home-product-status" role="status">{catalogueFailure ? "Chưa tải đầy đủ sản phẩm. Vui lòng thử lại." : "Còn sản phẩm chưa kiểm tra trạng thái hàng."}</p>
+          <button className="home-catalogue-link" type="button" onClick={continueCatalogueScan}>{catalogueFailure ? "Thử lại" : "Tiếp tục tải sản phẩm"} <UiIcon name="chevronRight" size={20} /></button>
+        </> : null}
+        {!catalogueLoading && !catalogueFailure && !cataloguePending && !visibleFeaturedProducts.length ? <p className="catalogue-filter-empty">Chưa có sản phẩm phù hợp với trạng thái hàng đã chọn.</p> : null}
         <button className="home-catalogue-link" type="button" onClick={() => navigate("/products", { animate: false })}>Xem toàn bộ danh mục <UiIcon name="chevronRight" size={20} /></button>
       </section>
 
-      {!categoryHighlights.length && !featuredProducts.length && !catalogueLoading ? <EmptyCatalogue onRetry={() => void refresh()} /> : null}
+      {!categoryHighlights.length && !featuredProducts.length && !catalogueLoading && !catalogueFailure && !cataloguePending ? <EmptyCatalogue onRetry={() => void refresh()} /> : null}
       {usingDevMock ? <p className="dev-fixture-note">DEMO DEV: dữ liệu mẫu chỉ để xem giao diện, không phải Catalogue UAT hoặc Production.</p> : null}
     </AppShell>
   );

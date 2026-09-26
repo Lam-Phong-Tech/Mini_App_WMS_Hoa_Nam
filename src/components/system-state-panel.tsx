@@ -2,6 +2,8 @@ import { Button, Spinner } from "zmp-ui";
 
 import { SafeSystemState } from "@/state/system-state";
 import { UiIcon, UiIconName } from "@/components/ui-icon";
+import { getOfflineHotline, toTelHref } from "@/services/contact-config";
+import { useAppContext } from "@/state/app-context";
 
 interface SystemStatePanelProps {
   state: SafeSystemState;
@@ -18,17 +20,23 @@ const STATE_ICONS: Record<Exclude<SafeSystemState["kind"], "loading">, UiIconNam
   "update-required": "alert",
 };
 
-export const SystemStatePanel = ({ state, onRetry }: SystemStatePanelProps) => (
-  <section className={`system-state system-state--${state.kind}`} aria-live="polite">
+export const SystemStatePanel = ({ state, onRetry }: SystemStatePanelProps) => {
+  const { config } = useAppContext();
+  const hotlineHref = state.kind === "no-network" ? toTelHref(getOfflineHotline(config).tel) : null;
+  const canRetry = Boolean(onRetry) && state.kind !== "maintenance" && state.kind !== "update-required";
+
+  return <section className={`system-state system-state--${state.kind}`} aria-live="polite">
     {state.kind === "loading" ? <Spinner /> : <span className="system-state__icon"><UiIcon name={STATE_ICONS[state.kind]} size={20} /></span>}
     <h2>{state.title}</h2>
     <p>{state.message}</p>
     {state.retryAfterSeconds ? (
       <p className="system-state__hint">Có thể thử lại sau khoảng {state.retryAfterSeconds} giây.</p>
     ) : null}
-    {onRetry && state.kind !== "maintenance" && state.kind !== "update-required" ? (
-      <Button variant="primary" onClick={onRetry}>Thử lại</Button>
-    ) : null}
-    {state.kind === "no-network" ? <a className="system-state__hotline" href="tel:0986366675">Gọi hotline</a> : null}
-  </section>
-);
+    {canRetry || (state.kind === "no-network" && hotlineHref) ? <div className="system-state__actions">
+      {canRetry ? (
+        <Button variant="primary" onClick={onRetry}><UiIcon name="refreshCw" size={18} />Thử lại</Button>
+      ) : null}
+      {state.kind === "no-network" && hotlineHref ? <a className="system-state__hotline" href={hotlineHref}><UiIcon name="phone" size={17} />Gọi hotline</a> : null}
+    </div> : null}
+  </section>;
+};

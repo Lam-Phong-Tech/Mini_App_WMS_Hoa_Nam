@@ -1,0 +1,14 @@
+/* Native keyboard only. Browser reference geometry and closed-keyboard safe
+   area remain untouched; AppShell also removes the nav from the focus order. */
+[data-host="zalo"] .hn-page.hn-page--keyboard-open {
+  scroll-padding-bottom: 16px;
+}
+
+[data-host="zalo"] .hn-page.hn-page--keyboard-open .hn-bottom-navigation {
+  display: none;
+}
+
+[data-host="zalo"] .hn-page.hn-page--keyboard-open .hn-shell,
+[data-host="zalo"] .hn-page.hn-page--keyboard-open .hn-content {
+  padding-bottom: 16px;
+}

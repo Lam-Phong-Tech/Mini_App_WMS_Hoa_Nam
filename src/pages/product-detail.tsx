@@ -1,5 +1,5 @@
 import { useEffect } from "react";
-import { Button, useLocation, useNavigate, useParams, useSnackbar } from "zmp-ui";
+import { Button, useLocation, useNavigate, useParams } from "zmp-ui";
 
 import {
   createProductReturnPath,
@@ -25,7 +25,6 @@ const ProductDetailPage = () => {
   const { slug } = useParams<{ slug: string }>();
   const location = useLocation();
   const navigate = useNavigate();
-  const { openSnackbar } = useSnackbar();
   const { api, config, phase, systemState, refresh } = useAppContext();
   const { recordViewed, savedIds, toggleSaved } = useProductLibrary();
   const { items: compared, toggle: toggleCompare } = useCompare();
@@ -81,17 +80,9 @@ const ProductDetailPage = () => {
     return `/products/${encodeURIComponent(product.slug)}/quote?${parameters.toString()}`;
   };
   const onToggleCompare = () => {
-    const outcome = toggleCompare(product);
-    if (outcome === "added") {
-      openSnackbar({
-        text: "Đã thêm sản phẩm vào danh sách so sánh.",
-        type: "success",
-        icon: true,
-        action: { text: "Mở so sánh", close: true, onClick: () => navigate("/compare", { animate: false }) },
-      });
-    }
-    if (outcome === "limit") openSnackbar({ text: "Chỉ so sánh tối đa 3 sản phẩm.", type: "warning", icon: true });
-    if (outcome === "category") openSnackbar({ text: "Chỉ so sánh sản phẩm cùng nhóm và danh mục.", type: "warning", icon: true });
+    // Cards and detail share the same light notice in AppShell. Do not create
+    // an additional bottom snackbar for this entry point.
+    toggleCompare(product);
   };
 
   return (

@@ -27,6 +27,9 @@ export const ProductGallery = ({ product, galleryMode = false, variant = null, o
   const [swipeStartX, setSwipeStartX] = useState<number | null>(null);
   const [zoom, setZoom] = useState(100);
   const activeMedia = media[Math.min(activeIndex, Math.max(media.length - 1, 0))] ?? null;
+  const gallerySubtitle = [visibleText(product.model) ?? visibleText(product.primary_code), product.name]
+    .filter((value): value is string => Boolean(value))
+    .join(" · ");
 
   useEffect(() => {
     setActiveIndex(0);
@@ -49,6 +52,13 @@ export const ProductGallery = ({ product, galleryMode = false, variant = null, o
 
   return (
     <section className={`product-gallery ${galleryMode ? "product-gallery--full" : ""}`} aria-label="Media sản phẩm">
+      {galleryMode ? <header className="product-gallery__full-heading">
+        <div>
+          <h1>Ảnh sản phẩm</h1>
+          <p>{gallerySubtitle}</p>
+        </div>
+        {onClose ? <button type="button" aria-label="Đóng ảnh sản phẩm" onClick={onClose}><UiIcon name="x" size={24} /></button> : null}
+      </header> : null}
       <div
         className="product-gallery__main"
         style={galleryMode ? ({ "--product-gallery-zoom": zoom / 100 } as CSSProperties) : undefined}
@@ -63,7 +73,7 @@ export const ProductGallery = ({ product, galleryMode = false, variant = null, o
         }}
       >
         {activeMedia?.type === "IMAGE" ? (
-          <PublicImage media={activeMedia} alt={product.name} eager />
+          <PublicImage media={activeMedia} alt={product.name} eager trimWhitespace={!galleryMode} />
         ) : (
           <button type="button" className="media-document" onClick={() => activeMedia && openMedia(activeMedia)}>
             <UiIcon name={activeMedia?.type === "VIDEO" ? "play" : "fileText"} size={34} />
@@ -87,7 +97,6 @@ export const ProductGallery = ({ product, galleryMode = false, variant = null, o
             <button type="button" onClick={() => setZoom((current) => Math.min(300, current + 25))} disabled={zoom >= 300}>Phóng to</button>
             <output aria-live="polite">{zoom}%</output>
           </div>
-          {onClose ? <button className="product-gallery__close" type="button" onClick={onClose}>Đóng</button> : null}
           <div className="product-gallery__thumbs">
             {media.map((item, index) => (
               <button key={item.media_id} type="button" onClick={() => setActiveIndex(index)} className={index === activeIndex ? "is-active" : ""}>

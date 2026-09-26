@@ -1,10 +1,18 @@
-import { PublicConfigDto, SupportHoursDto } from "@/types/public-api";
+import { ContactPhoneDto, PublicConfigDto, SupportHoursDto } from "@/types/public-api";
 
 export const OA_UNAVAILABLE_MESSAGE = "Chat Zalo OA chưa sẵn sàng. Vui lòng gọi hotline hoặc gửi yêu cầu tư vấn.";
 
 export const toTelHref = (tel: string): string => `tel:${tel.trim().replace(/[^0-9+]/g, "")}`;
 
 export const getPublicHotline = (config: PublicConfigDto | null) => config?.hotline ?? config?.hotline_fallback ?? null;
+
+// Public deployment/UAT hotline, bundled so the approved offline screen can
+// still offer a call on a first visit when /config cannot be downloaded.
+// This fallback is not used to enable other unconfigured contact channels.
+const APPROVED_OFFLINE_HOTLINE: ContactPhoneDto = { display: "098 636 6675", tel: "0986366675" };
+
+export const getOfflineHotline = (config: PublicConfigDto | null): ContactPhoneDto =>
+  getPublicHotline(config) ?? APPROVED_OFFLINE_HOTLINE;
 
 type SupportDay = NonNullable<SupportHoursDto["intervals"]>[number]["days"][number];
 

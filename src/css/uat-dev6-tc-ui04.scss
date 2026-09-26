@@ -1,0 +1,60 @@
+/* UAT_Dev_v6 TC_UI_04 — at mobile width the availability choices and result
+ * count must remain one compact line, as in the approved Home reference. */
+@media (max-width: 700px) {
+  .home-catalogue-toolbar {
+    align-items: center;
+    gap: 6px;
+  }
+
+  .home-catalogue-toolbar .availability-filter {
+    flex: 1 1 auto;
+  }
+
+  .home-catalogue-toolbar .availability-filter__options {
+    flex-wrap: nowrap;
+    gap: 4px;
+  }
+
+  .home-catalogue-toolbar .availability-filter__options > button {
+    min-height: 40px;
+    gap: 4px;
+    padding: 7px 8px;
+    font-size: 12px;
+    white-space: nowrap;
+  }
+
+  .home-catalogue-toolbar .availability-filter__options > button svg {
+    width: 14px;
+    height: 14px;
+  }
+
+  .home-catalogue-toolbar .home-product-count {
+    min-width: max-content;
+    font-size: 12px;
+  }
+}
+
+@media (max-width: 359px) {
+  .home-catalogue-toolbar {
+    gap: 4px;
+  }
+
+  .home-catalogue-toolbar .availability-filter__options {
+    gap: 3px;
+  }
+
+  .home-catalogue-toolbar .availability-filter__options > button {
+    gap: 3px;
+    padding: 6px 5px;
+    font-size: 10px;
+  }
+
+  .home-catalogue-toolbar .availability-filter__options > button svg {
+    width: 12px;
+    height: 12px;
+  }
+
+  .home-catalogue-toolbar .home-product-count {
+    font-size: 10px;
+  }
+}
