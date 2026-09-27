@@ -90,6 +90,24 @@
   text-align: center;
 }
 
+.help-support {
+  display: grid;
+  grid-template-columns: 34px minmax(0, 1fr);
+  gap: 10px 14px;
+  padding: 20px;
+  border: 1px solid var(--hn-border);
+  border-radius: 16px;
+  background: #eef4f4;
+}
+
+.help-support > svg { margin-top: 2px; color: var(--hn-primary); }
+.help-support h2, .help-support p { margin: 0; }
+.help-support h2 { color: var(--hn-text-primary); font-size: 18px; line-height: 1.35; }
+.help-support p { margin-top: 4px; color: var(--hn-text-secondary); font-size: 14px; line-height: 1.5; }
+.help-support__actions { display: flex; grid-column: 1 / -1; align-items: center; gap: 14px; }
+.help-support__actions .quote-submit { min-width: 0; flex: 1 1 auto; margin: 0; }
+.help-support__actions a { display: inline-flex; min-height: 44px; align-items: center; gap: 7px; color: var(--hn-primary); font-size: 15px; font-weight: 700; text-decoration: none; white-space: nowrap; }
+
 .library-empty {
   display: grid;
   justify-items: center;

@@ -3,6 +3,9 @@ import { useNavigate } from "zmp-ui";
 import { AppShell } from "@/components/app-shell";
 import { UiIcon } from "@/components/ui-icon";
 import { getFoundationRoute } from "@/routes";
+import { getOfflineHotline, toTelHref } from "@/services/contact-config";
+import { openDeviceDialer } from "@/services/phone-dialer";
+import { useAppContext } from "@/state/app-context";
 
 const route = getFoundationRoute("help");
 
@@ -18,11 +21,21 @@ const questions = [
 
 const HelpPage = () => {
   const navigate = useNavigate();
+  const { config } = useAppContext();
+  const hotline = getOfflineHotline(config);
+  const hotlineHref = toTelHref(hotline.tel);
   return <AppShell route={route}>
     <section className="help-heading"><p className="info-card__eyebrow">HỖ TRỢ</p><h2>Hướng dẫn & câu hỏi thường gặp</h2><p>Tìm sản phẩm, gửi nhu cầu và kết nối với Hoa Nam.</p></section>
     <ol className="help-steps"><li><span>1</span>Tìm sản phẩm phù hợp</li><li><span>2</span>Chọn sản phẩm quan tâm</li><li><span>3</span>Gửi thông tin cần tư vấn</li></ol>
     <section className="faq-list">{questions.map(([title, text]) => <details key={title}><summary>{title}<UiIcon name="chevronRight" size={19} /></summary><p>{text}</p></details>)}</section>
-    <button type="button" className="quote-submit" onClick={() => navigate("/selection", { animate: false })}>Chọn sản phẩm</button>
+    <section className="help-support" aria-label="Hỗ trợ thêm">
+      <UiIcon name="bookOpen" size={30} />
+      <div><h2>Bạn cần hỗ trợ thêm?</h2><p>Gửi sản phẩm quan tâm hoặc trao đổi trực tiếp với nhân viên tư vấn.</p></div>
+      <div className="help-support__actions">
+        <button type="button" className="quote-submit" onClick={() => navigate("/selection", { animate: false })}>Chọn sản phẩm <UiIcon name="arrowRight" size={20} /></button>
+        <a href={hotlineHref} onClick={(event) => { event.preventDefault(); openDeviceDialer(hotline.tel, hotlineHref); }}><UiIcon name="phone" size={20} />Gọi hotline</a>
+      </div>
+    </section>
   </AppShell>;
 };
 
