@@ -253,10 +253,6 @@ const ComparePage = () => {
           </section>
         ) : null}
 
-        {items.length === 1 && phase === "ready" ? (
-          <p className="compare-selection-note"><UiIcon name="info" size={16} /> Chọn thêm một model cùng danh mục để bắt đầu đối chiếu.</p>
-        ) : null}
-
         {products.length ? (
           <>
             <p className="compare-category-name">{categoryName}</p>
@@ -299,53 +295,59 @@ const ComparePage = () => {
               </button>
             ) : null}
 
-            <div className="compare-features">
-              <section className="compare-feature" aria-labelledby="compare-use-heading">
-                <h2 id="compare-use-heading">Công dụng &amp; đặc điểm</h2>
-                {hasComparisonUsage ? (
-                  <div className="compare-model-facts" aria-label="Công dụng và đặc điểm theo từng model">
-                    {comparisonUsages.map((item) => (
-                      <article className="compare-model-fact" key={item.productId}>
-                        <h3>{item.modelLabel}</h3>
-                        {item.usage ? <p>{item.usage}</p> : <p className="compare-empty-value">—</p>}
-                        {item.features.length ? (
-                          <ul className="compare-feature-list">
-                            {item.features.map((feature) => <li key={feature}>{feature}</li>)}
-                          </ul>
-                        ) : null}
-                      </article>
-                    ))}
-                  </div>
-                ) : <p>Chưa có thông tin công dụng để đối chiếu. Hoa Nam sẽ tư vấn theo nhu cầu của bạn.</p>}
-              </section>
-              <section className="compare-feature" aria-labelledby="compare-spec-heading">
-                <h2 id="compare-spec-heading">Thông số kỹ thuật</h2>
-                {comparisonSpecGroups.length ? (
-                  <div className="compare-spec-groups" aria-label="Thông số kỹ thuật theo từng model">
-                    {comparisonSpecGroups.map((group) => (
-                      <section className="compare-spec-group" key={group.key} aria-label={group.label}>
-                        {comparisonSpecGroups.length > 1 ? <h3>{group.label}</h3> : null}
-                        {group.rows.map((row) => (
-                          <div className="compare-spec-row" key={row.key}>
-                            <strong>{row.label}</strong>
-                            <div className="compare-spec-values">
-                              {products.map((product) => (
-                                <div key={product.product_id}>
-                                  <span>{getProductModelLabel(product)}</span>
-                                  <b>{row.values.get(product.product_id) ?? "—"}</b>
-                                </div>
-                              ))}
-                            </div>
-                          </div>
-                        ))}
-                      </section>
-                    ))}
-                  </div>
-                ) : <p>Chưa có thông số để đối chiếu giữa các model. Gửi yêu cầu để được tư vấn chi tiết.</p>}
-              </section>
-            </div>
+            {items.length === 1 && phase === "ready" ? (
+              <p className="compare-selection-note"><UiIcon name="info" size={16} /> Chọn thêm một model cùng danh mục để bắt đầu đối chiếu.</p>
+            ) : null}
 
             {products.length >= 2 ? (
+              <div className="compare-features">
+                <section className="compare-feature" aria-labelledby="compare-use-heading">
+                  <h2 id="compare-use-heading">Công dụng &amp; đặc điểm</h2>
+                  {hasComparisonUsage ? (
+                    <div className="compare-model-facts" aria-label="Công dụng và đặc điểm theo từng model">
+                      {comparisonUsages.map((item) => (
+                        <article className="compare-model-fact" key={item.productId}>
+                          <h3>{item.modelLabel}</h3>
+                          {item.usage ? <p>{item.usage}</p> : <p className="compare-empty-value">—</p>}
+                          {item.features.length ? (
+                            <ul className="compare-feature-list">
+                              {item.features.map((feature) => <li key={feature}>{feature}</li>)}
+                            </ul>
+                          ) : null}
+                        </article>
+                      ))}
+                    </div>
+                  ) : <p>Chưa có thông tin công dụng để đối chiếu. Hoa Nam sẽ tư vấn theo nhu cầu của bạn.</p>}
+                </section>
+                <section className="compare-feature" aria-labelledby="compare-spec-heading">
+                  <h2 id="compare-spec-heading">Thông số kỹ thuật</h2>
+                  {comparisonSpecGroups.length ? (
+                    <div className="compare-spec-groups" aria-label="Thông số kỹ thuật theo từng model">
+                      {comparisonSpecGroups.map((group) => (
+                        <section className="compare-spec-group" key={group.key} aria-label={group.label}>
+                          {comparisonSpecGroups.length > 1 ? <h3>{group.label}</h3> : null}
+                          {group.rows.map((row) => (
+                            <div className="compare-spec-row" key={row.key}>
+                              <strong>{row.label}</strong>
+                              <div className="compare-spec-values">
+                                {products.map((product) => (
+                                  <div key={product.product_id}>
+                                    <span>{getProductModelLabel(product)}</span>
+                                    <b>{row.values.get(product.product_id) ?? "—"}</b>
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          ))}
+                        </section>
+                      ))}
+                    </div>
+                  ) : <p>Chưa có thông số để đối chiếu giữa các model. Gửi yêu cầu để được tư vấn chi tiết.</p>}
+                </section>
+              </div>
+            ) : null}
+
+            {products.length ? (
               <div className="compare-actions">
                 <button type="button" onClick={() => requestConsultation(products)}>
                   Tư vấn {products.length} sản phẩm <UiIcon name="arrowRight" size={20} />
