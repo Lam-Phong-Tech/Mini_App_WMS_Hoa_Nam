@@ -18,4 +18,12 @@ describe("UAT_Dev_v6 TC_UI_07 recent products library", () => {
     expect(page).not.toContain("window.confirm");
     expect(style).toMatch(/\.library-clear-dialog\s*\{[^}]*position: fixed;[^}]*z-index: 100;/);
   });
+
+  it("keeps saved products actionable from the approved library screen", () => {
+    expect(page).toContain("Gửi yêu cầu cho danh sách");
+    expect(page).toContain("requestSavedProducts");
+    expect(page).toContain("library-storage-note--${kind}");
+    expect(page).toContain("Đã hiển thị {library.products.length} / {library.products.length} sản phẩm");
+    expect(style).toMatch(/\.library-request\s*\{[^}]*background: var\(--hn-gradient-primary\);/);
+  });
 });

@@ -1,6 +1,7 @@
 import { useMemo, useState } from "react";
 import { useNavigate } from "zmp-ui";
 
+import { createProductSelectionSnapshot } from "@/catalogue/product-identity";
 import { CatalogueSkeleton, EmptyCatalogue } from "@/components/catalogue/catalogue-feedback";
 import { ProductGrid } from "@/components/catalogue/product-grid";
 import { AppShell } from "@/components/app-shell";
@@ -10,6 +11,7 @@ import { useLibraryProducts } from "@/hooks/use-library-products";
 import { getFoundationRoute } from "@/routes";
 import { useAppContext } from "@/state/app-context";
 import { useProductLibrary } from "@/state/product-library-context";
+import { useQuoteWorkflow } from "@/state/quote-workflow-context";
 import { getSystemStateForFailure } from "@/state/system-state";
 
 export type ProductLibraryPageKind = "recent" | "saved";
@@ -33,6 +35,7 @@ const ProductLibraryPage = ({ kind }: { kind: ProductLibraryPageKind }) => {
   const navigate = useNavigate();
   const { api, catalogueGeneration } = useAppContext();
   const { recentIds, savedIds, storageAvailable, clearRecent, reconcileMissing } = useProductLibrary();
+  const { setSelectedItems, rememberSelectedProducts } = useQuoteWorkflow();
   const ids = kind === "recent" ? recentIds : savedIds;
   const library = useLibraryProducts(api, ids, reconcileMissing, catalogueGeneration);
   const route = getFoundationRoute(kind === "recent" ? "recent" : "saved");
@@ -46,6 +49,11 @@ const ProductLibraryPage = ({ kind }: { kind: ProductLibraryPageKind }) => {
     clearRecent();
     setClearConfirmOpen(false);
   };
+  const requestSavedProducts = () => {
+    setSelectedItems(library.products.map((product) => ({ product_id: product.product_id, variant_id: null, quantity: null })));
+    rememberSelectedProducts(library.products.map(createProductSelectionSnapshot));
+    navigate("/quote", { animate: false });
+  };
 
   return (
     <AppShell route={route}>
@@ -56,14 +64,15 @@ const ProductLibraryPage = ({ kind }: { kind: ProductLibraryPageKind }) => {
           <h1>{pageCopy.title}</h1>
           <p className="library-heading__description">{pageCopy.description}</p>
         </div>
-        {kind === "saved" ? <div className="library-heading__actions">
-          <output>{library.products.length} sản phẩm</output>
-        </div> : null}
       </section>
-      {kind === "recent" ? <p className="library-storage-note library-storage-note--recent">Danh sách được lưu trong trình duyệt trên thiết bị này, không đồng bộ sang thiết bị khác. Xóa dữ liệu trình duyệt sẽ xóa danh sách.</p> : null}
+      <p className={`library-storage-note library-storage-note--${kind}`}>Danh sách được lưu trong trình duyệt trên thiết bị này, không đồng bộ sang thiết bị khác. Xóa dữ liệu trình duyệt sẽ xóa danh sách.</p>
       {kind === "recent" ? <div className="library-heading__actions library-heading__actions--recent">
         <output>{library.products.length} sản phẩm</output>
         {ids.length ? <button type="button" className="library-clear" onClick={confirmClearRecent}><UiIcon name="trash" size={20} />Xóa lịch sử xem</button> : null}
+      </div> : null}
+      {kind === "saved" ? <div className="library-heading__actions library-heading__actions--saved">
+        <output>{library.products.length} sản phẩm</output>
+        {library.products.length ? <button type="button" className="library-request" onClick={requestSavedProducts}>Gửi yêu cầu cho danh sách <UiIcon name="arrowRight" size={20} /></button> : null}
       </div> : null}
       {kind === "saved" && !storageAvailable ? <p className="library-storage-note"><UiIcon name="info" size={16} />Thiết bị đang giới hạn lưu trữ; danh sách chỉ giữ trong phiên mở app này.</p> : null}
       {library.phase === "loading" ? <CatalogueSkeleton cards={2} /> : null}
@@ -80,7 +89,7 @@ const ProductLibraryPage = ({ kind }: { kind: ProductLibraryPageKind }) => {
       </> : null}
       {library.products.length ? <>
         <ProductGrid products={library.products} returnPath={returnPath} label={pageCopy.title} loadedCount={library.products.length} />
-        {kind === "recent" ? <p className="library-progress">Đã hiển thị {library.products.length} / {library.products.length} sản phẩm</p> : null}
+        <p className="library-progress">Đã hiển thị {library.products.length} / {library.products.length} sản phẩm</p>
       </> : null}
       {kind === "recent" && clearConfirmOpen ? <div className="library-clear-dialog" role="presentation">
         <button className="library-clear-dialog__backdrop" type="button" aria-label="Giữ lịch sử xem" onClick={() => setClearConfirmOpen(false)} />
