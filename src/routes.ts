@@ -53,6 +53,9 @@ export const BOTTOM_NAVIGATION = [
 export const getBottomNavigationKey = (pathname: string): string => {
   if (pathname === "/home" || pathname === "/") return "home";
   if (pathname.startsWith("/contact") || pathname.startsWith("/quote") || pathname.startsWith("/system")) return "contact";
+  // A quote begun from a product detail keeps its detail path for Back
+  // navigation, but it is still the Contact/quote workflow in the mobile UI.
+  if (pathname.startsWith("/products/") && pathname.endsWith("/quote")) return "contact";
   if (pathname === "/categories" || pathname.startsWith("/products") || pathname.startsWith("/filters") || pathname.startsWith("/search")) return "categories";
   return "";
 };

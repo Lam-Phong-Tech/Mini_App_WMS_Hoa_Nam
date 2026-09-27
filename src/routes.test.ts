@@ -36,6 +36,7 @@ describe("foundation routing", () => {
       "/system",
     ]);
     expect(getBottomNavigationKey("/products/example")).toBe("categories");
+    expect(getBottomNavigationKey("/products/example/quote")).toBe("contact");
     expect(getBottomNavigationKey("/search")).toBe("categories");
     expect(getBottomNavigationKey("/contact")).toBe("contact");
   });
