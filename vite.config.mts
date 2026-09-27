@@ -18,7 +18,14 @@ export default ({ mode }: { mode: string }) => {
     root: ".",
     envDir: workspaceRoot,
     base: "",
-    plugins: [zaloMiniApp(), react()],
+    plugins: [
+      zaloMiniApp(),
+      // Zalo Device mode loads Vite modules from its embedded H5 origin.
+      // React Refresh injects a separate preamble that the WebView blocks by
+      // CORS, leaving the native app on its loading screen. Vite still
+      // reloads normally when a source file changes; only Fast Refresh is off.
+      react({ fastRefresh: false }),
+    ],
     build: {
       // The native host rewrites stylesheet asset paths. Embed only the
       // approved font bytes so text does not depend on a separate font URL;
