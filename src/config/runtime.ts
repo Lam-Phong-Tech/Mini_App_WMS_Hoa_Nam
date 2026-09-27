@@ -29,6 +29,7 @@ const normalizeBoolean = (value?: string): boolean | undefined => {
 
 export const createRuntimeSettings = (
   environment: RuntimeEnvironment,
+  isZaloDeviceMode = false,
 ): RuntimeSettings => {
   const appEnvironment = normalizeEnvironment(environment.VITE_APP_ENV);
   const configuredMock = normalizeBoolean(environment.VITE_USE_DEV_MOCK);
@@ -41,11 +42,20 @@ export const createRuntimeSettings = (
     // In a local ZMP session, the runnable Mini App is hosted in an iframe on
     // a different port from the outer frame. Route real public API calls via
     // Vite's DEV proxy; the deployed build retains the configured origin.
-    apiBaseUrl: environment.DEV && !useDevMock && configuredApiBaseUrl ? "" : configuredApiBaseUrl,
+    // The normal local frame uses Vite's /api proxy. In Zalo Device mode the
+    // Vite module executes inside an H5 document, so `/api` resolves against
+    // h5.zdn.vn instead of the local dev server. Keep the approved HTTPS API
+    // origin for that native verification path.
+    apiBaseUrl: environment.DEV && !useDevMock && configuredApiBaseUrl && !isZaloDeviceMode ? "" : configuredApiBaseUrl,
     appVersion: environment.VITE_APP_VERSION?.trim() || "0.0.0-dev",
     environment: appEnvironment,
     useDevMock,
   };
 };
 
-export const runtimeSettings = createRuntimeSettings(import.meta.env);
+const isZaloDeviceMode = (): boolean => {
+  if (typeof window === "undefined") return false;
+  return new URLSearchParams(window.location.search).get("env") === "TESTING_LOCAL";
+};
+
+export const runtimeSettings = createRuntimeSettings(import.meta.env, isZaloDeviceMode());

@@ -24,6 +24,19 @@ describe("runtime settings", () => {
     });
   });
 
+  it("keeps the configured API origin when Zalo Device mode cannot use Vite's proxy", () => {
+    expect(
+      createRuntimeSettings({
+        DEV: true,
+        VITE_USE_DEV_MOCK: "false",
+        VITE_PUBLIC_API_BASE_URL: "https://public.example/",
+      }, true),
+    ).toMatchObject({
+      useDevMock: false,
+      apiBaseUrl: "https://public.example",
+    });
+  });
+
   it("keeps the configured public API origin in a deployed build", () => {
     expect(
       createRuntimeSettings({
