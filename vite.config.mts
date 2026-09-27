@@ -31,6 +31,9 @@ export default ({ mode }: { mode: string }) => {
       // WebView. Turning off HMR also disables that preamble; a source edit
       // simply needs a page reload during native-device verification.
       hmr: false,
+      // The Zalo Device tunnel changes the script origin to an H5 host. Its
+      // module and Refresh-runtime requests must be explicitly CORS-enabled.
+      cors: true,
       // Local QA stores Chrome profiles and captured evidence beneath .tmp.
       // They are not source files; watching a locked browser Cookie database
       // aborts Vite before the Mini App can be tested.

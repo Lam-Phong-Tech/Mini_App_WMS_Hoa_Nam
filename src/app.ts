@@ -1,3 +1,6 @@
+// Must be first: Zalo Device mode serves the document itself and therefore
+// cannot receive Vite's ordinary React Refresh preamble.
+import "@/device-refresh-preamble";
 // ZaUI stylesheet
 import "zmp-ui/zaui.css";
 // Tailwind stylesheet
