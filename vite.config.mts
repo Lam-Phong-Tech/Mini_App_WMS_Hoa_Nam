@@ -18,14 +18,7 @@ export default ({ mode }: { mode: string }) => {
     root: ".",
     envDir: workspaceRoot,
     base: "",
-    plugins: [
-      zaloMiniApp(),
-      // Zalo Device mode loads Vite modules from its embedded H5 origin.
-      // React Refresh injects a separate preamble that the WebView blocks by
-      // CORS, leaving the native app on its loading screen. Vite still
-      // reloads normally when a source file changes; only Fast Refresh is off.
-      react({ fastRefresh: false }),
-    ],
+    plugins: [zaloMiniApp(), react()],
     build: {
       // The native host rewrites stylesheet asset paths. Embed only the
       // approved font bytes so text does not depend on a separate font URL;
@@ -33,6 +26,11 @@ export default ({ mode }: { mode: string }) => {
       assetsInlineLimit: (filePath) => /\/src\/assets\/fonts\/[^/]+\.(?:ttf|woff2)$/i.test(filePath.replace(/\\/g, "/")),
     },
     server: {
+      // Zalo Device mode loads Vite modules from an H5 origin, so the React
+      // Refresh preamble would be fetched cross-origin and be blocked by the
+      // WebView. Turning off HMR also disables that preamble; a source edit
+      // simply needs a page reload during native-device verification.
+      hmr: false,
       // Local QA stores Chrome profiles and captured evidence beneath .tmp.
       // They are not source files; watching a locked browser Cookie database
       // aborts Vite before the Mini App can be tested.
