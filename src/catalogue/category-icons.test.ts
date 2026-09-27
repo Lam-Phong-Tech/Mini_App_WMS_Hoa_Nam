@@ -22,4 +22,12 @@ describe("approved electrical-category icon", () => {
     expect(getCategoryIcon("FASTENING_TOOLS")).toBe("wrench");
     expect(getCategoryIcon("NEW_CATEGORY")).toBe("sliders");
   });
+
+  it("uses category-specific icons for the live Power Tools catalogue", () => {
+    expect(getCategoryIcon("PT_AIR")).toBe("wind");
+    expect(getCategoryIcon("PT_CLEANING")).toBe("sparkles");
+    expect(getCategoryIcon("PT_GARDEN")).toBe("tree");
+    expect(getCategoryIcon("PT_PUMP")).toBe("droplets");
+    expect(getCategoryIcon("PAINTING_WALL_TOOLS")).toBe("paintbrush");
+  });
 });
