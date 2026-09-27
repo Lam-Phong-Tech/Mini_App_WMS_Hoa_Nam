@@ -3,7 +3,6 @@ import { useLocation, useNavigate } from "zmp-ui";
 
 import {
   createProductReturnPath,
-  countActiveFilters,
   normalizeProductQuery,
   parseProductQuery,
   PRODUCT_PAGE_LIMIT,
@@ -11,7 +10,9 @@ import {
   serializeProductQuery,
   visibleText,
 } from "@/catalogue/catalogue-utils";
-import { getCatalogueCountCopy, getCategoryFilterLabel, getCategoryProductTotal } from "@/catalogue/catalogue-filter-utils";
+import { DOMAIN_PRESENTATION } from "@/catalogue/category-presentation";
+import { AVAILABILITY_PRESENTATION } from "@/catalogue/availability-presentation";
+import { getActiveCatalogueFilterCount, getCatalogueCountCopy, getCategoryFilterLabel, getCategoryProductTotal } from "@/catalogue/catalogue-filter-utils";
 import {
   CatalogueFailure,
   CatalogueSkeleton,
@@ -30,18 +31,6 @@ import { useAppContext } from "@/state/app-context";
 import { createLoadingState } from "@/state/system-state";
 
 const productsRoute = getFoundationRoute("products");
-const DOMAIN_TITLES = {
-  POWER_TOOLS: "Máy và thiết bị động lực",
-  HAND_TOOLS: "Dụng cụ cầm tay",
-  ACCESSORIES: "Phụ tùng và phụ kiện",
-} as const;
-
-const DOMAIN_FILTER_LABELS = {
-  POWER_TOOLS: "Máy công cụ",
-  HAND_TOOLS: "Dụng cụ cầm tay",
-  ACCESSORIES: "Phụ kiện",
-} as const;
-
 export const ProductListPage = ({ openFilter = false }: { openFilter?: boolean }) => {
   const location = useLocation();
   const navigate = useNavigate();
@@ -110,7 +99,7 @@ export const ProductListPage = ({ openFilter = false }: { openFilter?: boolean }
   const isLoadingAvailability = availability !== "ALL"
     && !visibleProducts.length
     && (results.renderedCount < results.loadedCount || results.hasMore);
-  const activeFilterCount = countActiveFilters(query) + Number(Boolean(query.domain));
+  const activeFilterCount = getActiveCatalogueFilterCount(query, availability);
   const clearAppliedFilters = () => {
     setAvailability("ALL");
     navigate(`/products${serializeProductQuery(normalizeProductQuery({ q: query.q, sort: "featured" }))}`, { replace: true, animate: false });
@@ -118,7 +107,7 @@ export const ProductListPage = ({ openFilter = false }: { openFilter?: boolean }
   const title = query.category
     ? "Sản phẩm trong danh mục"
     : query.domain
-      ? DOMAIN_TITLES[query.domain]
+      ? DOMAIN_PRESENTATION[query.domain].title
       : "Tất cả sản phẩm";
 
   return (
@@ -139,10 +128,13 @@ export const ProductListPage = ({ openFilter = false }: { openFilter?: boolean }
           <output aria-live="polite">{results.kind === "loading" ? "Đang tải…" : countCopy.result}</output>
         </div>
         <AvailabilityFilter value={availability} onChange={setAvailability} />
-        {query.domain || query.category ? (
+        {activeFilterCount ? (
           <div className="catalogue-active-filters" aria-label="Bộ lọc đang áp dụng">
-            {query.domain ? <button type="button" onClick={() => navigate(`/products${serializeProductQuery({ ...query, domain: undefined, category: undefined })}`, { replace: true, animate: false })}>{DOMAIN_FILTER_LABELS[query.domain]} <UiIcon name="x" size={14} /></button> : null}
+            {query.domain ? <button type="button" onClick={() => navigate(`/products${serializeProductQuery({ ...query, domain: undefined, category: undefined })}`, { replace: true, animate: false })}>{DOMAIN_PRESENTATION[query.domain].tabLabel} <UiIcon name="x" size={14} /></button> : null}
             {query.category ? <button type="button" onClick={() => navigate(`/products${serializeProductQuery({ ...query, category: undefined })}`, { replace: true, animate: false })}>{getCategoryFilterLabel(query.category, categoryState.categories, results.loadedProducts)} <UiIcon name="x" size={14} /></button> : null}
+            {availability !== "ALL" ? <button type="button" onClick={() => setAvailability("ALL")}>
+              {AVAILABILITY_PRESENTATION[availability].label} <UiIcon name="x" size={14} />
+            </button> : null}
             <button type="button" className="catalogue-active-filters__clear" onClick={clearAppliedFilters}>Xóa bộ lọc</button>
           </div>
         ) : null}

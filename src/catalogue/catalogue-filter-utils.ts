@@ -1,4 +1,5 @@
-import { normalizeProductQuery, visibleText } from "@/catalogue/catalogue-utils";
+import { countActiveFilters, normalizeProductQuery, visibleText } from "@/catalogue/catalogue-utils";
+import type { AvailabilityFilterValue } from "@/catalogue/availability-presentation";
 import { CategoryDto, ProductCardDto, ProductQuery } from "@/types/public-api";
 
 /** Catalogue category totals cannot answer a search, feature or availability
@@ -37,6 +38,19 @@ export const getCategoryFilterLabel = (
 ): string => visibleText(categories.find((category) => category.code === code)?.display_name)
   ?? visibleText(products.find((product) => product.category.code === code)?.category.display_name)
   ?? "Danh mục đã chọn";
+
+/** The availability control is a real client-side filter even though its
+ * value is not sent to the public catalogue endpoint. Count it together with
+ * query filters so the toolbar always reports the customer-visible state. */
+export const getActiveCatalogueFilterCount = (
+  query: ProductQuery,
+  availability: AvailabilityFilterValue,
+): number => {
+  const normalized = normalizeProductQuery(query);
+  return countActiveFilters(normalized)
+    + Number(Boolean(normalized.domain))
+    + Number(availability !== "ALL");
+};
 
 export const getCatalogueCountCopy = (
   renderedCount: number,

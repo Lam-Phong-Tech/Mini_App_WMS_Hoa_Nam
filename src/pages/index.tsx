@@ -7,6 +7,7 @@ import {
   getVisibleHomeSections,
   PRODUCT_PAGE_LIMIT,
 } from "@/catalogue/catalogue-utils";
+import { DOMAIN_PRESENTATION, HOME_CATEGORY_SHORTCUTS } from "@/catalogue/category-presentation";
 import { HomeCatalogueDomain, needsHomeDomainCandidates, selectHomeCatalogue } from "@/catalogue/home-catalogue";
 import { CatalogueSkeleton, EmptyCatalogue } from "@/components/catalogue/catalogue-feedback";
 import { AvailabilityFilter, AvailabilityFilterValue } from "@/components/catalogue/availability-filter";
@@ -14,7 +15,7 @@ import { ProductGrid } from "@/components/catalogue/product-grid";
 import { AppShell } from "@/components/app-shell";
 import { UiButton } from "@/components/ui-button";
 import { SystemStatePanel } from "@/components/system-state-panel";
-import { UiIcon, UiIconName } from "@/components/ui-icon";
+import { UiIcon } from "@/components/ui-icon";
 import { useLibraryProducts } from "@/hooks/use-library-products";
 import { usePullToRefresh } from "@/hooks/use-pull-to-refresh";
 import { ProductResultsState, useProductResults } from "@/hooks/use-product-results";
@@ -25,33 +26,6 @@ import { CategoryDto, ProductCardDto, isApiSuccess } from "@/types/public-api";
 
 const homeRoute = getFoundationRoute("home");
 
-const DOMAIN_ICONS: Record<"POWER_TOOLS" | "HAND_TOOLS" | "ACCESSORIES", UiIconName> = {
-  POWER_TOOLS: "drill",
-  HAND_TOOLS: "wrench",
-  ACCESSORIES: "zap",
-};
-
-const DOMAIN_DESCRIPTIONS: Record<"POWER_TOOLS" | "HAND_TOOLS" | "ACCESSORIES", string> = {
-  POWER_TOOLS: "Pin, điện AC, khí nén",
-  HAND_TOOLS: "Kẹp, siết, đo, cắt",
-  ACCESSORIES: "Pin, sạc, mũi và lưỡi",
-};
-const DOMAIN_LABELS: Record<"POWER_TOOLS" | "HAND_TOOLS" | "ACCESSORIES", string> = {
-  POWER_TOOLS: "Máy công cụ",
-  HAND_TOOLS: "Dụng cụ cầm tay",
-  ACCESSORIES: "Phụ kiện",
-};
-
-const HOME_CATEGORY_SHORTCUTS: ReadonlyArray<{
-  categoryCodes: readonly string[];
-  label: string;
-  icon: UiIconName;
-}> = [
-  { categoryCodes: ["CLAMPING_TOOLS", "DEV_CLAMPING"], label: "Dụng cụ kẹp giữ", icon: "hammer" },
-  { categoryCodes: ["PT_CONCRETE", "DEV_CONCRETE"], label: "Bê tông và xây dựng", icon: "sliders" },
-  { categoryCodes: ["CUTTING_TOOLS", "DEV_HAND_CUTTING"], label: "Dụng cụ cắt", icon: "ruler" },
-  { categoryCodes: ["PT_DRILL_DRIVER", "DEV_DRILL_FASTEN"], label: "Khoan và siết/vặn", icon: "drill" },
-];
 const HOME_CATEGORY_PREVIEW_LIMIT = 4;
 const HOME_RECENT_PREVIEW_LIMIT = 4;
 // Two first pages plus at most four further pages per domain. Continue only
@@ -268,9 +242,9 @@ const HomePage = () => {
               type="button"
               onClick={() => navigate(`/categories?domain=${domain.code}`, { animate: false })}
             >
-              <span className="domain-icon"><UiIcon name={DOMAIN_ICONS[domain.code]} size={27} /></span>
-              <strong>{DOMAIN_LABELS[domain.code]}</strong>
-              <span>{DOMAIN_DESCRIPTIONS[domain.code]}</span>
+              <span className="domain-icon"><UiIcon name={DOMAIN_PRESENTATION[domain.code].icon} size={27} /></span>
+              <strong>{DOMAIN_PRESENTATION[domain.code].tabLabel}</strong>
+              <span>{DOMAIN_PRESENTATION[domain.code].description}</span>
             </button>
           ))}
         </div>

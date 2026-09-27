@@ -13,6 +13,7 @@ import {
   PublicAvailability,
   VariantDto,
 } from "@/types/public-api";
+import { AVAILABILITY_PRESENTATION } from "@/catalogue/availability-presentation";
 
 export const MOBILE_TOUCH_TARGET_PX = 44;
 export const SEARCH_DEBOUNCE_MS = 220;
@@ -61,7 +62,7 @@ export const isPreorderAvailability = (availability: PublicAvailability): boolea
  * an internal stock-count state.  PREORDER must therefore not be described as
  * "Hết hàng" (out of stock) in any card, detail page, or selected-product UI. */
 export const getAvailabilityLabel = (availability: PublicAvailability): "Sẵn hàng" | "Đặt trước" =>
-  isPreorderAvailability(availability) ? "Đặt trước" : "Sẵn hàng";
+  AVAILABILITY_PRESENTATION[availability].label;
 
 /** The public API may append the model and variant group to a marketing name
  * (for example, `Tên sản phẩm - DCZC02-26 (EM/FK/H2K/Z)`).  The model is

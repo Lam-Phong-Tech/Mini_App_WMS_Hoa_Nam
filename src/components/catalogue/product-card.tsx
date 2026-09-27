@@ -5,9 +5,9 @@ import {
   getAvailabilityLabel,
   getProductDisplayName,
   isEligiblePublicProduct,
-  isPreorderAvailability,
   visibleText,
 } from "@/catalogue/catalogue-utils";
+import { AVAILABILITY_PRESENTATION } from "@/catalogue/availability-presentation";
 import { ProductCardDto } from "@/types/public-api";
 import { UiIcon } from "@/components/ui-icon";
 import { useProductLibrary } from "@/state/product-library-context";
@@ -29,7 +29,7 @@ export const ProductCard = ({ product, returnPath = "/products", onOpen }: Produ
 
   const model = visibleText(product.model);
   const primaryCode = visibleText(product.primary_code);
-  const isPreorder = isPreorderAvailability(product.availability);
+  const availability = AVAILABILITY_PRESENTATION[product.availability];
   const isSaved = savedIds.includes(product.product_id.toLowerCase());
   const isCompared = compared.some((item) => item.product_id === product.product_id);
   const onCompare = () => {
@@ -49,8 +49,8 @@ export const ProductCard = ({ product, returnPath = "/products", onOpen }: Produ
       >
         <div className="product-card__media">
           <PublicImage media={product.cover_media} alt={product.name} className="product-card__image" />
-          <span className={`availability-chip ${isPreorder ? "availability-chip--preorder" : ""}`}>
-            <UiIcon name={isPreorder ? "clock" : "checkCircle"} size={14} strokeWidth={2} />
+          <span className={`availability-chip ${availability.tone === "preorder" ? "availability-chip--preorder" : ""}`}>
+            <UiIcon name={availability.icon} size={14} strokeWidth={2} />
             {getAvailabilityLabel(product.availability)}
           </span>
         </div>

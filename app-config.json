@@ -7,7 +7,7 @@
     },
     "statusBar": "transparent",
     "actionBarHidden": true,
-    "hideIOSSafeAreaBottom": true,
+    "hideIOSSafeAreaBottom": false,
     "hideAndroidBottomNavigationBar": false
   },
   "listCSS": [],

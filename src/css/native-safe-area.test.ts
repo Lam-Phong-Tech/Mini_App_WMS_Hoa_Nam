@@ -5,26 +5,17 @@ const native = readFileSync(new URL("./uat-native-safe-area.scss", import.meta.u
 const entry = readFileSync(new URL("../app.ts", import.meta.url), "utf8");
 const legacy = readFileSync(new URL("./hoa-nam-theme.scss", import.meta.url), "utf8");
 
-describe("native capsule clearance regression guards", () => {
-  it("scopes every new declaration to the native host so browser parity is unaffected", () => {
-    const rules = Array.from(native.matchAll(/([^\n{}]+)\{([^{}]*)\}/g));
-    expect(rules.length).toBeGreaterThanOrEqual(5);
-    rules.forEach((rule) => expect(rule[1].trim().startsWith('[data-host="zalo"]')).toBe(true));
-    expect(native).not.toContain('[data-host="browser"]');
+describe("native safe-area regression guards", () => {
+  it("uses official insets rather than a measured per-device capsule rail", () => {
+    expect(native).toContain("configAppView plus `env(safe-area-inset-*)`");
+    expect(native).not.toMatch(/(?:90|104)px/);
+    expect(legacy).toContain("--hn-safe-top: env(safe-area-inset-top, 0px)");
+    expect(legacy).toContain("--hn-safe-bottom: env(safe-area-inset-bottom, 0px)");
+    expect(legacy).not.toMatch(/--hn-safe-top:\s*max\(24px/);
+    expect(legacy).not.toMatch(/--hn-safe-bottom:\s*max\(8px/);
   });
 
-  it("reserves the measured capsule rail plus the hardware right inset", () => {
-    expect(native).toMatch(/@media \(max-width: 700px\)[\s\S]*?padding-right: calc\(104px \+ env\(safe-area-inset-right, 0px\)\);/);
-    const measuredCapsuleRail = (1440 - 1115) / (560 / 160);
-    expect(104 - measuredCapsuleRail).toBeGreaterThanOrEqual(8);
-  });
-
-  it("moves the native comparison remove-action centre clear of the host debug overlay without changing browser cards", () => {
-    expect(native).toMatch(/\[data-host="zalo"\] \.compare-card\s*\{\s*grid-template-columns: minmax\(0, 1fr\) 72px;/);
-    expect(native).toMatch(/\[data-host="zalo"\] \.compare-roster \.compare-remove\s*\{\s*width: 72px;/);
-  });
-
-  it("lets the native wordmark fit the narrow grid without shrinking the 44px action targets", () => {
+  it("lets the narrow wordmark fit without shrinking the 44px action targets", () => {
     expect(native).toMatch(/@media \(max-width: 380px\)[\s\S]*?\.hn-wordmark__logo\s*\{[^}]*min-width: 36px;[^}]*flex: 0 1 60px;/);
     expect(native).toMatch(/\.hn-wordmark__copy\s*\{\s*flex: 0 0 auto;/);
     expect(native).toMatch(/@media \(max-width: 340px\)[\s\S]*?gap: 3px;/);
@@ -49,5 +40,10 @@ describe("native capsule clearance regression guards", () => {
       "@/css/uat-dev6-tc-ui16.scss",
       "@/css/uat-dev6-tc-ui17.scss",
     ]);
+  });
+
+  it("keeps the iOS bottom safe area native-managed", () => {
+    expect(entry).toContain('configAppView({');
+    expect(entry).toContain("hideIOSSafeAreaBottom: false");
   });
 });

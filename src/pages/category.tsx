@@ -7,6 +7,7 @@ import {
   serializeProductQuery,
   visibleText,
 } from "@/catalogue/catalogue-utils";
+import { DOMAIN_PRESENTATION } from "@/catalogue/category-presentation";
 import { getCategoryIcon } from "@/catalogue/category-icons";
 import { CatalogueFailure, CatalogueSkeleton } from "@/components/catalogue/catalogue-feedback";
 import { AppShell } from "@/components/app-shell";
@@ -18,30 +19,6 @@ import { useAppContext } from "@/state/app-context";
 import { createLoadingState } from "@/state/system-state";
 
 const categoryRoute = getFoundationRoute("categories");
-
-const DOMAIN_PRESENTATION = {
-  POWER_TOOLS: {
-    icon: "drill",
-    title: "Máy và thiết bị động lực",
-    description: "Pin, điện AC, khí nén",
-  },
-  HAND_TOOLS: {
-    icon: "wrench",
-    title: "Dụng cụ cầm tay",
-    description: "Kẹp, siết, đo, cắt",
-  },
-  ACCESSORIES: {
-    icon: "zap",
-    title: "Phụ tùng và phụ kiện",
-    description: "Pin, sạc, mũi và lưỡi",
-  },
-} as const;
-
-const DOMAIN_TAB_LABELS = {
-  POWER_TOOLS: "Máy công cụ",
-  HAND_TOOLS: "Dụng cụ cầm tay",
-  ACCESSORIES: "Phụ kiện",
-} as const;
 
 const CategoryPage = () => {
   const location = useLocation();
@@ -87,7 +64,7 @@ const CategoryPage = () => {
                 onClick={() => navigate(`/categories?domain=${domain.code}`, { animate: false })}
               >
                 <span className="category-browser__tab-icon"><UiIcon name={presentation.icon} size={23} /></span>
-                <span>{DOMAIN_TAB_LABELS[domain.code]}</span>
+                <span>{presentation.tabLabel}</span>
                 {active ? <UiIcon className="category-browser__tab-check" name="check" size={18} /> : null}
               </button>
             );
@@ -142,21 +119,21 @@ const CategoryPage = () => {
               </ul>
             </section>
           ) : null}
+          {categoryState.kind === "success-empty" ? (
+            <section className="category-browser__empty" aria-live="polite">
+              <span><UiIcon name="packageOpen" size={26} /></span>
+              <h3>Chưa có danh mục để hiển thị</h3>
+              <p>{selectedDomain === "ACCESSORIES"
+                ? "Liên hệ để được tư vấn phụ kiện phù hợp với dụng cụ của bạn."
+                : "Liên hệ để được tư vấn sản phẩm phù hợp với công việc của bạn."}</p>
+              <button type="button" onClick={() => navigate("/contact", { animate: false })}>{selectedDomain === "ACCESSORIES" ? "Tư vấn phụ kiện" : "Tư vấn sản phẩm"} <UiIcon name="arrowRight" size={18} /></button>
+            </section>
+          ) : null}
         </div>
       </section>
 
       {categoryState.kind === "loading" ? <CatalogueSkeleton /> : null}
       {categoryState.failure ? <CatalogueFailure failure={categoryState.failure} onRetry={categoryState.reload} /> : null}
-      {categoryState.kind === "success-empty" ? <>
-        <section className="category-browser__empty">
-          <span><UiIcon name="packageOpen" size={26} /></span>
-          <h3>Chưa có danh mục để hiển thị</h3>
-          <p>{selectedDomain === "ACCESSORIES"
-            ? "Liên hệ để được tư vấn phụ kiện phù hợp với dụng cụ của bạn."
-            : "Liên hệ để được tư vấn sản phẩm phù hợp với công việc của bạn."}</p>
-          <button type="button" onClick={() => navigate("/contact", { animate: false })}>{selectedDomain === "ACCESSORIES" ? "Tư vấn phụ kiện" : "Tư vấn sản phẩm"} <UiIcon name="arrowRight" size={18} /></button>
-        </section>
-      </> : null}
       <aside className="category-browser__help" aria-label="Hỗ trợ chọn sản phẩm">
         <UiIcon name="helpCircle" size={20} />
         <span>Cần giúp chọn dụng cụ?</span>

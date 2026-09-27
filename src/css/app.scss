@@ -3080,11 +3080,6 @@ button.contact-channel-card {
   --hn-safe-bottom: env(safe-area-inset-bottom, 0px);
 }
 
-[data-host="zalo"] {
-  --hn-safe-top: max(24px, env(safe-area-inset-top, 0px));
-  --hn-safe-bottom: max(8px, env(safe-area-inset-bottom, 0px));
-}
-
 .hn-header.app-header {
   height: calc(56px + var(--hn-safe-top));
   min-height: calc(56px + var(--hn-safe-top));

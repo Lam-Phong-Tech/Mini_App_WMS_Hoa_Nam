@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { getCatalogueCountCopy, getCategoryFilterLabel, getCategoryProductTotal } from "@/catalogue/catalogue-filter-utils";
+import { getActiveCatalogueFilterCount, getCatalogueCountCopy, getCategoryFilterLabel, getCategoryProductTotal } from "@/catalogue/catalogue-filter-utils";
 import { CategoryDto } from "@/types/public-api";
 
 const category = (code: string, product_count?: number, domain: CategoryDto["domain"] = "HAND_TOOLS"): CategoryDto => ({
@@ -14,6 +14,11 @@ const category = (code: string, product_count?: number, domain: CategoryDto["dom
 
 describe("catalogue filter labels and exact public counts", () => {
   const categories = [category("MEASURING_TOOLS", 59), category("CLAMPING_TOOLS", 71), category("DRILL", 10, "POWER_TOOLS")];
+
+  it("counts availability as a customer-visible filter", () => {
+    expect(getActiveCatalogueFilterCount({ domain: "POWER_TOOLS", sort: "featured" }, "ALL")).toBe(1);
+    expect(getActiveCatalogueFilterCount({ domain: "POWER_TOOLS", sort: "featured" }, "PREORDER")).toBe(2);
+  });
 
   it("uses API taxonomy labels for every category rather than a short hardcoded map", () => {
     expect(getCategoryFilterLabel("MEASURING_TOOLS", categories)).toBe("Dụng cụ đo lường");

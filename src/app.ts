@@ -28,6 +28,7 @@ import "@/css/uat-dev6-tc-ui17.scss";
 // React core
 import React from "react";
 import { createRoot } from "react-dom/client";
+import { configAppView } from "zmp-sdk";
 
 // Mount the app
 import Layout from "@/components/layout";
@@ -53,6 +54,22 @@ document.documentElement.dataset.host = isZaloHost() ? "zalo" : "browser";
 // ZMP's local wrapper paints its own status bar/capsule over the iframe.
 // Reserve that DEV-only chrome without treating the browser as a native SDK.
 document.documentElement.dataset.previewFrame = import.meta.env.DEV && window.parent !== window ? "zmp" : "none";
+
+// Keep the native system insets managed by Zalo rather than approximating a
+// particular iPhone or Android status/navigation bar in CSS. CSS consumes the
+// resulting `env(safe-area-inset-*)` values when the WebView exposes them.
+// This API is native-only; a browser preview keeps the zero-inset baseline.
+if (document.documentElement.dataset.host === "zalo") {
+  void configAppView({
+    statusBarType: "transparent",
+    actionBar: { hide: true },
+    hideIOSSafeAreaBottom: false,
+    hideAndroidBottomNavigationBar: false,
+  }).catch(() => {
+    // Older Zalo versions still honor the static app config. The layout keeps
+    // using official CSS safe-area insets without a device-specific fallback.
+  });
+}
 
 const root = createRoot(document.getElementById("app")!);
 root.render(React.createElement(Layout));

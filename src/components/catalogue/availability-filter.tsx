@@ -1,16 +1,17 @@
-import { UiIcon } from "@/components/ui-icon";
+import { UiIcon, UiIconName } from "@/components/ui-icon";
+import { AVAILABILITY_PRESENTATION, AvailabilityFilterValue } from "@/catalogue/availability-presentation";
 
-export type AvailabilityFilterValue = "ALL" | "IN_STOCK" | "PREORDER";
+export type { AvailabilityFilterValue } from "@/catalogue/availability-presentation";
 
 interface AvailabilityFilterProps {
   value: AvailabilityFilterValue;
   onChange: (value: AvailabilityFilterValue) => void;
 }
 
-const OPTIONS: Array<{ value: AvailabilityFilterValue; label: string; icon: "checkCircle" | "clock" }> = [
+const OPTIONS: Array<{ value: AvailabilityFilterValue; label: string; icon: UiIconName }> = [
   { value: "ALL", label: "Tất cả", icon: "checkCircle" },
-  { value: "IN_STOCK", label: "Sẵn hàng", icon: "checkCircle" },
-  { value: "PREORDER", label: "Đặt trước", icon: "clock" },
+  { value: "IN_STOCK", ...AVAILABILITY_PRESENTATION.IN_STOCK },
+  { value: "PREORDER", ...AVAILABILITY_PRESENTATION.PREORDER },
 ];
 
 /**

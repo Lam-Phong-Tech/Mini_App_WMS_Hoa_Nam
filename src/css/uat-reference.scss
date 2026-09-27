@@ -245,7 +245,9 @@
   padding-top: 32px;
   min-height: 100px;
 }
-[data-preview-frame="zmp"][data-host="browser"] .hn-header--zalo-capsule-safe { padding-right: 90px; }
+[data-preview-frame="zmp"][data-host="browser"] .hn-header--zalo-capsule-safe {
+  padding-right: max(16px, calc(16px + env(safe-area-inset-right, 0px)));
+}
 @media (max-width: 700px) {
   [data-preview-frame="zmp"][data-host="browser"] .hn-wordmark { width: 100%; gap: 4px; }
   [data-preview-frame="zmp"][data-host="browser"] .hn-wordmark__logo { width: 60px; height: 38px; flex-basis: 60px; }
