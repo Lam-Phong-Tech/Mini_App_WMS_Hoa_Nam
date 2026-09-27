@@ -172,7 +172,8 @@
   z-index: 100;
   inset: 0;
   display: grid;
-  align-items: end;
+  align-items: center;
+  padding: 20px 16px;
 }
 
 .library-clear-dialog__backdrop {
@@ -190,9 +191,10 @@
   display: grid;
   gap: 18px;
   max-width: 560px;
+  width: min(100%, 560px);
   margin: 0 auto;
   padding: 24px;
-  border-radius: 24px 24px 0 0;
+  border-radius: 24px;
   background: var(--hn-surface);
 }
 

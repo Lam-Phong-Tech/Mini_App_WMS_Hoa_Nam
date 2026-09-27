@@ -17,6 +17,7 @@ describe("UAT_Dev_v6 TC_UI_07 recent products library", () => {
     expect(page).toContain("Danh sách đã lưu vẫn được giữ nguyên.");
     expect(page).not.toContain("window.confirm");
     expect(style).toMatch(/\.library-clear-dialog\s*\{[^}]*position: fixed;[^}]*z-index: 100;/);
+    expect(style).toMatch(/\.library-clear-dialog\s*\{[^}]*align-items: center;/);
   });
 
   it("keeps saved products actionable from the approved library screen", () => {
