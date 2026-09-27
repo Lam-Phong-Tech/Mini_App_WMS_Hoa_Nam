@@ -102,7 +102,12 @@ const SearchPage = () => {
   const isLoadingAvailability = availability !== "ALL"
     && !visibleProducts.length
     && (results.renderedCount < results.loadedCount || results.hasMore);
-  const activeFilterCount = countActiveFilters(query) + Number(Boolean(query.domain));
+  // Availability is a customer-visible filter even though the public API
+  // filters it locally. Include it in the badge so the toolbar accurately
+  // reflects the active "Sẵn hàng"/"Đặt trước" state.
+  const activeFilterCount = countActiveFilters(query)
+    + Number(Boolean(query.domain))
+    + Number(availability !== "ALL");
   const queryPending = !isComposing && searchInput !== debouncedSearch;
   const hasMoreResults = results.renderedCount < results.loadedCount || results.hasMore;
   const displayedTotal = results.totalCount ?? visibleProducts.length;
