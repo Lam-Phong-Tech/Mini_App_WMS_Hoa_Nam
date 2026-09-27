@@ -1,6 +1,5 @@
-import { openShareSheet } from "zmp-sdk";
-
 import { ProductDetailDto, VariantDto } from "@/types/public-api";
+import { loadNativeZaloSdk } from "@/services/zalo-runtime";
 
 export interface ProductShareContext {
   slug: string;
@@ -61,14 +60,19 @@ export const shareProduct = async (
   const link = buildProductDeepLink(context.slug, context.variantId);
 
   try {
-    await openShareSheet({
-      type: "link",
-      data: { link, chatOnly: false },
-    });
-    return "shared";
+    const sdk = await loadNativeZaloSdk();
+    if (sdk) {
+      await sdk.openShareSheet({
+        type: "link",
+        data: { link, chatOnly: false },
+      });
+      return "shared";
+    }
   } catch {
-    return copyDeepLink(link);
+    // Browser fallback is handled below, as is a native bridge failure.
   }
+
+  return copyDeepLink(link);
 };
 
 export const getShareDescription = (context: ProductShareContext): string => {

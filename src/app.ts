@@ -28,10 +28,10 @@ import "@/css/uat-dev6-tc-ui17.scss";
 // React core
 import React from "react";
 import { createRoot } from "react-dom/client";
-import { configAppView } from "zmp-sdk";
 
 // Mount the app
 import Layout from "@/components/layout";
+import { isZaloNativeHost, loadNativeZaloSdk } from "@/services/zalo-runtime";
 
 // Expose app configuration
 import appConfig from "../app-config.json";
@@ -43,14 +43,9 @@ if (!window.APP_CONFIG) {
 // CSS safe-area/capsule compensation is valid only inside the native Zalo
 // WebView.  The browser preview must keep a zero-inset baseline so its 375px
 // measurements are not shifted by a guessed Android fallback.
-const isZaloHost = () => {
-  const bridge = (window as Window & {
-    ZJSBridge?: { callCustomAction?: unknown };
-  }).ZJSBridge;
-  return typeof bridge?.callCustomAction === "function";
-};
+const isZaloHost = isZaloNativeHost();
 
-document.documentElement.dataset.host = isZaloHost() ? "zalo" : "browser";
+document.documentElement.dataset.host = isZaloHost ? "zalo" : "browser";
 // ZMP's local wrapper paints its own status bar/capsule over the iframe.
 // Reserve that DEV-only chrome without treating the browser as a native SDK.
 document.documentElement.dataset.previewFrame = import.meta.env.DEV && window.parent !== window ? "zmp" : "none";
@@ -59,13 +54,13 @@ document.documentElement.dataset.previewFrame = import.meta.env.DEV && window.pa
 // particular iPhone or Android status/navigation bar in CSS. CSS consumes the
 // resulting `env(safe-area-inset-*)` values when the WebView exposes them.
 // This API is native-only; a browser preview keeps the zero-inset baseline.
-if (document.documentElement.dataset.host === "zalo") {
-  void configAppView({
+if (isZaloHost) {
+  void loadNativeZaloSdk().then((sdk) => sdk?.configAppView({
     statusBarType: "transparent",
     actionBar: { hide: true },
     hideIOSSafeAreaBottom: false,
     hideAndroidBottomNavigationBar: false,
-  }).catch(() => {
+  })).catch(() => {
     // Older Zalo versions still honor the static app config. The layout keeps
     // using official CSS safe-area insets without a device-specific fallback.
   });

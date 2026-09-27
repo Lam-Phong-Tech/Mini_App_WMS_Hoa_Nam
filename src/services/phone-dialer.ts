@@ -1,4 +1,4 @@
-import { openPhone } from "zmp-sdk";
+import { loadNativeZaloSdk } from "@/services/zalo-runtime";
 
 /**
  * Opens the operating-system dialer with a number already filled in.  ZMP's
@@ -10,13 +10,7 @@ export const openDeviceDialer = (phoneNumber: string, telHref: string): void => 
     window.location.assign(telHref);
   };
 
-  // ZMP SDK intentionally resolves without doing anything for localhost. A
-  // desktop preview has no native dialer, but this still gives a browser with
-  // a tel: handler the chance to open its call application.
-  if (window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1") {
-    openTelFallback();
-    return;
-  }
-
-  void openPhone({ phoneNumber }).catch(openTelFallback);
+  void loadNativeZaloSdk()
+    .then((sdk) => sdk ? sdk.openPhone({ phoneNumber }) : Promise.reject())
+    .catch(openTelFallback);
 };

@@ -1,7 +1,8 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const { openShareSheet } = vi.hoisted(() => ({ openShareSheet: vi.fn() }));
-vi.mock("zmp-sdk", () => ({ openShareSheet }));
+const { loadNativeZaloSdk } = vi.hoisted(() => ({ loadNativeZaloSdk: vi.fn() }));
+vi.mock("@/services/zalo-runtime", () => ({ loadNativeZaloSdk }));
 
 import { buildProductDeepLink, getShareDescription, shareProduct } from "@/services/share";
 
@@ -9,6 +10,7 @@ describe("product share/deep link", () => {
   beforeEach(() => {
     openShareSheet.mockReset();
     openShareSheet.mockResolvedValue(undefined);
+    loadNativeZaloSdk.mockResolvedValue({ openShareSheet });
   });
 
   it("builds a slug link and preserves the selected variant", () => {

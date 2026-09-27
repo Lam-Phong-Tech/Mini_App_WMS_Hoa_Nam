@@ -233,6 +233,10 @@
 }
 
 @media (max-width: 359px) {
+  /* The approved 320px composition keeps a 12px page gutter. Retaining the
+     regular 16px gutter narrowed the hero copy enough to add a third line,
+     pushing every Home section below the reference position. */
+  .hn-page--home .hn-content { padding-inline: 12px; }
   .hn-theme .home-hero.hero-card { grid-template-columns: minmax(0, 1fr) 82px; column-gap: 8px; padding: 20px 16px 12px; }
   .hn-theme .home-hero .hero-product__crop { width: 82px; }
   .hn-theme .home-hero .hn-button { padding-inline: 10px; font-size: 12px; }

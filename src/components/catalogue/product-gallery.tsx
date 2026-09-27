@@ -1,9 +1,9 @@
 import { CSSProperties, useEffect, useMemo, useState } from "react";
-import { openWebview } from "zmp-sdk";
 
 import { getProductMedia, isPublicMediaUrl, visibleText } from "@/catalogue/catalogue-utils";
 import { MediaDto, ProductDetailDto, VariantDto } from "@/types/public-api";
 import { UiIcon } from "@/components/ui-icon";
+import { loadNativeZaloSdk } from "@/services/zalo-runtime";
 
 import { PublicImage } from "./public-image";
 
@@ -16,7 +16,7 @@ interface ProductGalleryProps {
 
 const openMedia = (media: MediaDto): void => {
   if (!isPublicMediaUrl(media.url)) return;
-  void openWebview({ url: media.url, config: { style: "normal" } }).catch(() => {
+  void loadNativeZaloSdk().then((sdk) => sdk?.openWebview({ url: media.url, config: { style: "normal" } })).catch(() => {
     // Use the existing safe detail state rather than surfacing platform diagnostics.
   });
 };

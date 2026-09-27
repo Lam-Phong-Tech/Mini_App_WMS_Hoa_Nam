@@ -43,7 +43,7 @@ describe("native safe-area regression guards", () => {
   });
 
   it("keeps the iOS bottom safe area native-managed", () => {
-    expect(entry).toContain('configAppView({');
+    expect(entry).toContain('sdk?.configAppView({');
     expect(entry).toContain("hideIOSSafeAreaBottom: false");
   });
 });
