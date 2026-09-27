@@ -3679,8 +3679,8 @@ body,
 
 .catalogue-active-filters > button.catalogue-active-filters__clear {
   color: var(--hn-text-secondary);
-  border-color: transparent;
-  background: transparent;
+  border-color: var(--hn-primary);
+  background: var(--hn-surface);
 }
 
 .detail-template__related .product-card .availability-chip::before {
