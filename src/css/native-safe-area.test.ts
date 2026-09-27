@@ -6,11 +6,12 @@ const entry = readFileSync(new URL("../app.ts", import.meta.url), "utf8");
 const legacy = readFileSync(new URL("./hoa-nam-theme.scss", import.meta.url), "utf8");
 
 describe("native safe-area regression guards", () => {
-  it("uses official insets rather than a measured per-device capsule rail", () => {
+  it("uses native status-bar reservation plus a responsive Zalo capsule rail", () => {
     expect(native).toContain("configAppView plus `env(safe-area-inset-*)`");
-    expect(native).not.toMatch(/(?:90|104)px/);
     expect(legacy).toContain("--hn-safe-top: env(safe-area-inset-top, 0px)");
     expect(legacy).toContain("--hn-safe-bottom: env(safe-area-inset-bottom, 0px)");
+    expect(legacy).toContain("--hn-zalo-capsule-clearance: clamp(88px, 23vw, 104px)");
+    expect(legacy).toContain("var(--hn-zalo-capsule-clearance)");
     expect(legacy).not.toMatch(/--hn-safe-top:\s*max\(24px/);
     expect(legacy).not.toMatch(/--hn-safe-bottom:\s*max\(8px/);
   });
@@ -44,6 +45,7 @@ describe("native safe-area regression guards", () => {
 
   it("keeps the iOS bottom safe area native-managed", () => {
     expect(entry).toContain('sdk?.configAppView({');
+    expect(entry).toContain('statusBarType: "normal"');
     expect(entry).toContain("hideIOSSafeAreaBottom: false");
   });
 });

@@ -5,7 +5,7 @@
       "light": "black",
       "dark": "white"
     },
-    "statusBar": "transparent",
+    "statusBar": "normal",
     "actionBarHidden": true,
     "hideIOSSafeAreaBottom": false,
     "hideAndroidBottomNavigationBar": false

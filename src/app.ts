@@ -56,7 +56,12 @@ document.documentElement.dataset.previewFrame = import.meta.env.DEV && window.pa
 // This API is native-only; a browser preview keeps the zero-inset baseline.
 if (isZaloHost) {
   void loadNativeZaloSdk().then((sdk) => sdk?.configAppView({
-    statusBarType: "transparent",
+    // Android Zalo WebViews do not consistently expose CSS safe-area env()
+    // values. A normal native status bar reserves its own viewport space so
+    // the app header cannot render underneath system icons.
+    statusBarType: "normal",
+    headerColor: "#FFFFFF",
+    headerTextColor: "black",
     actionBar: { hide: true },
     hideIOSSafeAreaBottom: false,
     hideAndroidBottomNavigationBar: false,

@@ -4,7 +4,7 @@ import { isZaloNativeHost, loadNativeZaloSdk } from "@/services/zalo-runtime";
 
 describe("Zalo runtime boundary", () => {
   afterEach(() => {
-    delete (window as Window & { ZJSBridge?: unknown }).ZJSBridge;
+    Reflect.deleteProperty(globalThis, "window");
     vi.restoreAllMocks();
   });
 
@@ -14,7 +14,7 @@ describe("Zalo runtime boundary", () => {
   });
 
   it("recognizes the native bridge before native-only SDK work", () => {
-    (window as Window & { ZJSBridge?: unknown }).ZJSBridge = { callCustomAction: vi.fn() };
+    Object.assign(globalThis, { window: { ZJSBridge: { callCustomAction: vi.fn() } } });
     expect(isZaloNativeHost()).toBe(true);
   });
 });

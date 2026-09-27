@@ -85,6 +85,7 @@
   --hn-safe-bottom: env(safe-area-inset-bottom, 0px);
   --hn-safe-left: env(safe-area-inset-left, 0px);
   --hn-safe-right: env(safe-area-inset-right, 0px);
+  --hn-zalo-capsule-clearance: 0px;
   --hn-touch: 44px;
   --hn-control-height: 48px;
 }
@@ -172,6 +173,21 @@ body,
     max(16px, calc(16px + var(--hn-safe-right)))
     8px
     max(16px, calc(16px + var(--hn-safe-left)));
+}
+
+/* Zalo's native close/more capsule is outside the page DOM, so it is not
+   represented by safe-area env() values. Reserve a responsive native-host
+   rail rather than a single handset measurement: it grows with the WebView
+   and is deliberately absent from browser/reference layouts. */
+[data-host="zalo"] {
+  --hn-zalo-capsule-clearance: clamp(88px, 23vw, 104px);
+}
+
+[data-host="zalo"] .hn-header.hn-header--zalo-capsule-safe {
+  padding-right: max(
+    calc(16px + var(--hn-safe-right)),
+    var(--hn-zalo-capsule-clearance)
+  );
 }
 
 /* A 320–380px layout cannot fit the full 48px controls, wordmark and capsule
