@@ -31,6 +31,12 @@ const MENU_DESTINATIONS = [
   { label: "Liên hệ", path: "/contact", icon: "phone" },
 ] as const satisfies ReadonlyArray<{ label: string; path: string; icon: UiIconName }>;
 
+// Do not use a document-root string here. Zalo Device mode executes the H5
+// document on h5.zdn.vn while Vite modules come from localhost, so a literal
+// `/hoa-nam-logo.png` points at the wrong host. Resolve from the module URL
+// so both Device mode and the packaged public asset load the approved logo.
+const hoaNamLogoUrl = new URL("/hoa-nam-logo.png", import.meta.url).href;
+
 const BottomNavigationIcon = ({ itemKey }: { itemKey: BottomNavigationKey }) => {
   const iconByItemKey: Record<BottomNavigationKey, UiIconName> = {
     home: "home",
@@ -174,7 +180,7 @@ export const AppShell = ({
             </button>
             <button className="hn-wordmark" type="button" onClick={() => navigate("/home", { animate: false })} aria-label="Hoa Nam Tools, về Trang chủ">
               <span className="hn-wordmark__logo" aria-hidden="true">
-                <img src="/hoa-nam-logo.png" alt="" />
+                <img src={hoaNamLogoUrl} alt="" />
               </span>
               <span className="hn-wordmark__copy" aria-hidden="true">
                 <span className="hn-wordmark__name">HOA NAM</span>
