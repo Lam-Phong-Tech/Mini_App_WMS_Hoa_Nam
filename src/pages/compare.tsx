@@ -245,7 +245,7 @@ const ComparePage = () => {
                       <strong>{getProductModelLabel(product)}</strong>
                       <small>{product.name}</small>
                     </span>
-                    <UiIcon name="sliders" size={22} />
+                    <UiIcon name="listPlus" size={22} />
                   </button>
                 ))}
               </div>
@@ -291,7 +291,7 @@ const ComparePage = () => {
 
             {items.length < 3 ? (
               <button className="compare-add" type="button" onClick={() => navigate(addModelPath, { animate: false })}>
-                <UiIcon name="sliders" size={20} /> {items.length === 1 ? "Thêm model thứ hai" : "Thêm model thứ ba"}
+                <UiIcon name="listPlus" size={20} /> {items.length === 1 ? "Thêm model thứ hai" : "Thêm model thứ ba"}
               </button>
             ) : null}
 
