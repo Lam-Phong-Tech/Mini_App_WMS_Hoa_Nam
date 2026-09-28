@@ -8,5 +8,6 @@ describe("UAT_Dev_v8 TC_UI_06 empty comparison picker geometry", () => {
     expect(style).toMatch(/\.hn-page--compare \.hn-content\s*\{[^}]*padding: 20px 16px calc\(76px \+ var\(--hn-safe-bottom\)\);/);
     expect(style).toMatch(/\.hn-page--compare \.compare-picker\s*\{[^}]*gap: 12px;[^}]*padding: 16px;[^}]*border-radius: 14px;/);
     expect(style).toMatch(/\.hn-page--compare \.compare-picker__list > button\s*\{[^}]*min-height: 84px;[^}]*grid-template-columns: 60px minmax\(0, 1fr\) 24px;/);
+    expect(style).toMatch(/\.hn-page--compare \.compare-picker__list \.public-image\s*\{[^}]*min-height: 50px;[^}]*height: 50px;[^}]*max-height: 50px;/);
   });
 });

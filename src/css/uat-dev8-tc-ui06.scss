@@ -43,7 +43,9 @@
 
   .hn-page--compare .compare-picker__list .public-image {
     width: 60px;
+    min-height: 50px;
     height: 50px;
+    max-height: 50px;
   }
 
   .hn-page--compare .compare-picker__list strong {
