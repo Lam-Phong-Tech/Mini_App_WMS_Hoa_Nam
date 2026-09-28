@@ -6,7 +6,10 @@
 @media (max-width: 700px) {
   .hn-page--compare .hn-content {
     gap: 12px;
-    padding: 20px 16px calc(76px + var(--hn-safe-bottom));
+    /* Keep the final model action clear of the fixed bottom navigation even
+       on a shortened 400×850 viewport. */
+    padding: 20px 16px calc(96px + var(--hn-safe-bottom));
+    scroll-padding-bottom: calc(96px + var(--hn-safe-bottom));
   }
 
   .hn-page--compare .compare-screen {
