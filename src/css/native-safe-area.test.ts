@@ -40,6 +40,7 @@ describe("native safe-area regression guards", () => {
       "@/css/uat-dev6-tc-ui08.scss",
       "@/css/uat-dev6-tc-ui16.scss",
       "@/css/uat-dev6-tc-ui17.scss",
+      "@/css/uat-dev8-tc-ui06.scss",
     ]);
   });
 

@@ -1,0 +1,56 @@
+/* UAT_Dev_v8 TC_UI_06 ------------------------------------------------------
+ * Empty product comparison is a compact picker, not a product-card list.
+ * The locked 411px reference uses the normal 16px page gutter, a 14px
+ * selector panel and 84px candidate rows. Keep these values explicit so the
+ * picker does not expand when live catalogue images or names vary. */
+@media (max-width: 700px) {
+  .hn-page--compare .hn-content {
+    gap: 12px;
+    padding: 20px 16px calc(76px + var(--hn-safe-bottom));
+  }
+
+  .hn-page--compare .compare-screen {
+    width: 100%;
+    max-width: none;
+    gap: 12px;
+    padding-bottom: 0;
+  }
+
+  .hn-page--compare .compare-picker {
+    gap: 12px;
+    padding: 16px;
+    border-radius: 14px;
+  }
+
+  .hn-page--compare .compare-picker > select {
+    min-height: 46px;
+    padding: 8px 38px 8px 12px;
+    font-size: 15px;
+    border-radius: 10px;
+  }
+
+  .hn-page--compare .compare-picker__list {
+    gap: 8px;
+  }
+
+  .hn-page--compare .compare-picker__list > button {
+    min-height: 84px;
+    grid-template-columns: 60px minmax(0, 1fr) 24px;
+    gap: 12px;
+    padding: 10px 12px;
+    border-radius: 12px;
+  }
+
+  .hn-page--compare .compare-picker__list .public-image {
+    width: 60px;
+    height: 50px;
+  }
+
+  .hn-page--compare .compare-picker__list strong {
+    font-size: 15px;
+  }
+
+  .hn-page--compare .compare-picker__list small {
+    font-size: 13px;
+  }
+}

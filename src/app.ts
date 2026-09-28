@@ -27,6 +27,8 @@ import "@/css/uat-dev6-tc-ui07.scss";
 import "@/css/uat-dev6-tc-ui08.scss";
 import "@/css/uat-dev6-tc-ui16.scss";
 import "@/css/uat-dev6-tc-ui17.scss";
+// UAT_Dev_v8 TC_UI_06 locks the compact 411px comparison-picker geometry.
+import "@/css/uat-dev8-tc-ui06.scss";
 
 // React core
 import React from "react";
