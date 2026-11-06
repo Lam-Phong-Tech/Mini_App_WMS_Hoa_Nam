@@ -58,7 +58,7 @@ jobs:
         run: |
           npm ci --no-audit --no-fund
           npm run typecheck
-          node node_modules/jest/bin/jest.js --runInBand --runTestsByPath __tests__/iosPushCapability.test.ts __tests__/iosDocuments.test.ts __tests__/iosCameraPermission.test.ts
+          node node_modules/jest/bin/jest.js --runInBand --runTestsByPath __tests__/iosPushCapability.test.ts __tests__/iosDocuments.test.ts __tests__/iosCameraPermission.test.ts __tests__/iosUserAgent.test.ts __tests__/iosNfcMessages.test.ts
           python3 -m unittest discover -s scripts/ios -p 'test_*.py' -v
       - name: Archive unsigned iphoneos app
         run: bash scripts/ios/build-unsigned.sh

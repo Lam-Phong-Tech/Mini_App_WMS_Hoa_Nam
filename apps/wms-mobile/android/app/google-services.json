@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "57106079765",
+    "project_id": "hoa-nam-scanner-devtest",
+    "storage_bucket": "hoa-nam-scanner-devtest.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:57106079765:android:5e2e41442dc487ff60ee1c",
+        "android_client_info": {
+          "package_name": "vn.info.lptech.wmshoanam"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyC7ldBv0Hb9DpiJM82Z_--wjsmJw2IoEQE"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

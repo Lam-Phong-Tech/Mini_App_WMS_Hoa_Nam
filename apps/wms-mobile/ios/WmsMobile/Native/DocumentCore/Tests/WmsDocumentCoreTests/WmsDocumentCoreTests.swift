@@ -49,11 +49,14 @@ final class WmsDocumentCoreTests: XCTestCase {
         XCTAssertEqual(try WmsDocumentCore.exportFilename("C:\\temp\\receipt\n.pdf", mime: "application/pdf"), "receipt.pdf")
         XCTAssertEqual(try WmsDocumentCore.exportFilename("\u{0000}\n", mime: "image/png"), "chung-tu.png")
         XCTAssertEqual(try WmsDocumentCore.exportFilename("receipt.exe", mime: "application/pdf"), "receipt.exe.pdf")
+        let longName = try WmsDocumentCore.exportFilename(String(repeating: "😀", count: 200), mime: "application/pdf")
+        XCTAssertLessThanOrEqual(longName.utf8.count, 255)
+        XCTAssertTrue(longName.hasSuffix(".pdf"))
     }
 
     func testFileURLAcceptsOnlyAbsoluteLocalFileURLs() throws {
         XCTAssertEqual(try WmsDocumentCore.fileURL("file:///tmp/H%C3%B3a%20%C4%91%C6%A1n.pdf").path, "/tmp/Hóa đơn.pdf")
-        for value in ["https://example.invalid/a.pdf", "content://provider/a", "file://remote/tmp/a.pdf", "file:///tmp/a.pdf?token=secret", "file:///tmp/a.pdf#page=1", "/tmp/a.pdf", "file:relative.pdf"] {
+        for value in ["https://example.invalid/a.pdf", "content://provider/a", "file://remote/tmp/a.pdf", "file:///tmp/a.pdf?token=secret", "file:///tmp/a.pdf#page=1", "/tmp/a.pdf", "file:relative.pdf", "file:///tmp/a%00.pdf"] {
             assertError(.invalidURL) { try WmsDocumentCore.fileURL(value) }
         }
     }

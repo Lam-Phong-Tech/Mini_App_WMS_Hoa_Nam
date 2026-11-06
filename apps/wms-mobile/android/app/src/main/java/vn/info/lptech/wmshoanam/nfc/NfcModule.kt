@@ -29,17 +29,31 @@ class NfcModule(private val context: ReactApplicationContext) :
     val operation: Operation,
     val payload: String?,
     val promise: Promise,
+    val expectedUid: String? = null,
+    val writeDeadline: Long? = null,
   )
 
   private val lock = Any()
   private val adapter: NfcAdapter? = NfcAdapter.getDefaultAdapter(context)
   private var pending: Pending? = null
+  private var processing = false
 
   init {
     context.addLifecycleEventListener(this)
   }
 
   override fun getName(): String = "WmsNfc"
+
+  @ReactMethod
+  fun copyIdentifier(value: String, promise: Promise) {
+    try {
+      val clipboard = context.getSystemService(android.content.Context.CLIPBOARD_SERVICE) as android.content.ClipboardManager
+      clipboard.setPrimaryClip(android.content.ClipData.newPlainText("Mã NFC", value))
+      promise.resolve(null)
+    } catch (error: Exception) {
+      promise.reject("CLIPBOARD_UNAVAILABLE", "Không thể sao chép mã.", error)
+    }
+  }
 
   @ReactMethod
   fun getStatus(promise: Promise) {
@@ -66,12 +80,24 @@ class NfcModule(private val context: ReactApplicationContext) :
     start(Operation.WRITE, payload, promise)
   }
 
+  /** Only the inspected chip, and only before the reservation's remaining TTL. */
+  @ReactMethod
+  fun writeNdefTextToTag(payload: String, expectedUid: String, remainingMs: Double, promise: Promise) {
+    if (payload.isBlank() || expectedUid.isBlank() || !remainingMs.isFinite() || remainingMs <= 0) {
+      promise.reject("NFC_INVALID_WRITE_CONTEXT", "Thiếu UID hoặc giữ chỗ đã hết hạn; chưa ghi chip.")
+      return
+    }
+    start(Operation.WRITE, payload, promise, expectedUid.uppercase(),
+      android.os.SystemClock.elapsedRealtime() + remainingMs.toLong())
+  }
+
   @ReactMethod
   fun cancel() {
     cancelPending("NFC_CANCELLED", "Đã huỷ chờ chạm thẻ NFC.")
   }
 
-  private fun start(operation: Operation, payload: String?, promise: Promise) {
+  private fun start(operation: Operation, payload: String?, promise: Promise,
+                    expectedUid: String? = null, writeDeadline: Long? = null) {
     val nfc = adapter
     if (nfc == null) {
       promise.reject("NFC_UNSUPPORTED", "Thiết bị này không có NFC.")
@@ -87,11 +113,11 @@ class NfcModule(private val context: ReactApplicationContext) :
       return
     }
     synchronized(lock) {
-      if (pending != null) {
+      if (pending != null || processing) {
         promise.reject("NFC_BUSY", "Đang chờ một lần chạm NFC khác.")
         return
       }
-      pending = Pending(operation, payload, promise)
+      pending = Pending(operation, payload, promise, expectedUid, writeDeadline)
     }
     activity.runOnUiThread {
       try {
@@ -107,6 +133,7 @@ class NfcModule(private val context: ReactApplicationContext) :
     val request = synchronized(lock) {
       val claimed = pending
       pending = null
+      if (claimed != null) processing = true
       claimed
     } ?: return
 
@@ -119,11 +146,29 @@ class NfcModule(private val context: ReactApplicationContext) :
         Operation.READ -> {
           val result = Arguments.createMap()
           result.putString("hardwareUid", uid)
-          readTextPayload(tag)?.let { result.putString("rawCode", it) }
+          val message = readMessage(tag)
+          result.putBoolean("hasNdefData", message?.records?.any { it.tnf != NdefRecord.TNF_EMPTY } == true)
+          message?.records?.firstNotNullOfOrNull { parseTextRecord(it) }?.let { result.putString("rawCode", it) }
           request.promise.resolve(result)
         }
         Operation.WRITE -> {
+          if (request.expectedUid != null && uid != request.expectedUid) {
+            throw NfcFailure("NFC_WRONG_TAG", "Chip đang chạm khác UID đã kiểm tra; chưa ghi chip.")
+          }
+          if (request.writeDeadline != null && android.os.SystemClock.elapsedRealtime() >= request.writeDeadline) {
+            throw NfcFailure("NFC_RESERVATION_EXPIRED", "Giữ chỗ đã hết hạn trước khi chạm chip; chưa ghi.")
+          }
           val expected = request.payload ?: throw NfcFailure("NFC_EMPTY_PAYLOAD", "Dữ liệu ghi NFC trống.")
+          if (request.expectedUid != null) {
+            val existing = readMessage(tag)
+            if (existing?.records?.any { it.tnf != NdefRecord.TNF_EMPTY } == true &&
+                !(existing.records.size == 1 && parseTextRecord(existing.records[0]) == expected)) {
+              throw NfcFailure("NFC_TAG_NOT_EMPTY", "Chip đã có dữ liệu khác; không tự ghi đè.")
+            }
+          }
+          if (request.writeDeadline != null && android.os.SystemClock.elapsedRealtime() >= request.writeDeadline) {
+            throw NfcFailure("NFC_RESERVATION_EXPIRED", "Giữ chỗ hết hạn trong khi đọc chip; chưa ghi.")
+          }
           writeTextPayload(tag, expected)
           val actual = readTextPayload(tag)
             ?: throw NfcFailure("NFC_VERIFY_FAILED", "Đã ghi nhưng không đọc lại được nội dung thẻ NFC.")
@@ -146,6 +191,7 @@ class NfcModule(private val context: ReactApplicationContext) :
       // Ndef kịp giao tiếp với thẻ: UID vẫn đọc được nhưng ghi/xác minh thất
       // bại ngẫu nhiên bằng NFC_IO_ERROR.
       disableReaderMode()
+      synchronized(lock) { processing = false }
     }
   }
 
@@ -176,16 +222,18 @@ class NfcModule(private val context: ReactApplicationContext) :
     }
   }
 
-  private fun readTextPayload(tag: Tag): String? {
+  private fun readMessage(tag: Tag): NdefMessage? {
     val ndef = Ndef.get(tag) ?: return null
-    val message = try {
+    return try {
       ndef.connect()
       ndef.ndefMessage
     } finally {
       try { ndef.close() } catch (_: Exception) { }
-    } ?: return null
+    }
+  }
 
-    return message.records.firstNotNullOfOrNull { parseTextRecord(it) }
+  private fun readTextPayload(tag: Tag): String? {
+    return readMessage(tag)?.records?.firstNotNullOfOrNull { parseTextRecord(it) }
   }
 
   private fun parseTextRecord(record: NdefRecord): String? {

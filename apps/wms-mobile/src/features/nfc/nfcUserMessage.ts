@@ -7,6 +7,12 @@ import { messageForUser, type AppError } from '../../errors/AppError';
  */
 export function nfcUserMessage(error: AppError): string {
   switch (error.code) {
+    case 'NFC_ENTITLEMENT_UNAVAILABLE':
+      return 'Bản ký iPhone chưa có quyền NFC cần thiết. Kiểm tra cấu hình ký rồi thử lại.';
+    case 'NFC_CONFIG_UNAVAILABLE':
+      return 'Bản cài chưa có cấu hình NFC cho iPhone.';
+    case 'NFC_MULTIPLE_TAGS':
+      return 'Phát hiện nhiều thẻ. Chỉ giữ một thẻ gần iPhone.';
     case 'NFC_REJECTION_INVALID':
       return 'Biên nhận từ chối NFC chưa khớp yêu cầu cũ. Chưa cho phép chuẩn bị phục hồi; giữ nguyên lượt để đối chiếu.';
     case 'NFC_RECOVERY_NOT_PROVEN':

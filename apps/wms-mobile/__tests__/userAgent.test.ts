@@ -21,6 +21,7 @@
  * ngay khi cài lên máy thủ kho — triệu chứng trông y hệt lỗi đăng nhập.
  */
 
+jest.mock('react-native',()=>{const actual=jest.requireActual('react-native');Object.defineProperty(actual.Platform,'OS',{value:'android',configurable:true});return actual;});
 import {
   APP_REQUEST_ID_HEADER,
   APP_VERSION,

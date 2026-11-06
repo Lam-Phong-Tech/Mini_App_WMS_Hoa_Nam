@@ -201,6 +201,7 @@ export class NotificationDeliveryController {
     }
   }
   async enable() {
+    if(this.platform.platform==='IOS'){this.state({phase:'unavailable',message:'Thông báo iPhone chưa được cấu hình cho môi trường này.'});return;}
     if (this.busy || this.refreshing || !this.current()) return;
     this.busy = true;
     this.state({ phase: 'busy', message: 'Đang đăng ký thông báo…' });

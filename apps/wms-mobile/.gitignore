@@ -1,4 +1,8 @@
 # OSX
+**/__pycache__/
+**/.build/
+vendor/bundle/
+ios-output/
 #
 .DS_Store
 

@@ -22,7 +22,9 @@
 /**
  * Tiền tố Cloudflare khớp. Phần sau dấu `/` là phiên bản, không tham gia khớp.
  */
-export const USER_AGENT_PREFIX = 'WMSHoaNam-Android/';
+import {Platform} from 'react-native';
+// iOS DEV/TEST pre-auth health/me acceptance verified on 2026-11-06.
+export const USER_AGENT_PREFIX = Platform.OS==='ios'?'WMSHoaNam-iOS/':'WMSHoaNam-Android/';
 
 /**
  * Phiên bản app, phải khớp `versionName` trong `android/app/build.gradle`.

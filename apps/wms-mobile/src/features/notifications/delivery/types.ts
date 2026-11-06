@@ -81,7 +81,7 @@ export type PushPermission =
   | 'not-configured';
 export interface PushPlatform {
   configurationReady?(cap: DeliveryCapabilities): boolean;
-  readonly platform: 'WEB' | 'ANDROID';
+  readonly platform: 'WEB' | 'ANDROID' | 'IOS';
   support(): Promise<PushPermission>;
   requestPermission(): Promise<PushPermission>;
   identity(): Promise<InstallationIdentity>;

@@ -261,7 +261,7 @@ test('attachment header bounds a long document number while the source reader ke
   }finally{await done(f.tree);}
 });
 
-test.each(['android','web'])('%s file entry opens the exact P12 parent/file in P18 and Back restores its caller', async platform => {
+test.each(['android','ios','web'])('%s file entry opens the exact P12 parent/file in P18 and Back restores its caller', async platform => {
   const os = jest.replaceProperty(Platform, 'OS', platform);
   const mode = jest.fn();
   let f;

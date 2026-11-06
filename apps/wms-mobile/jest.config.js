@@ -1,4 +1,6 @@
 module.exports = {
+  // Existing native suite targets Android; iOS port tests import .ios explicitly.
+  haste: {defaultPlatform:'android',platforms:['android','ios','native']},
   preset: '@react-native/jest-preset',
   setupFiles: ['<rootDir>/jest.setup.js'],
   // Test modules only: fixtures and frozen handoff copies are not executable suites.

@@ -945,7 +945,7 @@ export function P12Screen({
   }
   function openViewer(file: File) {
     const context = api.scopeKey(), generation = getSessionGeneration();
-    if (!['android','web'].includes(Platform.OS) || fileBusy || downloadLatch.current || !d ||
+    if (!['android','ios','web'].includes(Platform.OS) || fileBusy || downloadLatch.current || !d ||
       !fileIsCurrent(file, d, context, generation)) return;
     const next = {parent:d,file,scope:context,generation};
     viewerRef.current = next;
@@ -1453,8 +1453,8 @@ export function P12Screen({
                         {!standalone && <>
                         <Pressable accessibilityRole="button" accessibilityLabel={'Xem ' + text(f.file_name)}
                           style={[s.fileAction,!enabled&&s.fileDisabled]} disabled={!enabled}
-                          onPress={()=>{if(!d||!fileIsCurrent(f,d,state.scope,getSessionGeneration()))return; if(Platform.OS==='android')openViewer(f);else setModal({kind:'file',file:f});}}>
-                          <Text style={s.fileActionText}>{Platform.OS==='android'?'Xem':'Chi tiết'}</Text>
+                            onPress={()=>{if(!d||!fileIsCurrent(f,d,state.scope,getSessionGeneration()))return; if(Platform.OS==='android'||Platform.OS==='ios')openViewer(f);else setModal({kind:'file',file:f});}}>
+                            <Text style={s.fileActionText}>{Platform.OS==='android'||Platform.OS==='ios'?'Xem':'Chi tiết'}</Text>
                         </Pressable>
                         </>}
                         <Pressable accessibilityRole="button" accessibilityLabel={'Tải ' + text(f.file_name)}
@@ -2730,7 +2730,7 @@ export function P12Screen({
             <Text style={s.muted}>
               Tải tệp có sẵn và chọn vị trí lưu trên máy.
             </Text>
-            {['android','web'].includes(Platform.OS) ? (
+            {['android','ios','web'].includes(Platform.OS) ? (
               <Button
                 label="Xem trong ứng dụng"
                 variant="secondary"

@@ -69,7 +69,7 @@ export function createDeliveryService(
   deps: {
     client?: Client;
     verifyRuntime?: () => Promise<void | DeliveryRuntimeIdentity>;
-    platform?: 'WEB' | 'ANDROID';
+    platform?: 'WEB' | 'ANDROID' | 'IOS';
   } = {},
 ): DeliveryService {
   const client = deps.client ?? apiClient,
@@ -109,6 +109,7 @@ export function createDeliveryService(
     return v;
   };
   const request = async (o: RequestOptions) => {
+    if(deps.platform==='IOS')throw new AppError({kind:'config',message:'Thông báo iPhone chưa có contract cho môi trường này.'});
     check();
     const runtime = await (deps.verifyRuntime?.() ??
       verifyDeliveryRuntime(client));
