@@ -142,7 +142,9 @@ export function actionVisibility(
 }
 
 /** Giá trị hiển thị cho một trường PII, đã tính cả trường hợp ẩn danh. */
-export function displayPii(value: string | null | undefined): string | undefined {
+export function displayPii(
+  value: string | null | undefined,
+): string | undefined {
   if (value === undefined || value === null || value === '') {
     return undefined;
   }
@@ -266,9 +268,7 @@ export interface TransitionInput {
  * quả kiểm tra chưa → có ghi chú chưa. Thứ tự này không tuỳ tiện: một bước
  * không hợp lệ thì hai câu kia vô nghĩa.
  */
-export function validateTransition(
-  input: TransitionInput,
-): string | undefined {
+export function validateTransition(input: TransitionInput): string | undefined {
   if (!canTransition(input.current, input.target)) {
     return (
       'Không chuyển được từ "' +
@@ -305,12 +305,16 @@ export function validateTransition(
  */
 export const ATTACHMENT_LIMITS = {
   maxImages: 10,
-  maxVideos: 2,
+  maxVideos: 1,
   imageBytes: 10 * 1024 * 1024,
   videoBytes: 300 * 1024 * 1024,
   videoSeconds: 5 * 60,
   imageTypes: ['image/jpeg', 'image/png', 'image/webp'] as readonly string[],
-  videoTypes: ['video/mp4', 'video/quicktime', 'video/webm'] as readonly string[],
+  videoTypes: [
+    'video/mp4',
+    'video/quicktime',
+    'video/webm',
+  ] as readonly string[],
 } as const;
 
 export interface AttachmentCandidate {

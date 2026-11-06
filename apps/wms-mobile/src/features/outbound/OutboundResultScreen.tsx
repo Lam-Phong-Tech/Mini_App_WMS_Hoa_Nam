@@ -1,3 +1,4 @@
+import {HN_UI} from '../../theme/uiKitV3';
 /**
  * Xuất kho — bước 4: kết quả.
  *
@@ -105,7 +106,7 @@ export function OutboundResultScreen({
   }[outcome === 'posted' ? 'queued' : outcome];
 
   return (
-    <Page title="Xuất kho" scroll headerVariant="brand" backgroundColor="#ffffff">
+    <Page title="Xuất kho" scroll headerVariant="brand" backgroundColor={HN_UI.surface}>
       <Box padding="xl" gap="md">
         <View
           style={[
@@ -131,7 +132,7 @@ export function OutboundResultScreen({
         </Text>
         <Text variant="caption" tone="muted" style={styles.center}>
           {posted
-            ? 'Phiếu đã được lưu trên backend và chuyển sang chờ duyệt/Post Issue.'
+            ? 'Phiếu đã được ghi nhận và đang chờ xử lý trên Web.'
             : resultCopy.body}
         </Text>
       </Box>
@@ -152,7 +153,7 @@ export function OutboundResultScreen({
         <DefinitionRow
           label="Trạng thái"
           // "Chờ duyệt xuất kho" — hàng CHƯA rời kho. Xem chú thích đầu tệp.
-          value={posted ? 'Chờ duyệt xuất kho' : resultCopy.status}
+          value={posted ? 'Chờ xử lý trên Web' : resultCopy.status}
           last
         />
       </Box>

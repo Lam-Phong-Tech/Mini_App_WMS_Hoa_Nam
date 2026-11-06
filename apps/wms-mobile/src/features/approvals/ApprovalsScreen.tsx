@@ -1,3 +1,4 @@
+import {HN_UI} from '../../theme/uiKitV3';
 /**
  * Hàng đợi duyệt phiếu native, đồng bộ với `src/pages/ApprovalQueuePage`.
  *
@@ -18,6 +19,7 @@ import { EmptyState } from '../../ui/EmptyState';
 import { FilterChipRow } from '../../ui/FilterChipRow';
 import { AppIcon } from '../../ui/AppIcon';
 import { useTheme } from '../../theme/ThemeProvider';
+import { formatVietnamDateTime } from '../../time/vietnamTime';
 import { messageForUser, toAppError, type AppError } from '../../errors/AppError';
 import {
   fetchInboundDocument,
@@ -64,7 +66,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
   },
   checkMark: {
-    color: '#ffffff',
+    color: HN_UI.onBrand,
     fontWeight: '700',
   },
   cardTop: {
@@ -680,15 +682,7 @@ function documentDate(document: AnyDocument): string | undefined {
 }
 
 function formatApprovalDate(value: string): string {
-  const date = new Date(value);
-  if (!Number.isFinite(date.getTime())) return value;
-  return date.toLocaleString('vi-VN', {
-    day: '2-digit',
-    month: '2-digit',
-    year: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit',
-  });
+  return formatVietnamDateTime(value, { missing: 'Chưa xác minh thời điểm' });
 }
 
 function dedupeDocuments(documents: readonly AnyDocument[]): readonly AnyDocument[] {

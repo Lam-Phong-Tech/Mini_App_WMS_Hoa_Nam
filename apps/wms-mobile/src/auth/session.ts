@@ -30,6 +30,8 @@ import {
 } from './secureRefreshToken';
 
 export interface Session {
+  /** Discovered on the same authenticated actor/family, never an FE rollout flag. */
+  readonly accountSessionPolicy?: 'auth-session-replacement-v1';
   readonly accessToken: string;
   /**
    * Token dùng để lấy access token mới. **Không** phải JWT — chuỗi ngẫu nhiên
@@ -47,17 +49,113 @@ export interface Session {
   readonly issuedAtMs?: number;
   /** Định danh người dùng do server trả về, nếu có. */
   readonly userId?: string;
+  /** Định danh phiên BE, ổn định khi access token được refresh. */
+  readonly authSessionId?: string;
+  /** UUID kho đang hoạt động của chính phiên này. */
+  readonly activeWarehouseId?: string;
   /** Tên hiển thị được xác nhận từ `GET /auth/me`, nếu có. */
   readonly userName?: string;
   /** URL ảnh đại diện được xác nhận từ `GET /auth/me`, nếu có. */
   readonly avatarUrl?: string;
+  /** Non-secret auth gate; blocks all business screens until password change. */
+  readonly mustChangePassword?: boolean;
 }
 
 /** Phần định danh an toàn để bổ sung sau khi `/auth/me` trả về. */
 export interface SessionIdentity {
+  readonly accountSessionPolicy?: 'auth-session-replacement-v1';
   readonly userId?: string;
+  readonly authSessionId?: string;
+  readonly activeWarehouseId?: string | null;
   readonly userName?: string;
   readonly avatarUrl?: string;
+  readonly mustChangePassword?: boolean;
+}
+
+export const TERMINAL_SESSION_CODES = [
+  'AUTH_SESSION_REPLACED',
+  'AUTH_SESSION_REQUIRED',
+  'AUTH_SESSION_EXPIRED',
+] as const;
+export type TerminalSessionCode = (typeof TERMINAL_SESSION_CODES)[number];
+export interface AuthSessionNotice {
+  readonly code: TerminalSessionCode;
+}
+let authSessionNotice: AuthSessionNotice | undefined;
+export const getAuthSessionNotice = () => authSessionNotice;
+export const clearAuthSessionNotice = () => {
+  authSessionNotice = undefined;
+};
+export const isTerminalSessionCode = (
+  code?: string,
+): code is TerminalSessionCode =>
+  TERMINAL_SESSION_CODES.some(value => value === code);
+
+/** Auth credentials only. Owner keys, drafts, ca and UNKNOWN journals survive. */
+export async function terminateAuthSession(
+  code: string | undefined,
+  generation: number,
+): Promise<void> {
+  if (
+    !isTerminalSessionCode(code) ||
+    generation !== sessionGeneration ||
+    !getSession()
+  )
+    return;
+  authSessionNotice = { code };
+  // Another browser tab may have persisted a newer login while this tab was
+  // awaiting its terminal response. Its refresh marker belongs to that login.
+  if (ownsPublicSession(getSession())) clearRefreshInFlight();
+  // The existing queue serializes this clear before a later explicit login.
+  const clearing = clearSecureRefreshToken();
+  clearSession();
+  await clearing;
+}
+
+export function observeAccountSessionPolicy(
+  payload: unknown,
+  generation: number,
+): void {
+  if (
+    !payload ||
+    typeof payload !== 'object' ||
+    generation !== sessionGeneration
+  )
+    return;
+  const value = payload as Record<string, unknown>,
+    policy = value.account_session_policy as
+      | Record<string, unknown>
+      | undefined;
+  const current = getSession();
+  if (
+    !current?.userId ||
+    !current.authSessionId ||
+    (value.id ?? value.user_id) !== current.userId ||
+    value.auth_session_id !== current.authSessionId ||
+    policy?.version !== 'auth-session-replacement-v1' ||
+    policy.enabled !== true ||
+    policy.scope !== 'ACCOUNT_ALL_CLIENTS' ||
+    policy.replacement_error !== 'AUTH_SESSION_REPLACED'
+  )
+    return;
+  if (current.accountSessionPolicy !== 'auth-session-replacement-v1')
+    setSession({
+      ...current,
+      accountSessionPolicy: 'auth-session-replacement-v1',
+    });
+}
+export function decodeAccountSessionPolicy(
+  value: unknown,
+): 'auth-session-replacement-v1' | undefined {
+  const p = value as Record<string, unknown> | null;
+  return p &&
+    typeof p === 'object' &&
+    p.version === 'auth-session-replacement-v1' &&
+    p.enabled === true &&
+    p.scope === 'ACCOUNT_ALL_CLIENTS' &&
+    p.replacement_error === 'AUTH_SESSION_REPLACED'
+    ? 'auth-session-replacement-v1'
+    : undefined;
 }
 
 /**
@@ -84,6 +182,30 @@ type Listener = (session: Session | undefined) => void;
 const listeners = new Set<Listener>();
 let sessionCache: Session | undefined;
 let sessionCacheLoaded = false;
+let sessionGeneration = 0;
+export const getSessionGeneration = (): number => sessionGeneration;
+export function captureSessionScope() {
+  const session = getSession();
+  return {
+    generation: sessionGeneration,
+    userId: session?.userId,
+    authSessionId: session?.authSessionId,
+    warehouseId: session?.activeWarehouseId,
+  };
+}
+export function isSessionScopeCurrent(
+  scope: ReturnType<typeof captureSessionScope>,
+): boolean {
+  const current = captureSessionScope();
+  return (
+    getSession() !== undefined &&
+    Object.keys(scope).every(
+      key =>
+        current[key as keyof typeof current] ===
+        scope[key as keyof typeof scope],
+    )
+  );
+}
 
 function isSession(value: unknown): value is Session {
   if (typeof value !== 'object' || value === null) {
@@ -98,6 +220,19 @@ function isSession(value: unknown): value is Session {
 function readPublicSession(): Session | undefined {
   const stored = getAppStorage().getObject<unknown>(STORAGE_KEY_SESSION);
   return isSession(stored) ? stored : undefined;
+}
+
+/** Per-tab generation alone cannot protect a shared browser storage record.
+ * A stale tab must invalidate its own cache without deleting a newer family.
+ * Legacy sessions have no stable family ID, so compare the exact credential.
+ */
+function ownsPublicSession(current: Session | undefined): boolean {
+  const stored = readPublicSession();
+  if (stored === undefined) return true;
+  if (current === undefined) return false;
+  if (current.authSessionId && stored.authSessionId)
+    return current.userId === stored.userId && current.authSessionId === stored.authSessionId;
+  return current.accessToken === stored.accessToken;
 }
 
 /** Chỉ ghi metadata; refresh token tuyệt đối không được serialize vào MMKV. */
@@ -135,10 +270,31 @@ export function getActiveSession(
 }
 
 export function setSession(session: Session): void {
+  const old = getSession();
+  if (
+    !old ||
+    old.userId !== session.userId ||
+    old.authSessionId !== session.authSessionId ||
+    (!old.authSessionId && old.accessToken !== session.accessToken)
+  )
+    sessionGeneration++;
+  authSessionNotice = undefined;
   sessionCache = session;
   sessionCacheLoaded = true;
   writePublicSession(session);
   notify(session);
+}
+
+/** Promote only the response generation that actually received 403. */
+export function markPasswordChangeRequired(generation: number): void {
+  const current = getSession();
+  if (
+    generation !== sessionGeneration ||
+    current === undefined ||
+    current.mustChangePassword === true
+  )
+    return;
+  setSession({ ...current, mustChangePassword: true });
 }
 
 /**
@@ -146,14 +302,24 @@ export function setSession(session: Session): void {
  * rồi mới xuất bản access token. App chết giữa hai bước sẽ không dùng lại
  * refresh token cũ vì dấu `refresh.inflight` vẫn còn.
  */
-export async function persistSession(session: Session): Promise<void> {
+export async function persistSession(
+  session: Session,
+  expectedGeneration = sessionGeneration,
+  isCurrent: () => boolean = () => true,
+): Promise<void> {
+  const accepts = () => expectedGeneration === sessionGeneration && isCurrent();
+  if (!accepts()) return;
   const refreshToken = nonBlank(session.refreshToken);
   if (refreshToken === undefined) {
-    await clearSecureRefreshToken();
+    await clearSecureRefreshToken(accepts);
   } else {
-    await writeSecureRefreshToken(refreshToken);
+    await writeSecureRefreshToken(refreshToken, accepts);
   }
-  setSession({ ...session, ...(refreshToken === undefined ? {} : { refreshToken }) });
+  if (accepts())
+    setSession({
+      ...session,
+      ...(refreshToken === undefined ? {} : { refreshToken }),
+    });
 }
 
 /**
@@ -162,6 +328,7 @@ export async function persistSession(session: Session): Promise<void> {
  * vào Keystore rồi bị xoá ngay khỏi bản ghi plaintext.
  */
 export async function hydrateSession(): Promise<Session | undefined> {
+  const generation = sessionGeneration;
   const publicSession = readPublicSession();
   if (publicSession === undefined) {
     sessionCache = undefined;
@@ -174,6 +341,7 @@ export async function hydrateSession(): Promise<Session | undefined> {
     await writeSecureRefreshToken(legacyRefresh);
   }
   const refreshToken = legacyRefresh ?? (await readSecureRefreshToken());
+  if (generation !== sessionGeneration) return getSession();
   const hydrated: Session = {
     ...publicSession,
     ...(refreshToken === undefined ? {} : { refreshToken }),
@@ -185,7 +353,7 @@ export async function hydrateSession(): Promise<Session | undefined> {
   return hydrated;
 }
 
-function nonBlank(value: string | undefined): string | undefined {
+function nonBlank(value: string | null | undefined): string | undefined {
   const normalized = value?.trim();
   return normalized === undefined || normalized === '' ? undefined : normalized;
 }
@@ -206,13 +374,27 @@ export function updateSessionIdentity(
   }
 
   const userId = nonBlank(identity.userId);
+  const authSessionId = nonBlank(identity.authSessionId);
+  const activeWarehouseId = nonBlank(identity.activeWarehouseId);
   const userName = nonBlank(identity.userName);
   const avatarUrl = nonBlank(identity.avatarUrl);
   const next: Session = {
     ...current,
+    ...(identity.accountSessionPolicy === 'auth-session-replacement-v1'
+      ? { accountSessionPolicy: identity.accountSessionPolicy }
+      : {}),
     ...(userId === undefined ? {} : { userId }),
+    ...(authSessionId === undefined ? {} : { authSessionId }),
+    ...(identity.activeWarehouseId === null
+      ? { activeWarehouseId: undefined }
+      : activeWarehouseId === undefined
+      ? {}
+      : { activeWarehouseId }),
     ...(userName === undefined ? {} : { userName }),
     ...(avatarUrl === undefined ? {} : { avatarUrl }),
+    ...(identity.mustChangePassword === undefined
+      ? {}
+      : { mustChangePassword: identity.mustChangePassword }),
   };
 
   setSession(next);
@@ -220,7 +402,9 @@ export function updateSessionIdentity(
 }
 
 export function clearSession(): void {
-  getAppStorage().remove(STORAGE_KEY_SESSION);
+  const ownsPersisted = ownsPublicSession(getSession());
+  sessionGeneration++;
+  if (ownsPersisted) getAppStorage().remove(STORAGE_KEY_SESSION);
   sessionCache = undefined;
   sessionCacheLoaded = true;
   notify(undefined);
@@ -228,8 +412,9 @@ export function clearSession(): void {
 
 /** Xoá cả metadata và refresh credential khi logout/phiên chết. */
 export async function clearPersistedSession(): Promise<void> {
+  const clearing = clearSecureRefreshToken();
   clearSession();
-  await clearSecureRefreshToken();
+  await clearing;
 }
 
 export function subscribeSession(listener: Listener): () => void {

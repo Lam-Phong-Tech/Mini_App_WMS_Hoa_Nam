@@ -1,0 +1,115 @@
+{
+  "date": "2026-11-03",
+  "repository": "https://github.com/Duc-Nguyen98/ScannerHNApp",
+  "commit": "04d13af1d7d6d9a7184d024d404bfd483d8eec6e",
+  "source": "Literal Lucide SVG nodes tracked by the user repository, not cropped from the asset-sheet raster.",
+  "license": "ISC; original license retained",
+  "assetSheetSeparateIconFiles": "No05iconSVG/PNGfilesfoundinassetsor design tree; original used code-native SVG nodes are present.",
+  "sources": [
+    {
+      "name": "file-text",
+      "file": "node_modules/lucide-react/dist/esm/icons/file-text.mjs",
+      "commit": "04d13af1d7d6d9a7184d024d404bfd483d8eec6e",
+      "url": "https://github.com/Duc-Nguyen98/ScannerHNApp/blob/04d13af1d7d6d9a7184d024d404bfd483d8eec6e/node_modules/lucide-react/dist/esm/icons/file-text.mjs",
+      "sha256": "94e458b45e94771548bf60000ec71fadcd3fcd43cdf60a2712ab82b450e2e25a"
+    },
+    {
+      "name": "user-round",
+      "file": "node_modules/lucide-react/dist/esm/icons/user-round.mjs",
+      "commit": "04d13af1d7d6d9a7184d024d404bfd483d8eec6e",
+      "url": "https://github.com/Duc-Nguyen98/ScannerHNApp/blob/04d13af1d7d6d9a7184d024d404bfd483d8eec6e/node_modules/lucide-react/dist/esm/icons/user-round.mjs",
+      "sha256": "21bad68eb8983e39c35dd6311f34734f3994d222339061348cbebd7ac3b59348"
+    },
+    {
+      "name": "house",
+      "file": "node_modules/lucide-react/dist/esm/icons/house.mjs",
+      "commit": "04d13af1d7d6d9a7184d024d404bfd483d8eec6e",
+      "url": "https://github.com/Duc-Nguyen98/ScannerHNApp/blob/04d13af1d7d6d9a7184d024d404bfd483d8eec6e/node_modules/lucide-react/dist/esm/icons/house.mjs",
+      "sha256": "6e68875c5ed048b7311b94f45ec89150577796be702315c581f6f6beae72f52d"
+    },
+    {
+      "name": "building-2",
+      "file": "node_modules/lucide-react/dist/esm/icons/building-2.mjs",
+      "commit": "04d13af1d7d6d9a7184d024d404bfd483d8eec6e",
+      "url": "https://github.com/Duc-Nguyen98/ScannerHNApp/blob/04d13af1d7d6d9a7184d024d404bfd483d8eec6e/node_modules/lucide-react/dist/esm/icons/building-2.mjs",
+      "sha256": "4e8f998b202d7a933ac94144e9ae17dd195038d5d012bc0d509fcaca9fc17147"
+    },
+    {
+      "name": "calendar-days",
+      "file": "node_modules/lucide-react/dist/esm/icons/calendar-days.mjs",
+      "commit": "04d13af1d7d6d9a7184d024d404bfd483d8eec6e",
+      "url": "https://github.com/Duc-Nguyen98/ScannerHNApp/blob/04d13af1d7d6d9a7184d024d404bfd483d8eec6e/node_modules/lucide-react/dist/esm/icons/calendar-days.mjs",
+      "sha256": "b5b336d3a9a4c95b58a2574d990e5d3a58b5e62b0af0a29150113498e662a52f"
+    },
+    {
+      "name": "clock-3",
+      "file": "node_modules/lucide-react/dist/esm/icons/clock-3.mjs",
+      "commit": "04d13af1d7d6d9a7184d024d404bfd483d8eec6e",
+      "url": "https://github.com/Duc-Nguyen98/ScannerHNApp/blob/04d13af1d7d6d9a7184d024d404bfd483d8eec6e/node_modules/lucide-react/dist/esm/icons/clock-3.mjs",
+      "sha256": "d68bfad192030cdf25f7edf6cfb001a09fb3c4947a637e65a995b3852c08790c"
+    },
+    {
+      "name": "scan-line",
+      "file": "node_modules/lucide-react/dist/esm/icons/scan-line.mjs",
+      "commit": "04d13af1d7d6d9a7184d024d404bfd483d8eec6e",
+      "url": "https://github.com/Duc-Nguyen98/ScannerHNApp/blob/04d13af1d7d6d9a7184d024d404bfd483d8eec6e/node_modules/lucide-react/dist/esm/icons/scan-line.mjs",
+      "sha256": "0ed459bf2f2295a57c0e8a51290ceb360d6020380bafa0f2bf8eb90a0c8b29f0"
+    },
+    {
+      "name": "package",
+      "file": "node_modules/lucide-react/dist/esm/icons/package.mjs",
+      "commit": "04d13af1d7d6d9a7184d024d404bfd483d8eec6e",
+      "url": "https://github.com/Duc-Nguyen98/ScannerHNApp/blob/04d13af1d7d6d9a7184d024d404bfd483d8eec6e/node_modules/lucide-react/dist/esm/icons/package.mjs",
+      "sha256": "e8c70fb8b16a4449e6e0da82eeca0147b7b6b58c12a357f36d8492f4b705af3e"
+    },
+    {
+      "name": "arrow-right",
+      "file": "node_modules/lucide-react/dist/esm/icons/arrow-right.mjs",
+      "commit": "04d13af1d7d6d9a7184d024d404bfd483d8eec6e",
+      "url": "https://github.com/Duc-Nguyen98/ScannerHNApp/blob/04d13af1d7d6d9a7184d024d404bfd483d8eec6e/node_modules/lucide-react/dist/esm/icons/arrow-right.mjs",
+      "sha256": "9052df3095af7f71daedaf293d5e6db1e53cd9ac502a4b292218400304660214"
+    },
+    {
+      "name": "flashlight",
+      "file": "node_modules/lucide-react/dist/esm/icons/flashlight.mjs",
+      "commit": "04d13af1d7d6d9a7184d024d404bfd483d8eec6e",
+      "url": "https://github.com/Duc-Nguyen98/ScannerHNApp/blob/04d13af1d7d6d9a7184d024d404bfd483d8eec6e/node_modules/lucide-react/dist/esm/icons/flashlight.mjs",
+      "sha256": "e6b436e245746d5e8cb7e8bd36356e81fc4d7fee2b0e11340fecbfcbb71efc49"
+    },
+    {
+      "name": "keyboard",
+      "file": "node_modules/lucide-react/dist/esm/icons/keyboard.mjs",
+      "commit": "04d13af1d7d6d9a7184d024d404bfd483d8eec6e",
+      "url": "https://github.com/Duc-Nguyen98/ScannerHNApp/blob/04d13af1d7d6d9a7184d024d404bfd483d8eec6e/node_modules/lucide-react/dist/esm/icons/keyboard.mjs",
+      "sha256": "32779c1dec565c70508ec77bd77399c00a75ea00df10a3a47c1db76c388c84c3"
+    },
+    {
+      "name": "info",
+      "file": "node_modules/lucide-react/dist/esm/icons/info.mjs",
+      "commit": "04d13af1d7d6d9a7184d024d404bfd483d8eec6e",
+      "url": "https://github.com/Duc-Nguyen98/ScannerHNApp/blob/04d13af1d7d6d9a7184d024d404bfd483d8eec6e/node_modules/lucide-react/dist/esm/icons/info.mjs",
+      "sha256": "4a801b74c1f793cc10850b9f32c08c0f7799a3166a91bf5bec91de97ad48c653"
+    },
+    {
+      "name": "circle-check",
+      "file": "node_modules/lucide-react/dist/esm/icons/circle-check.mjs",
+      "commit": "04d13af1d7d6d9a7184d024d404bfd483d8eec6e",
+      "url": "https://github.com/Duc-Nguyen98/ScannerHNApp/blob/04d13af1d7d6d9a7184d024d404bfd483d8eec6e/node_modules/lucide-react/dist/esm/icons/circle-check.mjs",
+      "sha256": "bec2a7559ec6d84ae872576c9bfface74ac94ded5a3ef4ab62c777f3c280ba28"
+    },
+    {
+      "name": "circle-alert",
+      "file": "node_modules/lucide-react/dist/esm/icons/circle-alert.mjs",
+      "commit": "04d13af1d7d6d9a7184d024d404bfd483d8eec6e",
+      "url": "https://github.com/Duc-Nguyen98/ScannerHNApp/blob/04d13af1d7d6d9a7184d024d404bfd483d8eec6e/node_modules/lucide-react/dist/esm/icons/circle-alert.mjs",
+      "sha256": "b09be038c0a171f2e5fbf607ed2aafd6e633b094cc168143085793cec7722998"
+    },
+    {
+      "name": "lock-keyhole",
+      "file": "node_modules/lucide-react/dist/esm/icons/lock-keyhole.mjs",
+      "commit": "04d13af1d7d6d9a7184d024d404bfd483d8eec6e",
+      "url": "https://github.com/Duc-Nguyen98/ScannerHNApp/blob/04d13af1d7d6d9a7184d024d404bfd483d8eec6e/node_modules/lucide-react/dist/esm/icons/lock-keyhole.mjs",
+      "sha256": "14369e9f2e49331089d314ab2018f1fb776d44f4aae04fbe9b5d179ac4fbeff2"
+    }
+  ]
+}

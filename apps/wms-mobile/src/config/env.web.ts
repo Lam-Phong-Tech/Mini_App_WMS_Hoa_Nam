@@ -15,14 +15,15 @@ export interface AppEnvironment {
 }
 
 /**
- * Vite/preview proxy cùng origin với giao diện, nên browser không gọi chéo
- * thẳng sang API. Đích sau proxy cố định ở vite.config.ts là Green DEV/TEST.
+ * Keep the logical backend identity identical to native for owner/runtime gates.
+ * wmsFetch.web rewrites this fixed origin to the same-origin /wms-api transport;
+ * the proxy path is not an environment identity and must not enter those gates.
  */
 export const ENVIRONMENTS: Readonly<Record<EnvironmentName, AppEnvironment>> = {
   'dev-test': {
     name: 'dev-test',
     label: 'DEV/TEST — Green',
-    apiBaseUrl: '/wms-api',
+    apiBaseUrl: 'https://khohoanamdev.lptech.info.vn',
     requestTimeoutMs: 20000,
     expectedTier: 'dev-test',
     environmentClassVerified: true,

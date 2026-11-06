@@ -24,20 +24,20 @@ import {
   submitLabel,
   validateLogin,
 } from '../src/features/auth/loginForm';
-import { classifyLoginError, login, logout } from '../src/services/wms/auth';
-import { HomeScreen } from '../src/features/home/HomeScreen';
-import { BOTTOM_NAV_ITEMS } from '../src/ui/BottomNav';
+import {
+  classifyLoginError,
+  login,
+  logout,
+  MfaRequiredError,
+  verifyMfaLogin,
+} from '../src/services/wms/auth';
 import { LoginScreen } from '../src/features/auth/LoginScreen';
 import { SessionConfirmationScreen } from '../src/features/auth/SessionConfirmationScreen';
+import { startWorkShift } from '../src/services/wms/workShift';
 import { AppProviders } from '../src/app/App';
-import { getSession, setSession } from '../src/auth/session';
+import { clearSession, getSession, setSession } from '../src/auth/session';
 import { resetServerClock } from '../src/auth/serverClock';
 import { AppError } from '../src/errors/AppError';
-import type {
-  InboundDocument,
-  OutboundDocument,
-  Page,
-} from '../src/services/wms/types';
 import {
   createMemoryBackend,
   createStorage,
@@ -46,6 +46,7 @@ import {
 } from '../src/storage/storage';
 
 beforeEach(() => {
+  clearSession();
   setAppStorageForTesting(createStorage(createMemoryBackend()));
   resetServerClock();
 });
@@ -72,7 +73,7 @@ describe('form đăng nhập — trạng thái theo ảnh 02–05', () => {
   it('email sai định dạng hiện đúng câu của Mini App hiện hành', () => {
     const state = setPassword(setEmail(initialLoginForm, 'thu-kho-01'), 'x');
     expect(validateLogin(state).email).toBe(MESSAGE_EMAIL_INVALID);
-    expect(MESSAGE_EMAIL_INVALID).toBe('Vui lòng nhập đúng định dạng email.');
+    expect(MESSAGE_EMAIL_INVALID).toBe('Vui lòng nhập email hợp lệ.');
   });
 
   it('gõ lại chỉ xoá lỗi của CHÍNH ô đó', () => {
@@ -145,7 +146,8 @@ describe('dịch vụ đăng nhập — luồng chạy THẬT qua ngoại lệ �
     expect(session.expiresAtMs).toBeGreaterThan(session.issuedAtMs ?? 0);
     expect(getSession()?.accessToken).toBe('access-1');
     expect(
-      getAppStorage().getObject<{ refreshToken?: string }>('auth.session')?.refreshToken,
+      getAppStorage().getObject<{ refreshToken?: string }>('auth.session')
+        ?.refreshToken,
     ).toBeUndefined();
   });
 
@@ -187,6 +189,93 @@ describe('dịch vụ đăng nhập — luồng chạy THẬT qua ngoại lệ �
     expect(getSession()).toEqual(next);
     expect(getSession()?.accessToken).not.toBe('fixture-access-user-a');
     expect(getSession()?.userId).not.toBe('fixture-user-a');
+  });
+
+  it('login MFA giữ challenge ngoài session/loggable JSON và chưa phát access token', async () => {
+    let challenge: MfaRequiredError | undefined;
+    try {
+      await login(
+        { email: 'mfa@example.test', password: 'fixture-only' },
+        {
+          post: async () => ({
+            success: true,
+            data: {
+              mfa_required: true,
+              mfa_token: 'secret-mfa-challenge',
+              expires_in: 300,
+            },
+          }),
+        },
+      );
+    } catch (error) {
+      challenge = error as MfaRequiredError;
+    }
+    expect(challenge).toBeInstanceOf(MfaRequiredError);
+    expect(challenge?.mfaToken).toBe('secret-mfa-challenge');
+    expect(challenge?.expiresIn).toBe(300);
+    expect(JSON.stringify(challenge)).not.toContain('secret-mfa-challenge');
+    expect(getSession()).toBeUndefined();
+  });
+
+  it('MFA verify gửi đúng challenge/code rồi mới lưu phiên', async () => {
+    let observedPath = '',
+      observedBody: unknown;
+    const session = await verifyMfaLogin(
+      { mfaToken: 'challenge-1', code: '123456' },
+      {
+        post: async (path, body) => {
+          observedPath = path;
+          observedBody = body;
+          return {
+            success: true,
+            data: {
+              access_token: 'mfa-access',
+              refresh_token: 'mfa-refresh',
+              expires_in: 3600,
+              second_factor: 'totp',
+            },
+          };
+        },
+      },
+    );
+    expect(observedPath).toBe('/api/v1/auth/mfa/verify');
+    expect(observedBody).toEqual({
+      mfa_token: 'challenge-1',
+      code: '123456',
+    });
+    expect(session.accessToken).toBe('mfa-access');
+    expect(getSession()?.accessToken).toBe('mfa-access');
+  });
+
+  it('login access token carries must_change_password without opening MFA', async () => {
+    const session = await login(
+      { email: 'reset@example.test', password: 'fixture-only' },
+      {
+        post: async () => ({
+          success: true,
+          data: {
+            access_token: 'reset-access',
+            refresh_token: 'reset-refresh',
+            expires_in: 3600,
+            user: {
+              user_id: '11111111-1111-4111-8111-111111111111',
+              auth_session_id: '22222222-2222-4222-8222-222222222222',
+              active_warehouse_id: '33333333-3333-4333-8333-333333333333',
+              display_name: 'TEST reset',
+              must_change_password: true,
+            },
+          },
+        }),
+      },
+    );
+    expect(session.mustChangePassword).toBe(true);
+    expect(session).toMatchObject({
+      userId: '11111111-1111-4111-8111-111111111111',
+      authSessionId: '22222222-2222-4222-8222-222222222222',
+      activeWarehouseId: '33333333-3333-4333-8333-333333333333',
+      userName: 'TEST reset',
+    });
+    expect(getSession()?.mustChangePassword).toBe(true);
   });
 
   it('đăng xuất xoá phiên cục bộ TRƯỚC khi gọi máy chủ', async () => {
@@ -231,7 +320,9 @@ describe('dịch vụ đăng nhập — luồng chạy THẬT qua ngoại lệ �
       new AppError({ kind: 'blocked_by_edge', status: 403, message: 'chặn' }),
     );
     expect(blocked.kind).toBe('blocked');
-    expect(blocked.message).toBe('Tài khoản chưa có quyền truy cập Mini App kho.');
+    expect(blocked.message).toBe(
+      'Tài khoản chưa có quyền truy cập Mini App kho.',
+    );
   });
 
   it('hiển thị đúng lỗi transport Web thay vì báo nhầm thiếu quyền', () => {
@@ -252,7 +343,7 @@ describe('dịch vụ đăng nhập — luồng chạy THẬT qua ngoại lệ �
     expect(
       classifyLoginError(
         new AppError({ kind: 'auth', status: 401, message: serverMessage }),
-    ).message,
+      ).message,
     ).toBe('Sai tài khoản hoặc mật khẩu.');
   });
 });
@@ -294,13 +385,17 @@ async function renderInteractive(element: React.ReactElement) {
 
 describe('màn Đăng nhập dựng được và bám reference Designer', () => {
   it('hiện nhận diện Scanner, form và chân trang đúng trạng thái idle', async () => {
-    const view = await render(<LoginScreen loginFn={async () => {
-      throw new Error('không được gọi');
-    }} />);
+    const view = await render(
+      <LoginScreen
+        loginFn={async () => {
+          throw new Error('không được gọi');
+        }}
+      />,
+    );
     expect(view.text).toContain('HOA NAM SCANNER');
-    expect(view.text).toContain('WMS · Vận hành chuyên nghiệp');
+    expect(view.text).toContain('WMS - Vận hành chuyên nghiệp');
     expect(view.text).toContain('Đăng nhập để bắt đầu phiên làm việc');
-    expect(view.text).toContain('Tên đăng nhập');
+    expect(view.text).toContain('Email');
     expect(view.text).toContain('Quên mật khẩu?');
     expect(view.text).toContain('Đăng nhập');
     await view.unmount();
@@ -318,9 +413,7 @@ describe('màn Đăng nhập dựng được và bám reference Designer', () =>
             });
         }),
     );
-    const tree = await renderInteractive(
-      <LoginScreen loginFn={loginFn} />,
-    );
+    const tree = await renderInteractive(<LoginScreen loginFn={loginFn} />);
 
     const inputs = tree.root.findAllByType(TextInput);
     const email = inputs[0];
@@ -330,9 +423,10 @@ describe('màn Đăng nhập dựng được và bám reference Designer', () =>
       password.props.onChangeText('fixture-password-a');
     });
 
-    const submit = tree.root.find(node =>
-      node.props.accessibilityLabel === 'Đăng nhập' &&
-      typeof node.props.onPress === 'function',
+    const submit = tree.root.find(
+      node =>
+        node.props.accessibilityLabel === 'Đăng nhập' &&
+        typeof node.props.onPress === 'function',
     );
     ReactTestRenderer.act(() => {
       submit.props.onPress();
@@ -354,11 +448,114 @@ describe('màn Đăng nhập dựng được và bám reference Designer', () =>
     });
   });
 
+  it('MFA mở bước 2, xoá password và chỉ hoàn tất sau verify', async () => {
+    const onSuccess = jest.fn(),
+      verifyMfaFn = jest.fn(async () => ({ accessToken: 'mfa-access' }));
+    const tree = await renderInteractive(
+      <LoginScreen
+        loginFn={async () => {
+          throw new MfaRequiredError('secret-ui-challenge', 300);
+        }}
+        verifyMfaFn={verifyMfaFn}
+        onSuccess={onSuccess}
+      />,
+    );
+    let inputs = tree.root.findAllByType(TextInput);
+    await ReactTestRenderer.act(async () => {
+      inputs[0].props.onChangeText('mfa@example.test');
+      inputs[1].props.onChangeText('fixture-password');
+    });
+    const submit = tree.root.find(
+      node =>
+        node.props.accessibilityLabel === 'Đăng nhập' &&
+        typeof node.props.onPress === 'function',
+    );
+    await ReactTestRenderer.act(async () => {
+      await submit.props.onPress();
+    });
+    expect(JSON.stringify(tree.toJSON())).toContain('Xác thực hai bước');
+    expect(JSON.stringify(tree.toJSON())).not.toContain('secret-ui-challenge');
+    inputs = tree.root.findAllByType(TextInput);
+    expect(inputs[0].props.value).toBe('');
+    expect(inputs[1].props.value).toBe('');
+    const mfaInput = inputs.find(
+      node => node.props.accessibilityLabel === 'Mã xác thực',
+    )!;
+    await ReactTestRenderer.act(async () => {
+      mfaInput.props.onChangeText('123456');
+    });
+    const verify = tree.root.find(
+      node =>
+        node.props.accessibilityLabel === 'Xác nhận' &&
+        typeof node.props.onPress === 'function',
+    );
+    await ReactTestRenderer.act(async () => {
+      await verify.props.onPress();
+    });
+    expect(verifyMfaFn).toHaveBeenCalledWith({
+      mfaToken: 'secret-ui-challenge',
+      code: '123456',
+    });
+    expect(onSuccess).toHaveBeenCalledTimes(1);
+    await ReactTestRenderer.act(async () => tree.unmount());
+  });
+
+  it('stale MFA challenge is discarded before a later normal login', async () => {
+    let attempt = 0;
+    const onSuccess = jest.fn();
+    const tree = await renderInteractive(
+      <LoginScreen
+        loginFn={async () => {
+          attempt++;
+          if (attempt === 1)
+            throw new MfaRequiredError('old-challenge', 300);
+          return { accessToken: 'normal-access', mustChangePassword: true };
+        }}
+        onSuccess={onSuccess}
+      />,
+    );
+    let inputs = tree.root.findAllByType(TextInput);
+    await ReactTestRenderer.act(async () => {
+      inputs[0].props.onChangeText('reset@example.test');
+      inputs[1].props.onChangeText('fixture-password');
+    });
+    let submit = tree.root.find(
+      node =>
+        node.props.accessibilityLabel === 'Đăng nhập' &&
+        typeof node.props.onPress === 'function',
+    );
+    await ReactTestRenderer.act(async () => submit.props.onPress());
+    expect(JSON.stringify(tree.toJSON())).toContain('Xác thực hai bước');
+    const back = tree.root.find(
+      node =>
+        node.props.accessibilityLabel === 'Quay lại đăng nhập' &&
+        typeof node.props.onPress === 'function',
+    );
+    await ReactTestRenderer.act(async () => back.props.onPress());
+    expect(JSON.stringify(tree.toJSON())).not.toContain('Xác thực hai bước');
+    inputs = tree.root.findAllByType(TextInput);
+    await ReactTestRenderer.act(async () => {
+      inputs[0].props.onChangeText('reset@example.test');
+      inputs[1].props.onChangeText('fixture-password');
+    });
+    submit = tree.root.find(
+      node =>
+        node.props.accessibilityLabel === 'Đăng nhập' &&
+        typeof node.props.onPress === 'function',
+    );
+    await ReactTestRenderer.act(async () => submit.props.onPress());
+    expect(onSuccess).toHaveBeenCalledTimes(1);
+    expect(JSON.stringify(tree.toJSON())).not.toContain('Xác thực hai bước');
+    await ReactTestRenderer.act(async () => tree.unmount());
+  });
+
   it('giữ nguyên giá trị và vị trí gõ khi hiện/ẩn mật khẩu', async () => {
     const tree = await renderInteractive(
-      <LoginScreen loginFn={async () => {
-        throw new Error('không được gọi');
-      }} />,
+      <LoginScreen
+        loginFn={async () => {
+          throw new Error('không được gọi');
+        }}
+      />,
     );
 
     const password = tree.root.findAllByType(TextInput)[1];
@@ -368,9 +565,10 @@ describe('màn Đăng nhập dựng được và bám reference Designer', () =>
         nativeEvent: { selection: { start: 7, end: 7 } },
       });
     });
-    const reveal = tree.root.find(node =>
-      node.props.accessibilityLabel === 'Hiện mật khẩu' &&
-      typeof node.props.onPress === 'function',
+    const reveal = tree.root.find(
+      node =>
+        node.props.accessibilityLabel === 'Hiện mật khẩu' &&
+        typeof node.props.onPress === 'function',
     );
     await ReactTestRenderer.act(async () => {
       reveal.props.onPress();
@@ -387,22 +585,45 @@ describe('màn Đăng nhập dựng được và bám reference Designer', () =>
   });
 });
 
-describe('xác nhận phiên — không biến thành thao tác mở ca', () => {
-  it('chỉ hiện dữ liệu BE trả về và thông báo rõ ca làm chưa áp dụng', async () => {
+describe('xác nhận phiên và bắt đầu ca kỹ thuật', () => {
+  it('data:null giữ màn xác nhận; chỉ ca ACTIVE + preview_ready mới vào Home', async () => {
+    const authSessionId = 'auth-session-fixture';
+    const warehouseId = '11111111-1111-4111-8111-111111111111';
     const fetchUser = jest.fn(async () => ({
+      id: 'user-1',
+      auth_session_id: authSessionId,
+      active_warehouse_id: warehouseId,
       name: 'Nguyễn Minh Anh',
       email: 'minh.anh@hoanam.vn',
       role: 'Thủ kho',
-      warehouse_scope_ids: ['KHO-TONG-HN'],
+      warehouse_scope_ids: [warehouseId],
     }));
+    const fetchShift = jest.fn(async () => null);
+    const fetchWarehouses = jest.fn(async () => ({
+      items: [],
+      meta: {},
+      links: {},
+    }));
+    const startShift = jest.fn(async () => ({
+      actor_id: 'user-1',
+      shift_id: 'shift-1',
+      auth_session_id: authSessionId,
+      warehouse_id: warehouseId,
+      status: 'ACTIVE',
+      started_at: '2026-10-05T08:00:00+07:00',
+      preview_ready: true,
+    })) as unknown as jest.MockedFunction<typeof startWorkShift>;
     const logoutFn = jest.fn(async () => undefined);
     const onContinue = jest.fn();
     const onLoggedOut = jest.fn();
     const onIdentityResolved = jest.fn();
 
-    const view = await render(
+    const tree = await renderInteractive(
       <SessionConfirmationScreen
         fetchUser={fetchUser}
+        fetchShift={fetchShift}
+        fetchWarehouses={fetchWarehouses}
+        startShift={startShift}
         logoutFn={logoutFn}
         onContinue={onContinue}
         onLoggedOut={onLoggedOut}
@@ -410,265 +631,199 @@ describe('xác nhận phiên — không biến thành thao tác mở ca', () => 
       />,
     );
 
-    expect(view.text).toContain('Chào Nguyễn Minh Anh');
-    expect(view.text).toContain('KHO-TONG-HN');
-    expect(view.text).toContain('Bắt đầu ca làm việc: Chưa áp dụng');
-    expect(view.text).toContain('Tiếp tục vào ứng dụng');
+    const beforeStart = JSON.stringify(tree.toJSON());
+    expect(beforeStart).toContain('Chào Nguyễn Minh Anh');
+    expect(beforeStart).toContain(warehouseId);
+    expect(beforeStart).toContain('Chưa bắt đầu ca');
+    expect(beforeStart).toContain('Bắt đầu ca');
     expect(fetchUser).toHaveBeenCalledTimes(1);
+    expect(fetchShift).toHaveBeenCalledTimes(1);
+    expect(fetchWarehouses).toHaveBeenCalledTimes(1);
     expect(onIdentityResolved).toHaveBeenCalledWith({
+      id: 'user-1',
+      auth_session_id: authSessionId,
+      active_warehouse_id: warehouseId,
       name: 'Nguyễn Minh Anh',
       email: 'minh.anh@hoanam.vn',
       role: 'Thủ kho',
-      warehouse_scope_ids: ['KHO-TONG-HN'],
+      warehouse_scope_ids: [warehouseId],
     });
     expect(logoutFn).not.toHaveBeenCalled();
     expect(onContinue).not.toHaveBeenCalled();
-    await view.unmount();
+
+    const start = tree.root.find(
+      node =>
+        node.props.accessibilityLabel === 'Bắt đầu ca' &&
+        typeof node.props.onPress === 'function',
+    );
+    await ReactTestRenderer.act(async () => {
+      start.props.onPress();
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+    expect(startShift).toHaveBeenCalledTimes(1);
+    expect(startShift.mock.calls[0]?.[0]).toEqual({
+      actorId: 'user-1',
+      authSessionId,
+      warehouseId,
+    });
+    expect(startShift.mock.calls[0]?.[1]).toMatch(
+      /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/,
+    );
+    expect(onContinue).toHaveBeenCalledTimes(1);
+    await ReactTestRenderer.act(() => tree.unmount());
+  });
+
+  it('hiển thị tên kho từ danh mục, vẫn gửi active_warehouse_id làm UUID', async () => {
+    const authSessionId = 'auth-session-name';
+    const warehouseId = '33333333-3333-4333-8333-333333333333';
+    const fetchUser = jest.fn(async () => ({
+      id: 'user-name',
+      auth_session_id: authSessionId,
+      active_warehouse_id: warehouseId,
+      name: 'Minh Anh',
+      email: 'minh.anh@hoanam.vn',
+      role: 'Thủ kho',
+    }));
+    const fetchWarehouses = jest.fn(async () => ({
+      items: [{ id: warehouseId, name: 'Kho Hoa Nam', status: 'ACTIVE' }],
+      meta: {},
+      links: {},
+    }));
+    const fetchShift = jest.fn(async () => null);
+    const startShift = jest.fn(async () => ({
+      actor_id: 'user-name',
+      shift_id: 'shift-name',
+      auth_session_id: authSessionId,
+      warehouse_id: warehouseId,
+      status: 'ACTIVE',
+      started_at: '2026-10-05T08:00:00+07:00',
+      preview_ready: true,
+    })) as unknown as jest.MockedFunction<typeof startWorkShift>;
+
+    const tree = await renderInteractive(
+      <SessionConfirmationScreen
+        fetchUser={fetchUser}
+        fetchWarehouses={fetchWarehouses}
+        fetchShift={fetchShift}
+        startShift={startShift}
+        onContinue={jest.fn()}
+        onLoggedOut={jest.fn()}
+      />,
+    );
+
+    expect(JSON.stringify(tree.toJSON())).toContain('Kho Hoa Nam');
+    expect(JSON.stringify(tree.toJSON())).not.toContain(warehouseId);
+    const start = tree.root.find(
+      node =>
+        node.props.accessibilityLabel === 'Bắt đầu ca' &&
+        typeof node.props.onPress === 'function',
+    );
+    await ReactTestRenderer.act(async () => {
+      start.props.onPress();
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+    expect(startShift.mock.calls[0]?.[0]).toEqual({
+      actorId: 'user-name',
+      authSessionId,
+      warehouseId,
+    });
+    await ReactTestRenderer.act(() => tree.unmount());
   });
 });
 
-describe('Trang chủ — bốn trạng thái của Prompt 4 §C', () => {
-  const emptyPage = { items: [], meta: {}, links: {} };
+// Home source assertions migrated to homeApiRevision2.test.tsx: revision2
+// requires dashboard totals, scoped recent capability and four warranty states.
+// The previous page-length/inbound-only expectations are retained in the
+// implementation handoff's before snapshot, not treated as backend evidence.
 
-  it('trạng thái loading hiện trước khi có dữ liệu', async () => {
-    const view = await render(
-      <HomeScreen
-        deps={{
-          // Không bao giờ resolve → giữ nguyên trạng thái loading.
-          fetchDocuments: () => new Promise(() => {}),
-          fetchInboundPending: () => new Promise(() => {}),
-          fetchOutboundPending: () => new Promise(() => {}),
-        }}
-      />,
-    );
-    expect(view.text).toContain('Phiếu chờ duyệt');
-    await view.unmount();
-  });
-
-  it('trạng thái lỗi có nút thử lại, không im lặng', async () => {
-    const view = await render(
-      <HomeScreen
-        deps={{
-          fetchDocuments: async () => {
-            throw new AppError({ kind: 'network', message: 'mất mạng' });
-          },
-          fetchInboundPending: async () => emptyPage,
-          fetchOutboundPending: async () => emptyPage,
-        }}
-      />,
-    );
-    expect(view.text).toContain('Không tải được');
-    expect(view.text).toContain('Thử lại');
-    expect(view.text).toContain('Chưa có dữ liệu để hiển thị');
-    expect(view.text).not.toContain('0 phiếu');
-    await view.unmount();
-  });
-
-  it('trạng thái rỗng nói rõ phải làm gì', async () => {
-    const view = await render(
-      <HomeScreen
-        deps={{
-          fetchDocuments: async () => emptyPage,
-          fetchInboundPending: async () => emptyPage,
-          fetchOutboundPending: async () => emptyPage,
-        }}
-      />,
-    );
-    expect(view.text).toContain('Chưa có chứng từ nào');
-    await view.unmount();
-  });
-
-  it('KPI bảo hành chỉ dùng tổng do WMS trả theo các trạng thái đang mở', async () => {
-    const seenStatuses: string[] = [];
-    const view = await render(
-      <HomeScreen
-        deps={{
-          fetchDocuments: async () => emptyPage,
-          fetchInboundPending: async () => emptyPage,
-          fetchOutboundPending: async () => emptyPage,
-          fetchWarrantyOpen: async options => {
-            seenStatuses.push(String(options?.query?.status));
-            return { items: [{ warranty_case_id: 'fixture-case' }], meta: { total: 2 } };
-          },
-        }}
-      />,
-    );
-    expect(seenStatuses).toEqual(['RECEIVED', 'CHECKING', 'REPAIRING']);
-    expect(view.text).toContain('Bảo hành đang mở');
-    expect(view.text).toContain('6');
-    await view.unmount();
-  });
-
-  it('Board 02 dùng năm tab, với Chứng từ trước lối quét trung tâm', () => {
-    expect(BOTTOM_NAV_ITEMS.map(item => item.label)).toEqual([
-      'Trang chủ',
-      'Chứng từ',
-      'Quét mã',
-      'Lịch sử',
-      'Cá nhân',
-    ]);
-  });
-
-  it('phân loại KPI theo trạng thái WMS của cùng danh sách dashboard', async () => {
-    const view = await render(
-      <HomeScreen
-        deps={{
-          fetchDocuments: async () => ({
-            items: [
-              { id: '1', status: 'WAITING_APPROVAL' },
-              { id: '2', status: 'POSTED' },
-            ],
-          }),
-          fetchInboundPending: async () => ({
-            items: [{ id: '1', status: 'WAITING_APPROVAL' }],
-            meta: { total: 1 },
-          }),
-          fetchOutboundPending: async () => ({ items: [], meta: { total: 0 } }),
-        }}
-      />,
-    );
-    expect(view.text).toContain('1');
-    await view.unmount();
-  });
-
-  it('"Chờ duyệt" dùng đúng hai truy vấn hàng đợi của màn Duyệt phiếu', async () => {
-    let inboundQuery: Record<string, unknown> | undefined;
-    let outboundQuery: Record<string, unknown> | undefined;
-    const view = await render(
-      <HomeScreen
-        deps={{
-          fetchDocuments: async () => ({ items: [] }),
-          fetchInboundPending: async options => {
-            inboundQuery = options?.query;
-            return { items: [{ id: 'in-1' }], meta: { total: 2 } };
-          },
-          fetchOutboundPending: async options => {
-            outboundQuery = options?.query;
-            return { items: [{ id: 'out-1' }], meta: { total: 3 } };
-          },
-        }}
-      />,
-    );
-    expect(view.text).toContain('Phiếu chờ duyệt');
-    expect(view.text).toContain('2');
-    expect(inboundQuery).toMatchObject({ status: 'WAITING_APPROVAL', per_page: 50 });
-    expect(outboundQuery).toMatchObject({ ready_for_post: true, ready_for_issue: true, per_page: 50 });
-    await view.unmount();
-  });
-
-  it('avatar mở đúng tab Cá nhân khi callback điều hướng đã được nối', async () => {
-    const onOpenProfile = jest.fn();
+describe('revision2 UNKNOWN start giữ key và khóa gửi lại', () => {
+  it('logout rời màn ngay, không gọi lại caller của phiên cũ sau network completion', async () => {
+    let finish!: () => void;
+    const onLoggedOut = jest.fn();
     const tree = await renderInteractive(
-      <HomeScreen
-        userName="Nguyễn Minh Anh"
-        onOpenProfile={onOpenProfile}
-        deps={{
-          fetchDocuments: async () => emptyPage,
-          fetchInboundPending: async () => emptyPage,
-          fetchOutboundPending: async () => emptyPage,
-        }}
+      <SessionConfirmationScreen
+        fetchUser={async () => ({
+          id: 'qa-actor',
+          auth_session_id: 'qa-session',
+          active_warehouse_id: '11111111-1111-4111-8111-111111111111',
+        })}
+        fetchShift={async () => null}
+        fetchWarehouses={async () => ({ items: [] })}
+        logoutFn={() =>
+          new Promise<void>(resolve => {
+            finish = resolve;
+          })
+        }
+        onContinue={jest.fn()}
+        onLoggedOut={onLoggedOut}
       />,
     );
-
-    const avatar = tree.root.find(node =>
-      node.props.accessibilityLabel === 'Mở trang cá nhân' &&
-      typeof node.props.onPress === 'function',
+    await ReactTestRenderer.act(async () => {
+      tree.root
+        .find(
+          n =>
+            n.props.accessibilityLabel === 'Đăng xuất' &&
+            typeof n.props.onPress === 'function',
+        )
+        .props.onPress();
+    });
+    expect(onLoggedOut).toHaveBeenCalledTimes(1);
+    await ReactTestRenderer.act(() => tree.unmount());
+    await ReactTestRenderer.act(async () => finish());
+    expect(onLoggedOut).toHaveBeenCalledTimes(1);
+  });
+  it('current lỗi không mở retry mù; đọc null rồi retry dùng đúng key/body', async () => {
+    const me = {
+      id: 'qa-actor',
+      auth_session_id: 'qa-session',
+      active_warehouse_id: '11111111-1111-4111-8111-111111111111',
+    };
+    const current = jest
+      .fn()
+      .mockResolvedValueOnce(null)
+      .mockRejectedValueOnce(
+        new AppError({ kind: 'network', message: 'unknown' }),
+      )
+      .mockResolvedValue(null);
+    const start = jest
+      .fn()
+      .mockRejectedValue(new AppError({ kind: 'timeout', message: 'unknown' }));
+    const tree = await renderInteractive(
+      <SessionConfirmationScreen
+        fetchUser={async () => me}
+        fetchShift={current}
+        startShift={start}
+        fetchWarehouses={async () => ({ items: [] })}
+        onContinue={jest.fn()}
+        onLoggedOut={jest.fn()}
+      />,
     );
-    await ReactTestRenderer.act(async () => {
-      avatar.props.onPress();
-    });
-    expect(onOpenProfile).toHaveBeenCalledTimes(1);
-    await ReactTestRenderer.act(async () => {
-      tree.unmount();
-    });
-  });
-
-  it('request Home cũ không được ghi đè dữ liệu của lượt tải mới', async () => {
-    let resolveOldInbound: ((value: Page<InboundDocument>) => void) | undefined;
-    let resolveOldOutbound: ((value: Page<OutboundDocument>) => void) | undefined;
-    const oldInboundPage = new Promise<Page<InboundDocument>>(resolve => {
-      resolveOldInbound = resolve;
-    });
-    const oldOutboundPage = new Promise<Page<OutboundDocument>>(resolve => {
-      resolveOldOutbound = resolve;
-    });
-    const oldDeps = {
-      fetchDocuments: () => oldInboundPage,
-      fetchInboundPending: () => oldInboundPage,
-      fetchOutboundPending: () => oldOutboundPage,
-    };
-    const newPage = {
-      items: [{ id: 'new-1', doc_no: 'NEW-001', status: 'POSTED' }],
-      meta: {},
-      links: {},
-    };
-    const newDeps = {
-      fetchDocuments: async () => newPage,
-      fetchInboundPending: async () => emptyPage,
-      fetchOutboundPending: async () => emptyPage,
-    };
-    const tree = await renderInteractive(<HomeScreen deps={oldDeps} />);
-
-    await ReactTestRenderer.act(async () => {
-      tree.update(<AppProviders><HomeScreen deps={newDeps} /></AppProviders>);
-      await Promise.resolve();
-      await Promise.resolve();
-    });
-    resolveOldInbound?.({
-      items: [{ id: 'old-1', doc_no: 'OLD-001', status: 'POSTED' }],
-      meta: {},
-      links: {},
-    });
-    resolveOldOutbound?.({ items: [], meta: {}, links: {} });
-    await ReactTestRenderer.act(async () => {
-      await Promise.resolve();
-      await Promise.resolve();
-    });
-
-    const text = JSON.stringify(tree.toJSON());
-    expect(text).toContain('NEW-001');
-    expect(text).not.toContain('OLD-001');
-    await ReactTestRenderer.act(async () => {
-      tree.unmount();
-    });
-  });
-
-  it('reload lỗi vẫn giữ chứng từ của lượt tải thành công gần nhất', async () => {
-    const successPage = {
-      items: [{ id: 'saved-1', doc_no: 'SAVED-001', status: 'POSTED' }],
-      meta: {},
-      links: {},
-    };
-    const successfulDeps = {
-      fetchDocuments: async () => successPage,
-      fetchInboundPending: async () => emptyPage,
-      fetchOutboundPending: async () => emptyPage,
-    };
-    const failingDeps = {
-      fetchDocuments: async () => {
-        throw new AppError({ kind: 'network', message: 'mất mạng' });
-      },
-      fetchInboundPending: async () => emptyPage,
-      fetchOutboundPending: async () => emptyPage,
-    };
-    const tree = await renderInteractive(<HomeScreen deps={successfulDeps} />);
-    await ReactTestRenderer.act(async () => {
-      await Promise.resolve();
-      await Promise.resolve();
-    });
-
-    await ReactTestRenderer.act(async () => {
-      tree.update(<AppProviders><HomeScreen deps={failingDeps} /></AppProviders>);
-      await Promise.resolve();
-      await Promise.resolve();
-    });
-
-    const text = JSON.stringify(tree.toJSON());
-    expect(text).toContain('SAVED-001');
-    expect(text).toContain('Không tải được dữ liệu trang chủ');
-    expect(text).not.toContain('Chưa có dữ liệu để hiển thị');
-    await ReactTestRenderer.act(async () => {
-      tree.unmount();
-    });
+    const button = () =>
+      tree.root.find(
+        n =>
+          n.props.accessibilityLabel === 'Bắt đầu ca' &&
+          typeof n.props.onPress === 'function',
+      );
+    await ReactTestRenderer.act(async () => button().props.onPress());
+    expect(start).toHaveBeenCalledTimes(1);
+    expect(button().props.disabled).toBe(true);
+    await ReactTestRenderer.act(async () => button().props.onPress());
+    expect(start).toHaveBeenCalledTimes(1);
+    await ReactTestRenderer.act(async () =>
+      tree.root
+        .find(
+          n =>
+            n.props.accessibilityLabel === 'Kiểm tra lại ca' &&
+            typeof n.props.onPress === 'function',
+        )
+        .props.onPress(),
+    );
+    expect(button().props.disabled).toBe(false);
+    await ReactTestRenderer.act(async () => button().props.onPress());
+    expect(start).toHaveBeenCalledTimes(2);
+    expect(start.mock.calls[1]).toEqual(start.mock.calls[0]);
+    await ReactTestRenderer.act(() => tree.unmount());
   });
 });

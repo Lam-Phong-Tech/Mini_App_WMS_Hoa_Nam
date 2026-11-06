@@ -18,6 +18,10 @@ import {
   resolveWarrantyCode,
   updateWarrantyStatus,
   uploadWarrantyAttachment,
+  uploadOwnerAttachment,
+  reconcileOwnerAttachment,
+  hashAttachmentFile,
+  OWNER_ATTACHMENT_UPLOAD_CONTRACT,
   warrantyAttachmentsPath,
   warrantyStatusPath,
   type WriteClient,
@@ -29,10 +33,7 @@ import {
   usesMultipart,
 } from '../src/api/writeGate';
 import { AppError } from '../src/errors/AppError';
-import {
-  TRANSITION_KEY_PREFIX,
-  transitionIdempotencyKey,
-} from '../src/features/warranty/useWarrantyTransition';
+import { setSession, clearSession } from '../src/auth/session';
 
 interface Sent {
   path: string;
@@ -145,175 +146,18 @@ describe('G — warranty/resolve-code', () => {
 // H — tạo hồ sơ
 // ---------------------------------------------------------------------------
 
-describe('H — tạo hồ sơ bảo hành', () => {
-  const base = {
-    customerName: 'Nguyễn Văn A',
-    customerPhone: '0901234567',
-    customerAddress: 'Số 5, Phường Lê Chân, Hải Phòng',
-    description: 'Máy không lên nguồn',
-    defectIds: ['DEF-006'],
-  };
-
-  it('nhánh CÓ mã gửi item_code', async () => {
-    const { client, sent } = spyClient({ data: {} });
-    await createWarrantyCase(
-      { ...base, itemCode: 'ITEM-1' },
-      'wmshn-k',
-      {},
-      client,
-    );
-    const body = sent[0]?.body as Record<string, unknown>;
-    expect(body.item_code).toBe('ITEM-1');
-    expect(body.customer_name).toBe('Nguyễn Văn A');
-    expect(body.defect_ids).toEqual(['DEF-006']);
-    expect(sent[0]?.headers?.['Idempotency-Key']).toBe('wmshn-k');
-  });
-
-  it('🔴 không chọn lỗi nào thì BỎ HẲN defect_ids, không gửi []', async () => {
-    // Danh mục lỗi trên WMS dev-test đang rỗng (đo 2026-09-06), nên đây là
-    // đường đi thường gặp chứ không phải ca hiếm. Gửi `[]` có thể vướng luật
-    // `min:1` phía máy chủ; vắng mặt thì lọt qua `nullable`. Mini App gốc bỏ
-    // khoá theo đúng cách này — `warranty-flow.service.ts:497`.
-    const { client, sent } = spyClient({ data: {} });
-    await createWarrantyCase(
-      { ...base, defectIds: [], itemCode: 'ITEM-1' },
-      'k',
-      {},
-      client,
-    );
-    const body = sent[0]?.body as Record<string, unknown>;
-    expect('defect_ids' in body).toBe(false);
-  });
-
-  it('nhánh MẤT mã gửi lý do và mô tả thay cho item_code', async () => {
-    const { client, sent } = spyClient({ data: {} });
-    await createWarrantyCase(
-      {
-        ...base,
-        missingCodeReason: 'Tem bong',
-        manualProductDescription: 'Máy khoan cầm tay',
-      },
-      'k',
-      {},
-      client,
-    );
-    const body = sent[0]?.body as Record<string, unknown>;
-    expect(body.item_code).toBeUndefined();
-    expect(body.missing_code_reason).toBe('Tem bong');
-    expect(body.manual_product_description).toBe('Máy khoan cầm tay');
-  });
-
-  it('🐞 nhánh MẤT mã VẪN gửi phụ kiện và tình trạng', async () => {
-    // Lỗi của Mini App: hàm chuẩn hoá payload chỉ giữ hai trường này ở nhánh có
-    // item_code. Hồ sơ tạm là loại hay có tranh chấp nhất — mất thông tin phụ
-    // kiện ở đúng đó là mất nó ở chỗ cần nhất.
-    const { client, sent } = spyClient({ data: {} });
-    await createWarrantyCase(
-      {
-        ...base,
-        missingCodeReason: 'Tem bong',
-        manualProductDescription: 'Máy khoan',
-        accessoriesReceived: 'Sạc, hộp',
-        receivedCondition: 'Xước vỏ',
-      },
-      'k',
-      {},
-      client,
-    );
-    const body = sent[0]?.body as Record<string, unknown>;
-    expect(body.accessories_received).toBe('Sạc, hộp');
-    expect(body.received_condition).toBe('Xước vỏ');
-  });
-
-  it('bỏ hẳn trường tuỳ chọn khi trống', async () => {
-    const { client, sent } = spyClient({ data: {} });
-    await createWarrantyCase({ ...base, itemCode: 'I' }, 'k', {}, client);
-    const keys = Object.keys(sent[0]?.body as object);
-    expect(keys).not.toContain('accessories_received');
-    expect(keys).not.toContain('received_condition');
-  });
-
-  it.each([
-    ['khoá rỗng', { ...base, itemCode: 'I' }, '  '],
-    ['không mã và không mô tả', { ...base }, 'k'],
-    ['thiếu tên khách', { ...base, itemCode: 'I', customerName: ' ' }, 'k'],
-    ['thiếu mô tả', { ...base, itemCode: 'I', description: '' }, 'k'],
-  ])('từ chối %s và KHÔNG gửi gì', async (_label, input, key) => {
-    const { client, sent } = spyClient({ data: {} });
+describe('P09 legacy commands retired', () => {
+  it('blocks legacy create/update even with an injected client', async () => {
+    const client = { request: jest.fn() };
     await expect(
-      createWarrantyCase(input as typeof base, key, {}, client),
-    ).rejects.toMatchObject({ kind: 'config' });
-    expect(sent).toHaveLength(0);
+      createWarrantyCase({} as never, 'old', {}, client),
+    ).rejects.toMatchObject({ code: 'P09_LEGACY_DISABLED' });
+    await expect(
+      updateWarrantyStatus({} as never, 'old', {}, client),
+    ).rejects.toMatchObject({ code: 'P09_LEGACY_DISABLED' });
+    expect(client.request).not.toHaveBeenCalled();
   });
 });
-
-// ---------------------------------------------------------------------------
-// I — chuyển trạng thái
-// ---------------------------------------------------------------------------
-
-describe('I — chuyển trạng thái hồ sơ', () => {
-  it('gửi đủ status, note, confirmed_defect và cả hai header', async () => {
-    const { client, sent } = spyClient({ data: {} });
-    await updateWarrantyStatus(
-      {
-        caseId: 'case-1',
-        status: 'REPAIRING',
-        version: '"4"',
-        note: 'Chuyển sửa chữa',
-        confirmedDefect: 'Rò dầu ở gioăng',
-      },
-      'wmshn-k',
-      {},
-      client,
-    );
-    expect(sent[0]?.path).toBe(warrantyStatusPath('case-1'));
-    expect(sent[0]?.body).toEqual({
-      status: 'REPAIRING',
-      note: 'Chuyển sửa chữa',
-      confirmed_defect: 'Rò dầu ở gioăng',
-    });
-    expect(sent[0]?.headers?.['If-Match']).toBe('4');
-    expect(sent[0]?.headers?.['Idempotency-Key']).toBe('wmshn-k');
-  });
-
-  it('🔒 KHÔNG gửi khi thiếu version', async () => {
-    // Hai người cùng mở một hồ sơ là chuyện thường; ghi đè Kết quả kiểm tra của
-    // nhau thì mất hẳn phần hồ sơ kỹ thuật.
-    const { client, sent } = spyClient({ data: {} });
-    for (const version of [undefined, null, '', '  ']) {
-      await expect(
-        updateWarrantyStatus(
-          { caseId: 'c', status: 'CHECKING', version: version as never },
-          'k',
-          {},
-          client,
-        ),
-      ).rejects.toMatchObject({ kind: 'config' });
-    }
-    expect(sent).toHaveLength(0);
-  });
-
-  it('trường rỗng bị bỏ hẳn, không gửi chuỗi rỗng đè lên ghi chú cũ', async () => {
-    const { client, sent } = spyClient({ data: {} });
-    await updateWarrantyStatus(
-      { caseId: 'c', status: 'CHECKING', version: 1, note: '   ' },
-      'k',
-      {},
-      client,
-    );
-    expect(Object.keys(sent[0]?.body as object)).toEqual(['status']);
-  });
-
-  it('If-Match được phép ở đúng đường này', () => {
-    expect(allowsIfMatch('POST', warrantyStatusPath('c'))).toBe(true);
-    expect(allowsIfMatch('POST', WARRANTY_WRITE_PATHS.cases)).toBe(false);
-    expect(allowsIfMatch('POST', WARRANTY_WRITE_PATHS.resolveCode)).toBe(false);
-  });
-});
-
-// ---------------------------------------------------------------------------
-// J — tải file
-// ---------------------------------------------------------------------------
 
 describe('J — tải file đính kèm', () => {
   const file = { uri: 'file:///a.jpg', name: 'a.jpg', type: 'image/jpeg' };
@@ -330,7 +174,9 @@ describe('J — tải file đính kèm', () => {
     // theo kiểu khó đoán, không phải lỗi rõ ràng.
     expect(usesMultipart('POST', warrantyAttachmentsPath('c'))).toBe(true);
     expect(usesMultipart('POST', WARRANTY_WRITE_PATHS.cases)).toBe(false);
-    expect(usesMultipart('POST', '/api/v1/mini-app/inbound/record')).toBe(false);
+    expect(usesMultipart('POST', '/api/v1/mini-app/inbound/record')).toBe(
+      false,
+    );
   });
 
   it('timeout dài — video tới 300 MB qua mạng kho', async () => {
@@ -367,6 +213,184 @@ describe('J — tải file đính kèm', () => {
       'RETURN',
       'OTHER',
     ]);
+  });
+});
+
+describe('P18 owner upload opt-in', () => {
+  const parent = '11111111-1111-4111-8111-111111111111';
+  const warehouse = '22222222-2222-4222-8222-222222222222';
+  const key = '33333333-3333-4333-8333-333333333333';
+  const actor = '44444444-4444-4444-8444-444444444444';
+  const family = '55555555-5555-4555-8555-555555555555';
+  const attachment = '66666666-6666-4666-8666-666666666666';
+  beforeEach(() =>
+    setSession({
+      accessToken: 'offline-test',
+      userId: actor,
+      authSessionId: family,
+      activeWarehouseId: warehouse,
+    }),
+  );
+  afterEach(clearSession);
+  const file = {
+    uri: 'blob:fixture',
+    name: 'test.jpg',
+    type: 'image/jpeg',
+    blob: new Blob(['abc']),
+  };
+  it('sends exact contract/key/warehouse/hash and requires HTTP 201 receipt', async () => {
+    const sha = await hashAttachmentFile(file);
+    const sent: any[] = [];
+    const client: WriteClient = {
+      request: jest.fn(async (options: any) => {
+        sent.push(options);
+        return {
+          status: 201,
+          data: {
+            success: true,
+            data: { id: attachment },
+            meta: {
+              upload_receipt: {
+                contract: OWNER_ATTACHMENT_UPLOAD_CONTRACT,
+                command: 'UPLOAD',
+                outcome: 'SUCCEEDED',
+                actor_id: actor,
+                auth_session_id: family,
+                parent_type: 'WARRANTY',
+                attachment_id: attachment,
+                http_status: 201,
+                attachment_status_at_completion: 'ACTIVE',
+                attachment_version_at_completion: 1,
+                scan_result: 'UNSCANNED',
+                completed_at: '2026-10-22T01:00:00Z',
+                request_key: key,
+                parent_id: parent,
+                warehouse_id: warehouse,
+                file_sha256: sha,
+              },
+            },
+          },
+        } as any;
+      }),
+    };
+    const result = await uploadOwnerAttachment(
+      'warranty',
+      parent,
+      file,
+      { warehouseId: warehouse, idempotencyKey: key, attachmentType: 'INTAKE' },
+      client,
+    );
+    expect(result).toMatchObject({ requestKey: key, sha256: sha });
+    expect(sent[0]).toMatchObject({ method: 'POST', p18Upload: true });
+    expect(sent[0].headers).toEqual({
+      'X-Upload-Contract': OWNER_ATTACHMENT_UPLOAD_CONTRACT,
+      'Idempotency-Key': key,
+      'X-Upload-Warehouse-ID': warehouse,
+      'X-Upload-SHA256': sha,
+    });
+    expect(sent[0].body).toBeInstanceOf(FormData);
+  });
+  it('never sends warranty note and rejects an invalid owner/mime before network', async () => {
+    const client: WriteClient = { request: jest.fn() };
+    await expect(
+      uploadOwnerAttachment(
+        'warranty',
+        parent,
+        { ...file, type: 'application/pdf' },
+        { warehouseId: warehouse, note: 'not allowed' },
+        client,
+      ),
+    ).rejects.toMatchObject({ code: 'P18_MIME_NOT_ALLOWED' });
+    expect(client.request).not.toHaveBeenCalled();
+  });
+  it('reconciles exact key/hash and preserves UNKNOWN CHECK_ONLY', async () => {
+    const sha = await hashAttachmentFile(file);
+    const get = jest.fn(async (_path: string, _options: any) => ({
+      status: 200,
+      data: {
+        success: true,
+        meta: { contract: OWNER_ATTACHMENT_UPLOAD_CONTRACT },
+        data: {
+          outcome: 'UNKNOWN',
+          request_key: key,
+          parent_type: 'WARRANTY',
+          parent_id: parent,
+          file_sha256: sha,
+          auth_session_id: family,
+          warehouse_id: warehouse,
+          request_state: 'PENDING',
+          receipt: null,
+          current_attachment: null,
+          retry_policy: 'CHECK_ONLY',
+          cancel_supported: false,
+          observed_at: '2026-10-15T00:00:00Z',
+        },
+      },
+      header: () => undefined,
+    }));
+    const result = await reconcileOwnerAttachment(
+      'warranty',
+      parent,
+      key,
+      warehouse,
+      sha,
+      { get } as any,
+    );
+    expect(result.outcome).toBe('UNKNOWN');
+    expect(get).toHaveBeenCalledWith(
+      '/api/v1/mini-app/warranty-cases/' +
+        parent +
+        '/attachments/requests/' +
+        key,
+      { query: { warehouse_id: warehouse, file_sha256: sha } },
+    );
+  });
+  it('rejects changed receipt identity instead of treating HTTP 201 as success', async () => {
+    const sha = await hashAttachmentFile(file);
+    const client: WriteClient = {
+      request: jest.fn(
+        async () =>
+          ({
+            status: 201,
+            data: {
+              success: true,
+              meta: {
+                upload_receipt: {
+                  request_key: key,
+                  parent_id: '44444444-4444-4444-8444-444444444444',
+                  warehouse_id: warehouse,
+                  file_sha256: sha,
+                },
+              },
+            },
+          } as any),
+      ),
+    };
+    await expect(
+      uploadOwnerAttachment(
+        'warranty',
+        parent,
+        file,
+        { warehouseId: warehouse, idempotencyKey: key },
+        client,
+      ),
+    ).rejects.toMatchObject({ code: 'P18_UPLOAD_RECEIPT_INVALID' });
+  });
+  it('treats legacy HTTP 200 without receipt as UNKNOWN, never a successful upload', async () => {
+    const client: WriteClient = {
+      request: jest.fn(
+        async () => ({ status: 200, data: { success: true, data: {} } } as any),
+      ),
+    };
+    await expect(
+      uploadOwnerAttachment(
+        'warranty',
+        parent,
+        file,
+        { warehouseId: warehouse, idempotencyKey: key },
+        client,
+      ),
+    ).rejects.toMatchObject({ code: 'P18_UPLOAD_OUTCOME_UNKNOWN' });
   });
 });
 
@@ -455,39 +479,3 @@ describe('cổng ghi sau §2i — mười thao tác, không hơn', () => {
 // ---------------------------------------------------------------------------
 // Hook chuyển trạng thái
 // ---------------------------------------------------------------------------
-
-describe('useWarrantyTransition — khoá idempotency theo BƯỚC', () => {
-  it('cùng hồ sơ + cùng bước ⇒ cùng khoá', () => {
-    expect(transitionIdempotencyKey('c1', 'CHECKING')).toBe(
-      transitionIdempotencyKey('c1', 'checking'),
-    );
-  });
-
-  it('🔒 bước KHÁC ⇒ khoá KHÁC', () => {
-    // Dùng chung một khoá cho cả vòng đời thì bước thứ hai bị máy chủ coi là
-    // gửi trùng của bước đầu và lặng lẽ không xảy ra.
-    expect(transitionIdempotencyKey('c1', 'CHECKING')).not.toBe(
-      transitionIdempotencyKey('c1', 'REPAIRING'),
-    );
-  });
-
-  it('hồ sơ khác ⇒ khoá khác', () => {
-    expect(transitionIdempotencyKey('c1', 'CHECKING')).not.toBe(
-      transitionIdempotencyKey('c2', 'CHECKING'),
-    );
-  });
-
-  it('không vượt 100 ký tự', () => {
-    expect(transitionIdempotencyKey('x'.repeat(500), 'CHECKING').length).toBe(
-      100,
-    );
-  });
-
-  it('mang tiền tố nhận diện được phía máy chủ', () => {
-    expect(
-      transitionIdempotencyKey('c1', 'CHECKING').startsWith(
-        TRANSITION_KEY_PREFIX,
-      ),
-    ).toBe(true);
-  });
-});

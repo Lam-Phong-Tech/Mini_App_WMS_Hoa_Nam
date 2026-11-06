@@ -1,3 +1,4 @@
+import {HN_UI} from '../../theme/uiKitV3';
 /**
  * Tra cứu sản phẩm/tồn kho — chỉ đọc WMS.
  *
@@ -20,6 +21,7 @@ import { FilterChipRow } from '../../ui/FilterChipRow';
 import { DefinitionRow } from '../../ui/DefinitionRow';
 import { AppIcon } from '../../ui/AppIcon';
 import { useTheme } from '../../theme/ThemeProvider';
+import { formatVietnamDateTime } from '../../time/vietnamTime';
 import { messageForUser, serverAnswered, toAppError, type AppError } from '../../errors/AppError';
 import {
   lookupInventoryByCode,
@@ -35,7 +37,7 @@ const styles = StyleSheet.create({
   resultTitle: { flex: 1 },
   itemHead: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   itemCopy: { flex: 1 },
-  movementRow: { paddingVertical: 8, borderBottomWidth: 1, borderBottomColor: '#dce8ee' },
+  movementRow: { paddingVertical: 8, borderBottomWidth: 1, borderBottomColor: HN_UI.border },
   movementRowLast: { borderBottomWidth: 0 },
 });
 
@@ -432,7 +434,7 @@ export function LookupScreen({
                 <View style={styles.itemCopy}>
                   <Text variant="body" tone="strong">{movementLabel(movement.type)}</Text>
                   <Text variant="caption" tone="muted">
-                    {[movement.documentNo, movement.warehouseName, movement.occurredAt].filter(Boolean).join(' · ') || 'WMS chưa trả chứng từ/thời điểm'}
+                    {[movement.documentNo, movement.warehouseName, movement.occurredAt ? formatVietnamDateTime(movement.occurredAt, { missing: 'Chưa xác minh thời điểm' }) : undefined].filter(Boolean).join(' · ') || 'WMS chưa trả chứng từ/thời điểm'}
                   </Text>
                 </View>
                 <Text variant="body" tone="strong">

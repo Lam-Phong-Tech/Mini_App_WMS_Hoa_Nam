@@ -1,3 +1,4 @@
+import { getSessionGeneration, isTerminalSessionCode, terminateAuthSession } from './session';
 /**
  * Gia hạn phiên ngầm — thủ kho không bao giờ thấy màn đăng nhập giữa ca.
  *
@@ -29,7 +30,11 @@ import { AppError } from '../errors/AppError';
 import { logger } from '../logging/logger';
 import { clearSecureRefreshToken } from './secureRefreshToken';
 import { usesCookieTokenTransport } from './tokenTransport';
-import { recordServerTime, readServerTimestamp, serverNow } from './serverClock';
+import {
+  recordServerTime,
+  readServerTimestamp,
+  serverNow,
+} from './serverClock';
 import {
   clearRefreshInFlight,
   clearSession,
@@ -86,7 +91,7 @@ export function parseRefreshPayload(
 ): RefreshPayload {
   const container =
     typeof payload === 'object' && payload !== null
-      ? ((payload as { data?: unknown }).data ?? payload)
+      ? (payload as { data?: unknown }).data ?? payload
       : payload;
 
   if (typeof container !== 'object' || container === null) {
@@ -145,8 +150,12 @@ export function sessionFromRefresh(
     issuedAtMs,
     expiresAtMs: issuedAtMs + payload.expires_in * 1000,
     userId: previous?.userId,
+    authSessionId: previous?.authSessionId,
+    activeWarehouseId: previous?.activeWarehouseId,
     userName: previous?.userName,
     avatarUrl: previous?.avatarUrl,
+    accountSessionPolicy: previous?.accountSessionPolicy,
+    mustChangePassword: previous?.mustChangePassword,
   };
 }
 
@@ -205,10 +214,11 @@ export function recoverAfterRestart(): RestartRecovery {
     return { outcome: 'clean' };
   }
   clearRefreshInFlight();
+  const clearing = clearSecureRefreshToken();
   clearSession();
   // Không để refresh credential cũ còn nằm trong Keystore sau một lượt refresh
   // không rõ kết quả. Không await: recovery phải quyết định trước render.
-  clearSecureRefreshToken().catch(() => undefined);
+  clearing.catch(() => undefined);
   const reason =
     'App đã tắt giữa lúc đang gia hạn phiên. Không rõ máy chủ đã thu hồi ' +
     'token cũ hay chưa, nên không dùng lại — cần đăng nhập lại một lần.';
@@ -223,6 +233,7 @@ export function recoverAfterRestart(): RestartRecovery {
 // ---------------------------------------------------------------------------
 
 let inFlightRefresh: Promise<Session> | undefined;
+let inFlightGeneration: number | undefined;
 
 /** Số lượt gia hạn thực sự đã gửi. Dùng cho test và chẩn đoán. */
 let refreshAttempts = 0;
@@ -248,19 +259,22 @@ export function isRefreshing(): boolean {
  * cùng lúc thì vẫn chỉ có **một** request đi ra mạng.
  */
 export function refreshSession(deps: RefreshDeps): Promise<Session> {
-  if (inFlightRefresh !== undefined) {
+  const generation = getSessionGeneration();
+  if (inFlightRefresh !== undefined && inFlightGeneration === generation) {
     return inFlightRefresh;
   }
   const promise = performRefresh(deps).finally(() => {
-    inFlightRefresh = undefined;
+    if (inFlightRefresh === promise) inFlightRefresh = undefined;
   });
   inFlightRefresh = promise;
+  inFlightGeneration = generation;
   return promise;
 }
 
 async function performRefresh(deps: RefreshDeps): Promise<Session> {
   const now = deps.now ?? (() => Date.now());
   const current = getSession();
+  const generation = getSessionGeneration();
   const refreshToken = current?.refreshToken;
 
   if (
@@ -282,24 +296,48 @@ async function performRefresh(deps: RefreshDeps): Promise<Session> {
   try {
     raw = await deps.send(refreshToken);
   } catch (error) {
+    if (error instanceof AppError && error.status === 401 && isTerminalSessionCode(error.code)) {
+      await terminateAuthSession(error.code, generation);
+      throw error;
+    }
     // Máy chủ từ chối rõ ràng ⇒ token này chết hẳn, xoá dấu và bỏ phiên.
-    if (error instanceof AppError && error.kind === 'auth') {
+    if (
+      generation === getSessionGeneration() &&
+      error instanceof AppError &&
+      error.kind === 'auth'
+    ) {
       clearRefreshInFlight();
+      const clearing = clearSecureRefreshToken();
       clearSession();
-      await clearSecureRefreshToken();
+      await clearing;
     }
     // Lỗi mạng/timeout: GIỮ dấu. Không biết máy chủ đã thu hồi hay chưa, và
     // `recoverAfterRestart()` sẽ xử lý ở lần mở app sau.
     throw error;
   }
 
+  if (generation !== getSessionGeneration())
+    throw new AppError({
+      kind: 'auth',
+      code: 'STALE_AUTH_RESPONSE',
+      message: 'Phiên đã thay đổi.',
+    });
   recordServerTime(readServerTimestamp(raw), now());
   const payload = parseRefreshPayload(raw);
   const session = sessionFromRefresh(payload, serverNow(now()), current);
   // Android xoay refresh token ở mỗi lượt và persist token mới vào Keystore
   // trước khi xoá dấu in-flight. Web không nhận token này: browser giữ cookie
   // HttpOnly, còn persistSession chỉ ghi access-token/metadata.
-  await persistSession(session);
+  await persistSession(session, generation);
+  if (
+    generation !== getSessionGeneration() &&
+    getSession()?.accessToken !== session.accessToken
+  )
+    throw new AppError({
+      kind: 'auth',
+      code: 'STALE_AUTH_RESPONSE',
+      message: 'Phiên đã thay đổi.',
+    });
   clearRefreshInFlight();
   logger.debug('Đã gia hạn phiên', { expiresInSec: payload.expires_in });
   return session;

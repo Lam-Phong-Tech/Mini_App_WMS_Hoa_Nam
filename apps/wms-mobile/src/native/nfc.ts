@@ -3,11 +3,16 @@
 import { NativeModules } from 'react-native';
 import { AppError } from '../errors/AppError';
 
-export type NfcAvailability = 'available' | 'disabled' | 'unsupported' | 'unavailable';
+export type NfcAvailability =
+  | 'available'
+  | 'disabled'
+  | 'unsupported'
+  | 'unavailable';
 
 export interface NativeNfcTag {
   readonly hardwareUid: string;
   readonly rawCode?: string;
+  readonly hasNdefData?: boolean;
 }
 
 export interface WrittenNfcTag {
@@ -16,10 +21,23 @@ export interface WrittenNfcTag {
 }
 
 interface WmsNfcModule {
+  copyIdentifier(value: string): Promise<void>;
   getStatus(): Promise<{ status: NfcAvailability }>;
   readTag(): Promise<NativeNfcTag>;
   writeNdefText(payload: string): Promise<WrittenNfcTag>;
+  writeNdefTextToTag(
+    payload: string,
+    expectedUid: string,
+    remainingMs: number,
+  ): Promise<WrittenNfcTag>;
   cancel(): void;
+}
+export async function copyNfcIdentifier(value: string): Promise<void> {
+  try {
+    await module().copyIdentifier(value);
+  } catch (error) {
+    rethrowNative(error);
+  }
 }
 
 function module(): WmsNfcModule {
@@ -40,7 +58,10 @@ function rethrowNative(error: unknown): never {
   throw new AppError({
     kind: 'unknown',
     code: typeof value?.code === 'string' ? value.code : undefined,
-    message: typeof value?.message === 'string' ? value.message : 'Không thể dùng NFC trên thiết bị này.',
+    message:
+      typeof value?.message === 'string'
+        ? value.message
+        : 'Không thể dùng NFC trên thiết bị này.',
     cause: error,
   });
 }
@@ -61,9 +82,39 @@ export async function readNfcTag(): Promise<NativeNfcTag> {
   }
 }
 
+/** Check before reservation/WRITING, not after a known unsupported write. */
+export async function assertNfcAssignmentWritable(): Promise<void> {
+  if (typeof module().writeNdefTextToTag !== 'function')
+    throw new AppError({
+      kind: 'config',
+      code: 'NFC_MODULE_UNAVAILABLE',
+      message: 'Cần cập nhật APK có kiểm tra UID trước ghi.',
+    });
+}
+
 export async function writeNfcText(payload: string): Promise<WrittenNfcTag> {
   try {
     return await module().writeNdefText(payload);
+  } catch (error) {
+    return rethrowNative(error);
+  }
+}
+
+export async function writeNfcTextToTag(
+  payload: string,
+  expectedUid: string,
+  remainingMs: number,
+): Promise<WrittenNfcTag> {
+  try {
+    const native = module();
+    if (typeof native.writeNdefTextToTag !== 'function') {
+      throw new AppError({
+        kind: 'config',
+        code: 'NFC_MODULE_UNAVAILABLE',
+        message: 'Cần cập nhật APK có kiểm tra UID trước ghi.',
+      });
+    }
+    return await native.writeNdefTextToTag(payload, expectedUid, remainingMs);
   } catch (error) {
     return rethrowNative(error);
   }

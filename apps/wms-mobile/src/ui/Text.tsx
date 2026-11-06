@@ -6,6 +6,7 @@
 import React from 'react';
 import {
   Text as RNText,
+  StyleSheet,
   type StyleProp,
   type TextProps as RNTextProps,
   type TextStyle,
@@ -42,6 +43,13 @@ export function Text({
 }: TextProps): React.ReactElement {
   const theme = useTheme();
   const scale = theme.typography[variant];
+  // An undefined platform override means inherit the registered app family.
+  // Keep explicit board font families (including Web Arial) authoritative.
+  const requestedFamily = StyleSheet.flatten(style)?.fontFamily;
+  const fontFamily = !requestedFamily || ['Arial','Arimo','Public Sans'].includes(requestedFamily)
+    ? theme.typography.fontFamily : requestedFamily;
+  const explicitWeight=StyleSheet.flatten(style)?.fontWeight;
+  const fontWeight=fontFamily==='Arimo'&&(explicitWeight==='600'||explicitWeight===600)?'700':undefined;
 
   const toneColor: Record<TextTone, string> = {
     default: theme.colors.text,
@@ -65,6 +73,8 @@ export function Text({
           color: toneColor[tone],
         },
         style,
+        fontFamily ? { fontFamily } : undefined,
+        fontWeight ? {fontWeight} : undefined,
       ]}
     />
   );

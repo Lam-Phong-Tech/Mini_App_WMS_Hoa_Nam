@@ -14,9 +14,15 @@
 
 import React from 'react';
 import ReactTestRenderer from 'react-test-renderer';
+import { ScrollView } from 'react-native';
 
 import { ApprovalsScreen } from '../src/features/approvals/ApprovalsScreen';
-import { HistoryScreen } from '../src/features/history/HistoryScreen';
+import {
+  HistoryScreen,
+  clearHistoryCacheForTesting,
+  createHistoryCacheScope,
+  loadHistory,
+} from '../src/features/history/HistoryScreen';
 import {
   LookupScreen,
   MESSAGE_NO_DESCRIPTION,
@@ -42,6 +48,7 @@ import {
 
 beforeEach(() => {
   setAppStorageForTesting(createStorage(createMemoryBackend()));
+  clearHistoryCacheForTesting();
 });
 
 /**
@@ -77,11 +84,15 @@ async function render(element: React.ReactElement) {
     // tránh state update trễ bị coi là cập nhật ngoài `act`.
     await Promise.resolve();
   });
+  const renderer = tree as ReactTestRenderer.ReactTestRenderer;
   return {
-    text: collectText(tree?.toJSON()).join(' | '),
+    get text() {
+      return collectText(renderer.toJSON()).join(' | ');
+    },
+    root: renderer.root,
     unmount: async () => {
       await ReactTestRenderer.act(() => {
-        tree?.unmount();
+        renderer.unmount();
       });
     },
   };
@@ -147,7 +158,9 @@ describe('🔧 V-02 — màn Duyệt phiếu TỰ NẠP, không đợi bấm Đ�
     const view = await render(
       <ApprovalsScreen
         fetchInbound={async () => ({ items: [{ id: 'in-1' }] })}
-        fetchOutbound={async () => ({ items: [{ id: 'out-1' }, { id: 'out-2' }] })}
+        fetchOutbound={async () => ({
+          items: [{ id: 'out-1' }, { id: 'out-2' }],
+        })}
       />,
     );
     expect(view.text).toContain('3 phiếu chờ duyệt');
@@ -160,15 +173,17 @@ describe('🔧 V-02 — màn Duyệt phiếu TỰ NẠP, không đợi bấm Đ�
     const view = await render(
       <ApprovalsScreen
         fetchInbound={async () => ({
-          items: [{
-            id: 'submitted-time',
-            doc_no: 'PN-GUI-DUNG-GIO',
-            // Hai trường này cố ý khác để bắt lỗi đổi thứ tự fallback.
-            doc_date: '2020-01-02',
-            updated_at: '2030-12-31T23:59:00+07:00',
-            submitted_at: '2026-09-08T11:35:00+07:00',
-            created_at: '2026-09-08T11:30:00+07:00',
-          }],
+          items: [
+            {
+              id: 'submitted-time',
+              doc_no: 'PN-GUI-DUNG-GIO',
+              // Hai trường này cố ý khác để bắt lỗi đổi thứ tự fallback.
+              doc_date: '2020-01-02',
+              updated_at: '2030-12-31T23:59:00+07:00',
+              submitted_at: '2026-09-08T11:35:00+07:00',
+              created_at: '2026-09-08T11:30:00+07:00',
+            },
+          ],
           meta: {},
         })}
         fetchOutbound={async () => emptyPage}
@@ -284,6 +299,224 @@ describe('Lịch sử chứng từ (ảnh 38)', () => {
     expect(view.text).toContain('Hoàn tất');
     expect(view.text).toContain('Không xử lý được lịch sử');
     expect(view.text).toContain('Nhập: Có lỗi xảy ra. Vui lòng thử lại.');
+    expect(view.text).toContain('Thử lại');
+    await view.unmount();
+  });
+
+  it('P02 danh sách truyền context kho và bộ lọc readiness đúng API khi mở từ KPI', async () => {
+    const inbound = jest.fn(
+      async (options?: { query?: Record<string, unknown> }) => {
+        expect(options?.query).toEqual({
+          warehouse_id: '11111111-1111-4111-8111-111111111111',
+          status: 'WAITING_APPROVAL',
+          per_page: 50,
+        });
+        return emptyPage;
+      },
+    );
+    const outbound = jest.fn(
+      async (options?: { query?: Record<string, unknown> }) => {
+        expect(options?.query).toEqual({
+          warehouse_id: '11111111-1111-4111-8111-111111111111',
+          ready_for_issue: 1,
+          per_page: 50,
+        });
+        return emptyPage;
+      },
+    );
+    await loadHistory(inbound, outbound, {
+      useCache: false,
+      warehouseId: '11111111-1111-4111-8111-111111111111',
+      pendingOnly: true,
+    });
+    expect(inbound).toHaveBeenCalledTimes(1);
+    expect(outbound).toHaveBeenCalledTimes(1);
+  });
+
+  it('giữ hai hàng riêng khi inbound và outbound tình cờ dùng cùng ID', async () => {
+    const view = await render(
+      <HistoryScreen
+        fetchInbound={async () => ({
+          items: [{ id: 'same-id', doc_no: 'PN-CÙNG-ID' }],
+          meta: {},
+        })}
+        fetchOutbound={async () => ({
+          items: [{ id: 'same-id', doc_no: 'PX-CÙNG-ID' }],
+          meta: {},
+        })}
+      />,
+    );
+    expect(view.text).toContain('PN-CÙNG-ID');
+    expect(view.text).toContain('PX-CÙNG-ID');
+    await view.unmount();
+  });
+
+  it('đổi account hoặc tier buộc tải snapshot mới thay vì dùng cache cũ', async () => {
+    const inboundCalls: string[] = [];
+    const outboundCalls: string[] = [];
+    const inbound = async () => {
+      inboundCalls.push('inbound');
+      return { items: [{ id: 'in-' + String(inboundCalls.length) }], meta: {} };
+    };
+    const outbound = async () => {
+      outboundCalls.push('outbound');
+      return {
+        items: [{ id: 'out-' + String(outboundCalls.length) }],
+        meta: {},
+      };
+    };
+    const scopeA = createHistoryCacheScope('user-a', 'dev-test');
+    const scopeB = createHistoryCacheScope('user-b', 'dev-test');
+    const tierChanged = createHistoryCacheScope('user-b', 'production');
+
+    await loadHistory(inbound, outbound, {
+      useCache: true,
+      cacheScope: scopeA,
+    });
+    await loadHistory(inbound, outbound, {
+      useCache: true,
+      cacheScope: scopeA,
+    });
+    expect(inboundCalls).toHaveLength(1);
+    expect(outboundCalls).toHaveLength(1);
+
+    await loadHistory(inbound, outbound, {
+      useCache: true,
+      cacheScope: scopeB,
+    });
+    await loadHistory(inbound, outbound, {
+      useCache: true,
+      cacheScope: tierChanged,
+    });
+    expect(inboundCalls).toHaveLength(3);
+    expect(outboundCalls).toHaveLength(3);
+  });
+
+  it('refresh lỗi giữ snapshot cũ của nguồn hỏng, đồng thời cập nhật nguồn còn lại', async () => {
+    let failInbound = false;
+    const view = await render(
+      <HistoryScreen
+        cacheScope={createHistoryCacheScope('user-a', 'dev-test')}
+        fetchInbound={async () => {
+          if (failInbound)
+            throw new AppError({ kind: 'network', message: 'mất mạng' });
+          return { items: [{ id: 'in-keep', doc_no: 'PN-GIỮ-LẠI' }], meta: {} };
+        }}
+        fetchOutbound={async () => ({
+          items: [{ id: 'out-next', doc_no: failInbound ? 'PX-MỚI' : 'PX-CŨ' }],
+          meta: {},
+        })}
+      />,
+    );
+    expect(view.text).toContain('PN-GIỮ-LẠI');
+    expect(view.text).toContain('PX-CŨ');
+
+    failInbound = true;
+    const refresh = view.root.findByProps({
+      accessibilityLabel: 'Đồng bộ WMS',
+    });
+    await ReactTestRenderer.act(async () => {
+      refresh.props.onPress();
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+    expect(view.text).toContain('PN-GIỮ-LẠI');
+    expect(view.text).toContain('PX-MỚI');
+    expect(view.text).toContain('Không xử lý được lịch sử');
+    await view.unmount();
+  });
+
+  it('empty do tìm/lọc có CTA xóa bộ lọc, không giả là chưa có lịch sử', async () => {
+    const view = await render(
+      <HistoryScreen
+        fetchInbound={async () => ({
+          items: [{ id: 'i1', doc_no: 'PN-CÓ-DỮ-LIỆU' }],
+          meta: {},
+        })}
+        fetchOutbound={async () => emptyPage}
+      />,
+    );
+    const search = view.root.findByProps({
+      accessibilityLabel: 'Tìm kiếm phiếu',
+    });
+    await ReactTestRenderer.act(async () => {
+      search.props.onChangeText('không khớp');
+    });
+    expect(view.text).toContain('Không tìm thấy phiếu phù hợp');
+    expect(view.text).toContain('Xóa bộ lọc');
+    expect(view.text).not.toContain('Xóa lịch sử cục bộ');
+
+    const clear = view.root.findByProps({ accessibilityLabel: 'Xóa bộ lọc' });
+    await ReactTestRenderer.act(async () => {
+      clear.props.onPress();
+    });
+    expect(view.text).toContain('PN-CÓ-DỮ-LIỆU');
+    await view.unmount();
+  });
+
+  it('mở chi tiết công bố lại filter và vị trí cuộn để Back khôi phục đúng danh sách', async () => {
+    const saved: unknown[] = [];
+    const opened: unknown[] = [];
+    const view = await render(
+      <HistoryScreen
+        viewState={{
+          keyword: 'PN',
+          contextFilter: 'inbound',
+          statusFilter: 'all',
+          scrollY: 72,
+        }}
+        onViewStateChange={state => saved.push(state)}
+        onOpen={row => opened.push(row)}
+        fetchInbound={async () => ({
+          items: [{ id: 'in-1', doc_no: 'PN-QUAY-LẠI' }],
+          meta: {},
+        })}
+        fetchOutbound={async () => ({
+          items: [{ id: 'out-1', doc_no: 'PX-KHÔNG-HIỆN' }],
+          meta: {},
+        })}
+      />,
+    );
+    const pageScroll = view.root
+      .findAllByType(ScrollView)
+      .find(
+        node =>
+          node.props.horizontal !== true &&
+          typeof node.props.onScroll === 'function',
+      );
+    expect(pageScroll).toBeDefined();
+    expect(pageScroll?.props.showsVerticalScrollIndicator).toBe(true);
+    expect(pageScroll?.props.persistentScrollbar).toBe(true);
+    expect(typeof pageScroll?.props.onContentSizeChange).toBe('function');
+    await ReactTestRenderer.act(async () => {
+      // Android có thể phát y=0 khi lần scrollTo đầu chạy trước lúc dữ liệu
+      // làm nội dung đủ cao. Giá trị tạm này không được ghi đè Back state.
+      pageScroll?.props.onScroll({ nativeEvent: { contentOffset: { y: 0 } } });
+      pageScroll?.props.onContentSizeChange(400, 1600);
+      pageScroll?.props.onScroll({ nativeEvent: { contentOffset: { y: 72 } } });
+      pageScroll?.props.onScroll({
+        nativeEvent: { contentOffset: { y: 248 } },
+      });
+    });
+    expect(saved).not.toContainEqual({
+      keyword: 'PN',
+      contextFilter: 'inbound',
+      statusFilter: 'all',
+      scrollY: 0,
+    });
+    const row = view.root.findByProps({
+      accessibilityLabel: 'Xem chi tiết phiếu PN-QUAY-LẠI',
+    });
+    await ReactTestRenderer.act(async () => {
+      row.props.onPress();
+    });
+    expect(opened).toHaveLength(1);
+    expect(saved).toContainEqual({
+      keyword: 'PN',
+      contextFilter: 'inbound',
+      statusFilter: 'all',
+      scrollY: 248,
+    });
     await view.unmount();
   });
 });

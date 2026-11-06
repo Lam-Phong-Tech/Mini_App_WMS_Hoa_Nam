@@ -20,7 +20,10 @@ import { ManualCodeScreen } from '../src/features/scan/ManualCodeScreen';
 
 // `types: ["jest"]` không kéo theo kiểu Node, mà test cuối đọc mã nguồn thật.
 declare const __dirname: string;
-import type { InboundDocument, OutboundDocument } from '../src/services/wms/types';
+import type {
+  InboundDocument,
+  OutboundDocument,
+} from '../src/services/wms/types';
 
 const INBOUND: InboundDocument = {
   id: 'in-1',
@@ -83,7 +86,7 @@ describe('phiếu NHẬP — ảnh 21, 22', () => {
     );
     expect(view.text).toContain('PN-COV-P00060');
     expect(view.text).toContain('PHIẾU NHẬP');
-    expect(view.text).toContain('Chờ duyệt');
+    expect(view.text).toContain('Chờ xử lý trên Web');
     expect(view.text).toContain('8/8');
     await view.unmount();
   });
@@ -172,7 +175,12 @@ describe('phiếu XUẤT — ảnh 31, 32, 33', () => {
 
 describe('danh sách mã đã quét', () => {
   const entries = [
-    { id: 'e1', item_unique: 'DCST20152-001', sku_name: 'Ống PVC', scanned_at: '07:41' },
+    {
+      id: 'e1',
+      item_unique: 'DCST20152-001',
+      sku_name: 'Ống PVC',
+      scanned_at: '07:41',
+    },
     { id: 'e2', serial_number: 'SN-002', sku_code: 'PVC-90' },
   ];
 
@@ -231,12 +239,112 @@ describe('danh sách mã đã quét', () => {
         detail={detailState({
           phase: 'error',
           document: undefined,
-          error: new AppError({ kind: 'http', status: 404, message: 'Không thấy' }),
+          error: new AppError({
+            kind: 'http',
+            status: 404,
+            message: 'Không thấy',
+          }),
         })}
       />,
     );
     expect(view.text).toContain('Không tải được phiếu');
     await view.unmount();
+  });
+});
+
+describe('P05 manual-create detail projection', () => {
+  const p05: OutboundDocument = {
+    id: '78634041-b2d4-4686-9ad4-a7d83d3c07b0',
+    doc_no: 'PX-20261011110258-LV24OU',
+    status: 'SCANNING',
+    required_total_qty: 1,
+    scanned_total_qty: 1,
+    recipient_name: 'Đại lý Hoa Nam Hà Nội',
+    recipient_phone_snapshot: null,
+    recipient_address_snapshot: null,
+    recipient_contact_phone: '0911111111',
+    recipient_address: '218 Dien Bien Phu, Phường Ba Đình, Thành phố Hà Nội',
+  };
+  it('uses observed P05 totals/TEXT fields, preserves scanned entries and reports waiting Web without claiming Post', async () => {
+    const before = JSON.stringify(p05);
+    const view = await render(
+      <DocumentDetailScreen
+        kind="outbound"
+        documentId={p05.id}
+        detail={detailState({
+          document: p05,
+          entries: [{ raw_code: 'SN-PN-COV-P00062-004' }],
+        })}
+      />,
+    );
+    for (const text of [
+      '1/1 mã đã quét',
+      '0911111111',
+      '218 Dien Bien Phu',
+      'SN-PN-COV-P00062-004',
+      'Chờ xử lý trên Web',
+      'Chưa ghi sổ',
+    ])
+      expect(view.text).toContain(text);
+    expect(view.text).not.toContain('1/0 mã đã quét');
+    expect(view.text).not.toContain('Phiếu xuất đang chờ duyệt');
+    expect(JSON.stringify(p05)).toBe(before);
+    await view.unmount();
+  });
+  it('keeps historical snapshot values instead of replacing them with current contact fields', async () => {
+    const view = await render(
+      <DocumentDetailScreen
+        kind="outbound"
+        documentId={p05.id}
+        detail={detailState({
+          document: {
+            ...p05,
+            recipient_phone_snapshot: '0901234567',
+            recipient_address_snapshot: 'Địa chỉ snapshot',
+          },
+        })}
+      />,
+    );
+    expect(view.text).toContain('0901234567');
+    expect(view.text).toContain('Địa chỉ snapshot');
+    expect(view.text).not.toContain('0911111111');
+    expect(view.text).not.toContain('218 Dien Bien Phu');
+    await view.unmount();
+  });
+  it.each([undefined, -1, NaN])(
+    'missing or invalid authoritative plan %p is unknown rather than fabricated zero',
+    async required => {
+      const view = await render(
+        <DocumentDetailScreen
+          kind="outbound"
+          documentId={p05.id}
+          detail={detailState({
+            document: { ...p05, required_total_qty: required },
+          })}
+        />,
+      );
+      expect(view.text).toContain('Số lượng chưa xác minh');
+      expect(view.text).not.toContain('1/0 mã đã quét');
+      await view.unmount();
+    },
+  );
+  it('retains legacy expected totals and authoritative totals beyond the new-entry limit', async () => {
+    for (const document of [
+      OUTBOUND,
+      { ...p05, required_total_qty: 100, scanned_total_qty: 100 },
+    ]) {
+      const view = await render(
+        <DocumentDetailScreen
+          kind="outbound"
+          documentId={document.id}
+          detail={detailState({ document })}
+        />,
+      );
+      expect(view.text).toContain(
+        document === OUTBOUND ? '2/2 mã đã quét' : '100/100 mã đã quét',
+      );
+      await view.unmount();
+    }
   });
 });
 
@@ -304,7 +412,10 @@ describe('🔴 màn Duyệt phải mở được chi tiết', () => {
 describe('ảnh 15 — nhập mã thủ công màn riêng', () => {
   it('có ô Ghi chú — đó là điểm khác bản modal ảnh 14', async () => {
     const view = await render(
-      <ManualCodeScreen onCancel={() => undefined} onSubmit={() => undefined} />,
+      <ManualCodeScreen
+        onCancel={() => undefined}
+        onSubmit={() => undefined}
+      />,
     );
     expect(view.text).toContain('Mã QR/Barcode*');
     expect(view.text).toContain('Ghi chú');
@@ -313,7 +424,10 @@ describe('ảnh 15 — nhập mã thủ công màn riêng', () => {
 
   it('hai nút đúng ảnh: Huỷ / Xác nhận', async () => {
     const view = await render(
-      <ManualCodeScreen onCancel={() => undefined} onSubmit={() => undefined} />,
+      <ManualCodeScreen
+        onCancel={() => undefined}
+        onSubmit={() => undefined}
+      />,
     );
     expect(view.text).toContain('Huỷ');
     expect(view.text).toContain('Xác nhận');

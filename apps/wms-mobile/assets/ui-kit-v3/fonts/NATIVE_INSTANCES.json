@@ -1,0 +1,78 @@
+{
+  "tool": "fontTools.varLib.instancer",
+  "reason": "Static weights from exact official variable source retain Android font-resource compatibility",
+  "fonts": [
+    {
+      "file": "inter_regular.ttf",
+      "weight": 400,
+      "italic": false,
+      "source": "Inter-Variable.ttf",
+      "sourceSha256": "29160a80ff49ddcab2c97711247e08b1fab27a484a329ce8b813d820dc559031",
+      "sha256": "146757dd1f59dc83bcc2be852c561d8bdd6f0dc7d9f1067cfd71b5d88cb42c65",
+      "opsz": 14
+    },
+    {
+      "file": "inter_medium.ttf",
+      "weight": 500,
+      "italic": false,
+      "source": "Inter-Variable.ttf",
+      "sourceSha256": "29160a80ff49ddcab2c97711247e08b1fab27a484a329ce8b813d820dc559031",
+      "sha256": "38d174410a9ac957491e7912c10d4eb3c110935379b542e364a94be900def9d2",
+      "opsz": 14
+    },
+    {
+      "file": "inter_semibold.ttf",
+      "weight": 600,
+      "italic": false,
+      "source": "Inter-Variable.ttf",
+      "sourceSha256": "29160a80ff49ddcab2c97711247e08b1fab27a484a329ce8b813d820dc559031",
+      "sha256": "d0ed3fb630e076846120cb9529f27cdc195bf8d22a0478c840a8fc906c4e5e1d",
+      "opsz": 14
+    },
+    {
+      "file": "inter_bold.ttf",
+      "weight": 700,
+      "italic": false,
+      "source": "Inter-Variable.ttf",
+      "sourceSha256": "29160a80ff49ddcab2c97711247e08b1fab27a484a329ce8b813d820dc559031",
+      "sha256": "a918eef202ce683ff8dac0667b241cf12c9238bdfbed7ecf87ec61a6d33e2266",
+      "opsz": 14
+    },
+    {
+      "file": "inter_regular_italic.ttf",
+      "weight": 400,
+      "italic": true,
+      "source": "Inter-Italic-Variable.ttf",
+      "sourceSha256": "acd98e64795781b2058f07b18475e0ecee2a0fe2b42a49e2f9e37d0d6bf66ce6",
+      "sha256": "8e73b487ca79b4419c3c6edec246bc68ad98dfe0315e71c21d41db47b503938b",
+      "opsz": 14
+    },
+    {
+      "file": "inter_medium_italic.ttf",
+      "weight": 500,
+      "italic": true,
+      "source": "Inter-Italic-Variable.ttf",
+      "sourceSha256": "acd98e64795781b2058f07b18475e0ecee2a0fe2b42a49e2f9e37d0d6bf66ce6",
+      "sha256": "72337f3968b9a14425899de2aed606f4bfdbb797e91c7a469796d70996d323dc",
+      "opsz": 14
+    },
+    {
+      "file": "inter_semibold_italic.ttf",
+      "weight": 600,
+      "italic": true,
+      "source": "Inter-Italic-Variable.ttf",
+      "sourceSha256": "acd98e64795781b2058f07b18475e0ecee2a0fe2b42a49e2f9e37d0d6bf66ce6",
+      "sha256": "3ae403432c68ada244700ed7a0e8ef15deafbc25feb6a80ce4eec5094f200ec5",
+      "opsz": 14
+    },
+    {
+      "file": "inter_bold_italic.ttf",
+      "weight": 700,
+      "italic": true,
+      "source": "Inter-Italic-Variable.ttf",
+      "sourceSha256": "acd98e64795781b2058f07b18475e0ecee2a0fe2b42a49e2f9e37d0d6bf66ce6",
+      "sha256": "d22573b5dc12027a985a37dfcd34ab8201322bd619237fffd137984d72da8312",
+      "opsz": 14
+    }
+  ]
+}

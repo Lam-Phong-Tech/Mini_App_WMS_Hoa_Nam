@@ -11,19 +11,36 @@ import {
   prepareNfcAssignment,
   resolveNfcCode,
   resolveNfcTag,
+  getNfcConfirmation,
+  releaseNfcReservation,
+  nfcConfirmationPath,
+  nfcReleasePath,
   type WriteClient,
 } from '../src/services/wms/nfc';
 import { allowsIdempotencyKey, approvedWriteFor } from '../src/api/writeGate';
 
-interface Sent { path: string; method?: string; body?: unknown; headers?: Record<string, string>; }
+interface Sent {
+  path: string;
+  method?: string;
+  body?: unknown;
+  headers?: Record<string, string>;
+}
 
-function spyClient(response: unknown = { data: {} }): { client: WriteClient; sent: Sent[] } {
+function spyClient(response: unknown = { data: {} }): {
+  client: WriteClient;
+  sent: Sent[];
+} {
   const sent: Sent[] = [];
   return {
     sent,
     client: {
       async request<T>(options: Parameters<WriteClient['request']>[0]) {
-        sent.push({ path: options.path, method: options.method, body: options.body, headers: options.headers });
+        sent.push({
+          path: options.path,
+          method: options.method,
+          body: options.body,
+          headers: options.headers,
+        });
         return { status: 200, data: response as T };
       },
     },
@@ -31,34 +48,115 @@ function spyClient(response: unknown = { data: {} }): { client: WriteClient; sen
 }
 
 describe('GATE_WMS §2j — luồng NFC', () => {
+  it('P07 reconciles GET with SAME key and no body, only this read can use Idempotency-Key', async () => {
+    const { client, sent } = spyClient({
+      data: { state: 'UNKNOWN', may_create_new_request: false },
+    });
+    await getNfcConfirmation(
+      'item-1',
+      'original-key',
+      { warehouseId: 'warehouse-1' },
+      client,
+    );
+    expect(sent[0]).toEqual({
+      path: nfcConfirmationPath('item-1'),
+      method: 'GET',
+      body: undefined,
+      headers: {
+        'Idempotency-Key': 'original-key',
+        'X-NFC-Recovery-Contract': 'nfc-confirm-recovery-v1',
+      },
+    });
+    expect(allowsIdempotencyKey('GET', nfcConfirmationPath('item-1'))).toBe(
+      true,
+    );
+    expect(allowsIdempotencyKey('GET', NFC_PATHS.tags)).toBe(false);
+    expect(allowsIdempotencyKey('POST', nfcConfirmationPath('item-1'))).toBe(
+      false,
+    );
+    expect(
+      allowsIdempotencyKey('GET', '/api/v1/mini-app/items/../nfc/confirmation'),
+    ).toBe(false);
+  });
+
+  it('P07 release is the narrow reservation-only write', async () => {
+    const { client, sent } = spyClient({
+      data: { released: true, stock_effect: 'NONE', mapping_removed: false },
+    });
+    await releaseNfcReservation('item-1', 'original-hold', {}, client);
+    expect(sent[0]).toMatchObject({
+      path: nfcReleasePath('item-1'),
+      method: 'POST',
+      body: { reservation_token: 'original-hold' },
+    });
+    expect(approvedWriteFor('POST', nfcReleasePath('item-1'))).toBe(
+      'nfc.release',
+    );
+    expect(allowsIdempotencyKey('POST', nfcReleasePath('item-1'))).toBe(false);
+  });
   it('chỉ mở đúng 5 cặp method + path NFC', () => {
-    expect(approvedWriteFor('POST', NFC_PATHS.resolveCode)).toBe('nfc.resolveCode');
-    expect(approvedWriteFor('POST', nfcPreparePath('item-1'))).toBe('nfc.prepare');
-    expect(approvedWriteFor('PATCH', nfcConfirmPath('item-1'))).toBe('nfc.confirm');
-    expect(approvedWriteFor('POST', NFC_PATHS.resolveTag)).toBe('nfc.resolveTag');
-    expect(approvedWriteFor('POST', nfcDeactivatePath('code-1'))).toBe('nfc.deactivate');
+    expect(approvedWriteFor('POST', NFC_PATHS.resolveCode)).toBe(
+      'nfc.resolveCode',
+    );
+    expect(approvedWriteFor('POST', nfcPreparePath('item-1'))).toBe(
+      'nfc.prepare',
+    );
+    expect(approvedWriteFor('PATCH', nfcConfirmPath('item-1'))).toBe(
+      'nfc.confirm',
+    );
+    expect(approvedWriteFor('POST', NFC_PATHS.resolveTag)).toBe(
+      'nfc.resolveTag',
+    );
+    expect(approvedWriteFor('POST', nfcDeactivatePath('code-1'))).toBe(
+      'nfc.deactivate',
+    );
     expect(approvedWriteFor('POST', nfcConfirmPath('item-1'))).toBeUndefined();
     expect(approvedWriteFor('PATCH', '/api/v1/physical-codes')).toBeUndefined();
   });
 
   it('resolve QR và prepare giữ đúng body, không có header chống trùng', async () => {
-    const { client, sent } = spyClient({ data: { assignable: true, item: { id: 'item-1' } } });
+    const { client, sent } = spyClient({
+      data: { assignable: true, item: { id: 'item-1' } },
+    });
     await resolveNfcCode('QR-01', {}, client);
     await prepareNfcAssignment('item-1', {}, client);
     expect(sent).toEqual([
-      { path: NFC_PATHS.resolveCode, method: 'POST', body: { raw_code: 'QR-01' }, headers: undefined },
-      { path: nfcPreparePath('item-1'), method: 'POST', body: {}, headers: undefined },
+      {
+        path: NFC_PATHS.resolveCode,
+        method: 'POST',
+        body: { raw_code: 'QR-01' },
+        headers: undefined,
+      },
+      {
+        path: nfcPreparePath('item-1'),
+        method: 'POST',
+        body: {},
+        headers: undefined,
+      },
     ]);
   });
 
   it('chỉ confirm sau write-readback ở tầng UI; service gửi đúng UID, payload, reservation và key', async () => {
     const { client, sent } = spyClient({ data: { nfc_status: 'ASSIGNED' } });
-    await confirmNfcAssignment('item-1', {
-      hardwareUid: '04A1B2C3', writtenPayload: 'HN1:ITEM:item-1', reservationToken: 'reserve-123', idempotencyKey: 'nfc-item1-04A1B2C3-x',
-    }, {}, client);
+    await confirmNfcAssignment(
+      'item-1',
+      {
+        hardwareUid: '04A1B2C3',
+        writtenPayload: 'HN1:ITEM:item-1',
+        reservationToken: 'reserve-123',
+        idempotencyKey: 'nfc-item1-04A1B2C3-x',
+      },
+      {},
+      client,
+    );
     expect(sent[0]).toEqual({
-      path: nfcConfirmPath('item-1'), method: 'PATCH',
-      body: { hardware_uid: '04A1B2C3', written_payload: 'HN1:ITEM:item-1', reservation_token: 'reserve-123' },
+      path: nfcConfirmPath('item-1'),
+      method: 'PATCH',
+      body: {
+        hardware_uid: '04A1B2C3',
+        written_payload: 'HN1:ITEM:item-1',
+        reservation_token: 'reserve-123',
+      },
       headers: { 'Idempotency-Key': 'nfc-item1-04A1B2C3-x' },
     });
     expect(allowsIdempotencyKey('PATCH', nfcConfirmPath('item-1'))).toBe(true);
@@ -67,7 +165,11 @@ describe('GATE_WMS §2j — luồng NFC', () => {
 
   it('tra cứu NFC là POST read-like và ưu tiên UID thay vì payload có thể bị sao chép', async () => {
     const { client, sent } = spyClient({ data: { resolve_code: 'RESOLVED' } });
-    await resolveNfcTag({ hardwareUid: '04010203', rawCode: 'HN1:ITEM:1' }, {}, client);
+    await resolveNfcTag(
+      { hardwareUid: '04010203', rawCode: 'HN1:ITEM:1' },
+      {},
+      client,
+    );
     await resolveNfcTag({ rawCode: 'HN1:ITEM:1' }, {}, client);
     expect(sent[0]?.body).toEqual({ hardware_uid: '04010203' });
     expect(sent[1]?.body).toEqual({ raw_code: 'HN1:ITEM:1' });
@@ -75,17 +177,34 @@ describe('GATE_WMS §2j — luồng NFC', () => {
 
   it('thu hồi chip yêu cầu trạng thái và lý do, không có DELETE', async () => {
     const { client, sent } = spyClient({ data: { status: 'LOST' } });
-    await deactivateNfcTag('physical-7', { status: 'LOST', reason: 'Mất thẻ khi giao hàng' }, {}, client);
-    expect(sent[0]).toMatchObject({ path: nfcDeactivatePath('physical-7'), method: 'POST', body: { status: 'LOST', reason: 'Mất thẻ khi giao hàng' } });
+    await deactivateNfcTag(
+      'physical-7',
+      { status: 'LOST', reason: 'Mất thẻ khi giao hàng' },
+      {},
+      client,
+    );
+    expect(sent[0]).toMatchObject({
+      path: nfcDeactivatePath('physical-7'),
+      method: 'POST',
+      body: { status: 'LOST', reason: 'Mất thẻ khi giao hàng' },
+    });
   });
 
   it('success:false không được coi là đã map NFC', async () => {
-    const { client } = spyClient({ success: false, message: 'UID đã được gán' });
-    await expect(resolveNfcCode('X', {}, client)).rejects.toMatchObject({ kind: 'http', message: 'UID đã được gán' });
+    const { client } = spyClient({
+      success: false,
+      message: 'UID đã được gán',
+    });
+    await expect(resolveNfcCode('X', {}, client)).rejects.toMatchObject({
+      kind: 'http',
+      message: 'UID đã được gán',
+    });
   });
 
   it('endpoint NFC ngoài danh sách bị tầng dịch vụ chặn', () => {
-    expect(() => assertApprovedNfcWrite('POST', '/api/v1/physical-codes')).toThrow(AppError);
+    expect(() =>
+      assertApprovedNfcWrite('POST', '/api/v1/physical-codes'),
+    ).toThrow(AppError);
   });
 
   it('key confirm sạch và chứa item + UID để retry cùng lượt chạm dùng lại key đó', () => {

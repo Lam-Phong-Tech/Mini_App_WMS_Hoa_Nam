@@ -69,6 +69,7 @@ async function fetchJson(url: string, timeoutMs: number): Promise<unknown> {
   try {
     const response = await fetch(url, {
       method: 'GET',
+      credentials: 'omit',
       headers: { Accept: 'application/json' },
       signal: controller.signal,
     });
@@ -111,7 +112,9 @@ export function extractUnits(payload: unknown): readonly GeoUnit[] {
   };
 
   if (Array.isArray(payload)) {
-    return payload.map(toUnit).filter((unit): unit is GeoUnit => unit !== undefined);
+    return payload
+      .map(toUnit)
+      .filter((unit): unit is GeoUnit => unit !== undefined);
   }
 
   if (typeof payload === 'object' && payload !== null) {
@@ -237,6 +240,26 @@ export function fetchWards(
   return load(
     KEY_WARDS_PREFIX + provinceCode,
     BASE_URL + '/p/' + encodeURIComponent(provinceCode) + '?depth=2',
+    deps,
+  );
+}
+
+// P05 user09/10/2026 chose v2 explicitly. Versioned keys do not reuse an
+// unlabelled historical address cache as a new v2 selection.
+export function fetchP05Provinces(deps: GeoDeps = {}): Promise<GeoResult> {
+  return load('geo.v2.p05.provinces', BASE_URL + '/', deps);
+}
+export function fetchP05Wards(
+  code: string,
+  deps: GeoDeps = {},
+): Promise<GeoResult> {
+  if (!/^[0-9]+$/.test(code))
+    return Promise.reject(
+      new AppError({ kind: 'config', message: 'Mã tỉnh chưa hợp lệ.' }),
+    );
+  return load(
+    'geo.v2.p05.wards.' + code,
+    BASE_URL + '/p/' + code + '?depth=2',
     deps,
   );
 }

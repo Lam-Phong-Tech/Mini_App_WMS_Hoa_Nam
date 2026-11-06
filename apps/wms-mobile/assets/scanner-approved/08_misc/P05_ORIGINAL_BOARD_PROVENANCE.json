@@ -1,0 +1,46 @@
+{
+  "kind": "EXACT_PIXELS_CROPPED_FROM_USER_REPOSITORY_BOARD",
+  "date": "2026-11-03",
+  "source_url": "https://duc-nguyen98.github.io/ScannerHNApp/design/01_Main/BOARDS/01_UPDATED_BOARDS/03_xuat_kho.png",
+  "repository": "https://github.com/Duc-Nguyen98/ScannerHNApp",
+  "revision": "04d13af1d7d6d9a7184d024d404bfd483d8eec6e",
+  "git_path": "docs/design/01_Main/BOARDS/01_UPDATED_BOARDS/03_xuat_kho.png",
+  "source_sha256": "c27ce612b8b1cffe997c28d6beceb0246950707d03a03c5da4cc795419d5e0e9",
+  "source_dimensions": [
+    1536,
+    1024
+  ],
+  "transformation": "Crop only, no repaint, resize or generative replacement. Original scanner artwork includes its own reticle.",
+  "live_evidence": false,
+  "sample_code_is_backend_identity": false,
+  "assets": [
+    {
+      "file": "p05_camera_from_original_board.png",
+      "crop_xyxy": [
+        420,
+        195,
+        739,
+        396
+      ],
+      "size": [
+        319,
+        201
+      ],
+      "sha256": "9fbc2808cae67a31945fc896846a3ff3e516382132f76fd359acaaffa636ad88"
+    },
+    {
+      "file": "p05_product_from_original_board.png",
+      "crop_xyxy": [
+        802,
+        709,
+        846,
+        752
+      ],
+      "size": [
+        44,
+        43
+      ],
+      "sha256": "db00d57575fc7aa138cb6819c0fe5242780e39fd7e132c0a96c1d3d468fd7f38"
+    }
+  ]
+}

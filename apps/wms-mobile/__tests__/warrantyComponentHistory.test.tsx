@@ -31,8 +31,8 @@ function page(
   currentPage: number,
   hasMore: boolean,
 ): WarrantyComponentHistoryPage {
-  const document: WarrantyComponentHistoryDocument = { id, lines: [] };
-  return { documents: [document], page: currentPage, hasMore };
+  const document: WarrantyComponentHistoryDocument = { id, postedAt:null, lines: [] };
+  return { documents: [document], page: currentPage, total:hasMore?2:1,hasMore,nextCursor:null,nextPage:hasMore?currentPage+1:null };
 }
 
 function renderHistoryHook(
@@ -89,7 +89,7 @@ describe('phân trang lịch sử linh kiện bảo hành', () => {
       await Promise.all([moreA.promise, firstB.promise]);
     });
 
-    expect(hook.get().documents).toEqual([{ id: 'b-1', lines: [] }]);
+    expect(hook.get().documents).toEqual([{ id: 'b-1', postedAt:null,lines: [] }]);
     expect(hook.get().loadingMore).toBe(false);
     hook.unmount();
   });
@@ -119,7 +119,7 @@ describe('phân trang lịch sử linh kiện bảo hành', () => {
       await Promise.all([more.promise, refreshed.promise]);
     });
 
-    expect(hook.get().documents).toEqual([{ id: 'a-refresh', lines: [] }]);
+    expect(hook.get().documents).toEqual([{ id: 'a-refresh', postedAt:null,lines: [] }]);
     expect(hook.get().loadingMore).toBe(false);
     hook.unmount();
   });

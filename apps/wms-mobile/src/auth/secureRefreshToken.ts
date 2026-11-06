@@ -18,7 +18,9 @@ interface NativeSecureSessionModule {
 let volatileToken: string | undefined;
 
 function nativeModule(): NativeSecureSessionModule | undefined {
-  return NativeModules.WmsSecureSession as NativeSecureSessionModule | undefined;
+  return NativeModules.WmsSecureSession as
+    | NativeSecureSessionModule
+    | undefined;
 }
 
 function requireNative(): NativeSecureSessionModule | undefined {
@@ -30,7 +32,8 @@ function requireNative(): NativeSecureSessionModule | undefined {
     throw new AppError({
       kind: 'config',
       code: 'SECURE_SESSION_MODULE_UNAVAILABLE',
-      message: 'Bản cài thiếu kho bảo mật phiên. Cập nhật ứng dụng rồi đăng nhập lại.',
+      message:
+        'Bản cài thiếu kho bảo mật phiên. Cập nhật ứng dụng rồi đăng nhập lại.',
     });
   }
   return undefined;
@@ -44,7 +47,7 @@ export async function readSecureRefreshToken(): Promise<string | undefined> {
   return normalized === undefined || normalized === '' ? undefined : normalized;
 }
 
-export async function writeSecureRefreshToken(token: string): Promise<void> {
+async function writeToken(token: string): Promise<void> {
   const normalized = token.trim();
   if (normalized === '') {
     throw new AppError({ kind: 'auth', message: 'Refresh token trống.' });
@@ -57,8 +60,34 @@ export async function writeSecureRefreshToken(token: string): Promise<void> {
   await module.setRefreshToken(normalized);
 }
 
-export async function clearSecureRefreshToken(): Promise<void> {
+async function clearToken(): Promise<void> {
   const module = requireNative();
   volatileToken = undefined;
   if (module !== undefined) await module.clearRefreshToken();
+}
+
+// Serialize native credential mutations: an old clear must finish before a new login writes.
+let credentialQueue: Promise<void> = Promise.resolve();
+function enqueueCredential(operation: () => Promise<void>): Promise<void> {
+  const next = credentialQueue.then(operation, operation);
+  credentialQueue = next.catch(() => undefined);
+  return next;
+}
+export function writeSecureRefreshToken(
+  token: string,
+  accepts: () => boolean = () => true,
+): Promise<void> {
+  return enqueueCredential(async () => {
+    if (!accepts()) return;
+    await writeToken(token);
+    // Clear a superseded write before the queue permits a newer login write.
+    if (!accepts()) await clearToken();
+  });
+}
+export function clearSecureRefreshToken(
+  accepts: () => boolean = () => true,
+): Promise<void> {
+  return enqueueCredential(async () => {
+    if (accepts()) await clearToken();
+  });
 }

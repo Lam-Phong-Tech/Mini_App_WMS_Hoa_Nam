@@ -1,63 +1,71 @@
+import {HN_UI,UI_KIT_COLORS} from './uiKitV3';
 /**
  * Design tokens.
  *
- * Nguồn duy nhất: bộ thiết kế Scanner v2 do người dùng chấp thuận,
- * `ScannerHNApp@90b0032` (palette trong `flows/warranty-components/style.css`).
+ * Nguồn: HoaNam Unified UI Kit v3.0.1, Ocean/Light, theo yêu cầu04/11/2026.
+ * Màu được khóa tập trung trong uiKitV3.ts.
  * Các token này dùng chung cho Web và React Native; nghiệp vụ/API không phụ
  * thuộc vào chúng.
  */
 
 import { Platform } from 'react-native';
+import { SCANNER_ARIAL_FAMILY } from './scannerTypography';
+import {SCANNER_COLORS} from '../ui/ScannerPalette';
 
 export const colors = {
-  surfaceCanvas: '#f3f8fb',
-  surface: '#ffffff',
-  surfaceSubtle: '#eaf5fa',
+  surfaceCanvas: HN_UI.canvas,
+  surface: HN_UI.surface,
+  surfaceSubtle: HN_UI.surfaceSunken,
 
-  primary: '#0c6286',
-  primaryStrong: '#0c5d7d',
-  primarySoft: '#eaf5fa',
+  primary: SCANNER_COLORS.primary,
+  primaryStrong: HN_UI.primaryPressed,
+  primarySoft: HN_UI.selected,
 
-  textStrong: '#12384e',
-  text: '#355a6c',
-  textMuted: '#527186',
-  divider: '#dce9ef',
+  textStrong: HN_UI.textPrimary,
+  text: HN_UI.textSecondary,
+  textMuted: HN_UI.textMuted,
+  divider: HN_UI.border,
 
-  success: '#168657',
-  successSoft: '#e1f5ea',
-  successText: '#168657',
+  success: HN_UI.success,
+  successSoft: HN_UI.successSoft,
+  successText: HN_UI.success,
 
-  danger: '#c63c43',
-  dangerSoft: '#fff0f0',
-  dangerText: '#c63c43',
+  danger: HN_UI.danger,
+  dangerSoft: HN_UI.dangerSoft,
+  dangerText: HN_UI.danger,
 
-  warning: '#a4640c',
-  warningSoft: '#fff5e3',
-  warningText: '#a4640c',
+  warning: HN_UI.warning,
+  warningSoft: HN_UI.warningSoft,
+  warningText: HN_UI.warning,
 
-  info: '#0c6286',
-  infoSoft: '#eaf5fa',
-  infoText: '#0c6286',
+  info: HN_UI.info,
+  infoSoft: HN_UI.infoSoft,
+  infoText: HN_UI.info,
 } as const;
 
 export const field = {
-  height: 50,
-  radius: 9,
+  height: 48,
+  radius: 8,
   paddingX: 14,
-  border: '#dce9ef',
-  borderHover: '#a9c6d3',
+  border: HN_UI.borderControl,
+  borderHover: UI_KIT_COLORS['input.hoverBorder'],
   borderFocus: colors.primary,
   borderError: colors.danger,
-  background: colors.surface,
-  disabledBackground: '#edf3f5',
-  labelSize: 12,
+  background: HN_UI.input,
+  readonlyBackground: UI_KIT_COLORS['input.readonlyBg'],
+  disabledText: UI_KIT_COLORS['action.disabled.fg'],
+  disabledBorder: UI_KIT_COLORS['action.disabled.border'],
+  placeholder: UI_KIT_COLORS['input.placeholder'],
+  helperColor: UI_KIT_COLORS['text.secondary'],
+  disabledBackground: HN_UI.disabled,
+  labelSize: 14,
   helperSize: 12,
 } as const;
 
 export const radius = {
   card: 12,
-  control: 9,
-  sheet: 23,
+  control: 8,
+  sheet: 20,
 } as const;
 
 /** Thang khoảng cách — ui-system-x-vuexy.md §2 "Khoảng cách và hình khối". */
@@ -86,19 +94,17 @@ export const elevation = {
 /**
  * Typography — ui-system-x-vuexy.md §2 "Chữ".
  *
- * ⚠️ Font `Public Sans` CHƯA được nhúng vào app (cần file font và bước link
- * asset, không thuộc phạm vi Prompt 2). `fontFamily: undefined` = dùng font hệ
- * thống làm fallback, đúng như spec cho phép ("fallback về font hệ thống").
+ * Web retains the existing Public Sans default; locked board overrides use
+ * Arial. Android ships the licensed Arimo faces to avoid system-font metric
+ * drift. Exact native rasterization remains part of visual review.
  */
 export const typography = {
-  // Web nạp Public Sans cục bộ từ `src/web/global.css`. Native tiếp tục dùng
-  // font hệ thống cho tới khi font được đăng ký qua Android/iOS asset pipeline.
-  fontFamily: (Platform.OS === 'web' ? 'Public Sans' : undefined) as string | undefined,
-  body: { fontSize: 14, lineHeight: 21, fontWeight: '400' },
+  fontFamily: SCANNER_ARIAL_FAMILY as string | undefined,
+  body: { fontSize: 16, lineHeight: 24, fontWeight: '400' },
   caption: { fontSize: 12, lineHeight: 18, fontWeight: '400' },
-  cardTitle: { fontSize: 16, lineHeight: 22, fontWeight: '700' },
+  cardTitle: { fontSize: 20, lineHeight: 28, fontWeight: '600' },
   metric: { fontSize: 22, lineHeight: 28, fontWeight: '700' },
-  screenTitle: { fontSize: 20, lineHeight: 27, fontWeight: '700' },
+  screenTitle: { fontSize: 20, lineHeight: 28, fontWeight: '600' },
 } as const;
 
 /**
@@ -106,7 +112,7 @@ export const typography = {
  * ui-system-x-vuexy.md §2: "Input/button: cao tối thiểu 44–48px".
  */
 export const touchTarget = {
-  min: 44,
+  min: 48,
   comfortable: 48,
 } as const;
 
@@ -140,3 +146,4 @@ export const tokens = {
 } as const;
 
 export type Tokens = typeof tokens;
+Object.freeze(colors);Object.freeze(field);Object.freeze(tokens);

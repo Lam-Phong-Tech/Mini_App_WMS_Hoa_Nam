@@ -44,7 +44,7 @@ export const INBOUND_STEPS = [
   'Thông tin',
   'Quét mã',
   'Kiểm tra',
-  'Gửi duyệt',
+  'Gửi phiếu',
 ] as const;
 
 export type InboundStep = 0 | 1 | 2 | 3;
@@ -108,7 +108,7 @@ export interface ScannedCode {
   readonly quantity: number;
   /** Có giá trị khi mã là `BOX-<SKU>-<Mã số hộp>`. */
   readonly boxNumber?: string;
-  readonly source: ScanSource;
+  readonly source: ScanSource | 'SCANNER' | 'HARDWARE';
   /** Epoch ms lúc quét, theo giờ máy chủ nếu có. */
   readonly at: number;
 }
@@ -132,6 +132,15 @@ export interface SkuGroup {
 }
 
 export interface InboundDraft {
+  /** P04 metadata retained locally until the typed P04 API adapter is available. */
+  readonly supplierId?: string;
+  readonly supplierName?: string;
+  /** Explicit date-only operator input; never a creation/event timestamp. */
+  readonly docDate?: string;
+  readonly note?: string;
+  readonly scanAttempts?:readonly {raw:string;at:number;kind:'valid'|'duplicate'|'invalid';reason?:string;reasonCode?:string}[];
+  readonly createdAt?:string;
+  readonly inboundCategory?:'PRODUCT'|'COMPONENT'|'OTHER';
   /** Tên phiếu — bắt buộc trước khi sang bước quét (ảnh 18). */
   readonly name: string;
   /**
@@ -560,7 +569,7 @@ export interface InboundOutboxPayload {
     readonly itemType?: InboundItemType;
     readonly quantity?: number;
     readonly boxNumber?: string;
-    readonly source?: ScanSource;
+    readonly source?: ScanSource | 'SCANNER' | 'HARDWARE';
     readonly at: number;
   }[];
 }

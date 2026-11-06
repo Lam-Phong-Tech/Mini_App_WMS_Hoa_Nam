@@ -1,0 +1,35 @@
+/** Local opt-in review; no imports in Android/AppShell or normal Web entry. */
+import React from 'react';
+import {createRoot} from 'react-dom/client';
+import {View} from 'react-native';
+import {SafeAreaProvider} from 'react-native-safe-area-context';
+import {ThemeProvider} from '../theme/ThemeProvider';
+import {BottomNav} from '../ui/BottomNav';
+import {P12Screen} from '../features/documents/p12/P12Screen';
+import {createP12Service} from '../features/documents/p12/service';
+import {createP12Controller} from '../features/documents/p12/controller';
+import {setSession} from '../auth/session';
+import {createMemoryBackend,createStorage,setAppStorageForTesting} from '../storage/storage';
+import pairs from '../../handoff/P12/TIMESTAMP_PAGING_V3_20261013/pair-inputs.json';
+import * as m from '../../__tests__/fixtures/p12Protocol';
+import * as mix from '../../__tests__/fixtures/p12Mixed';
+
+(window as any).p12TimestampProgress='module-start';
+const q=new URLSearchParams(location.search),caseId=q.get('case')??'TS01',pair=pairs.find(p=>p.caseId===caseId)??pairs[0],scene=q.get('scene')??'list';
+const names:Record<string,string>={TS01:'PX-20261011214007-L2SQGK',TS02:'PX-20261011110258-LV24OU',TS03:'PX-20261009151150-GS4OW4'};
+const wh=m.warehouse,raw=q.get('null')==='1'?null:pair.expected_raw;
+setAppStorageForTesting(createStorage(createMemoryBackend()));
+setSession({accessToken:'OFFLINE_ONLY',userId:m.actor,authSessionId:m.session,activeWarehouseId:wh});
+window.fetch=async()=>{throw Error('Offline timestamp component review forbids HTTP');};
+const user={id:m.actor,auth_session_id:m.session,active_warehouse_id:wh,warehouse_context:{status:'READY' as const},available_warehouses:[{warehouse_id:wh,status:'ACTIVE',name:'Kho Hoa Nam'}],permissions:m.context().rights};
+const row=mix.row('OUTBOUND',11,raw);row.id=pair.uuid;row.row_key='OUTBOUND:'+pair.uuid;row.document_no=names[caseId];row.p12.identity.id=pair.uuid;row.p12.read_target.path='/api/v1/mini-app/outbound-documents/'+pair.uuid;row.read_target=row.p12.read_target;
+const stock={...m.stock('outbound',11),id:pair.uuid,doc_no:names[caseId],created_at:raw,note:'Kiểm hiển thị timestamp bằng component P12 hiện hành.',status_history:[]};
+const detail=m.detail(stock,'outbound');
+const calls:unknown[]=[],client={async get(path:string,options:any={}){calls.push({path,query:options.query,method:'GET',trace:'MOCK_ONLY'});const body=path==='/api/v1/mini-app/documents'?mix.response(options.query,[row]):path.endsWith('/attachments')?m.files('outbound',pair.uuid,options.query,[]):path.endsWith('/scan-entries')?m.scans(pair.uuid,'ACTIVE',options.query,[],m.summary([])):detail;return {status:200,data:body,header:(name:string)=>({'content-type':'application/json','cache-control':'private, no-store','x-content-type-options':'nosniff',vary:'Authorization','x-request-id':'MOCK_ONLY'}[name.toLowerCase()]??null)};}};
+const service=createP12Service(()=>({user}),{client,origin:'https://p12.invalid',revalidateUser:async()=>user}),c=createP12Controller(service);
+(window as any).p12TimestampProgress='before-load';
+await c.load();
+(window as any).p12TimestampProgress='after-load';
+if(scene==='detail')await c.open('outbound',pair.uuid);const retained={current:c.snapshot()};c.dispose();
+(window as any).p12Timestamp={caseId,uuid:pair.uuid,raw,expected:pair.expected_vietnam,calls,retained,origin:'MOCK_ONLY',ownerIntents:[]};
+createRoot(document.getElementById('root')!).render(<main id="p12-timestamp-app" style={{height:950,width:494,maxWidth:'100%',display:'flex',margin:'0 auto',overflow:'hidden'}}><SafeAreaProvider initialMetrics={{frame:{x:0,y:0,width:494,height:950},insets:{left:0,top:0,right:0,bottom:0}}}><ThemeProvider><View style={{flex:1,minHeight:0}}><P12Screen service={service} user={user} retained={retained} onBack={()=>{}} onOwnerIntent={()=>{throw Error('No business owner in timestamp review');}}/></View><BottomNav items={[{key:'home',label:'Trang chủ',icon:'home'},{key:'documents',label:'Chứng từ',icon:'approvals'},{key:'scan',label:'Quét mã',icon:'scan'},{key:'history',label:'Lịch sử',icon:'history'},{key:'profile',label:'Cá nhân',icon:'user'}]} selectedKey="documents" onSelect={()=>{}}/></ThemeProvider></SafeAreaProvider></main>);

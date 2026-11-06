@@ -9,14 +9,20 @@
 import warehouseDark from '../../assets/scanner-approved/01_backgrounds/bg_warehouse_dark_v2_4k_enhanced.jpg';
 import warehouseMain from '../../assets/scanner-approved/01_backgrounds/bg_warehouse_main_4k_enhanced.jpg';
 import staffWarehouse from '../../assets/scanner-approved/02_people_staff/staff_warehouse_4k_enhanced.jpg';
+import outboundScanSample from '../../assets/scanner-approved/08_misc/p05_camera_from_original_board.png';
+import outboundProductSample from '../../assets/scanner-approved/08_misc/p05_product_from_original_board.png';
 import type { ImageSourcePropType } from 'react-native';
 
 export const scannerAssets: {
   readonly warehouseDark: ImageSourcePropType;
   readonly warehouseMain: ImageSourcePropType;
   readonly staffWarehouse: ImageSourcePropType;
+  readonly outboundScanSample: ImageSourcePropType;
+  readonly outboundProductSample: ImageSourcePropType;
 } = {
   warehouseDark,
   warehouseMain,
   staffWarehouse,
+  outboundScanSample,
+  outboundProductSample,
 };

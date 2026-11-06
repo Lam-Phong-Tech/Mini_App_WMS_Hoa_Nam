@@ -1,0 +1,508 @@
+{
+  "source": "ScannerHNApp P09 r12 actual synthetic",
+  "cases": [
+    {
+      "id": "BH-001",
+      "model": "Máy in nhiệt XP-420B",
+      "serial": "HN12345",
+      "status": "Đang kiểm tra",
+      "day": "2026-09-10",
+      "time": "14:45",
+      "actor": "Minh Anh",
+      "warehouse": "Kho Hoa Nam",
+      "version": 1,
+      "customerId": "KH-HN-001",
+      "customer": "Công ty Minh Phát",
+      "contact": "0901 234 567",
+      "faultId": "power-off",
+      "fault": "Máy không lên nguồn",
+      "diagnosis": "Máy không lên nguồn, kiểm tra nguồn và bo mạch.",
+      "note": "Khách hàng yêu cầu kiểm tra tổng thể và vệ sinh máy.",
+      "accessories": "Adapter nguồn 24V, cáp USB, 01 cuộn tem",
+      "ledgerKnown": true,
+      "events": [
+        {
+          "label": "Đã tiếp nhận",
+          "day": "2026-09-10",
+          "time": "08:32",
+          "id": "BH-001-E1",
+          "actor": "Minh Anh",
+          "description": "Công ty Minh Phát · Máy không lên nguồn"
+        },
+        {
+          "label": "Đang kiểm tra",
+          "day": "2026-09-10",
+          "time": "14:30",
+          "id": "BH-001-E2",
+          "actor": "Minh Anh",
+          "description": "Máy không lên nguồn, kiểm tra nguồn và bo mạch."
+        },
+        {
+          "id": "BH-001-XLK-0002",
+          "label": "Đã xuất linh kiện",
+          "day": "2026-09-10",
+          "time": "14:45",
+          "actor": "Minh Anh",
+          "documentId": "XLK-0002",
+          "description": "XLK-0002 · 2 mã · 3 linh kiện"
+        }
+      ]
+    },
+    {
+      "id": "BH-002",
+      "model": "Máy quét mã vạch ZD421",
+      "serial": "HN12346",
+      "status": "Đã trả khách",
+      "day": "2026-09-10",
+      "time": "11:20",
+      "actor": "Minh Anh",
+      "warehouse": "Kho Hoa Nam",
+      "version": 1,
+      "customerId": "KH-HN-002",
+      "customer": "Đại lý Thành Công",
+      "contact": "0902 345 678",
+      "faultId": "no-scan",
+      "fault": "Không quét được mã vạch",
+      "diagnosis": "Cáp USB tiếp xúc chập chờn; bộ phận đọc mã hoạt động bình thường khi đổi cáp.",
+      "note": "Khách đã kiểm tra thiết bị tại quầy và nhận đủ phụ kiện.",
+      "accessories": "Cáp USB, chân đế",
+      "result": "Đã thay cáp USB, kiểm tra quét liên tục 30 lượt. Thiết bị hoạt động ổn định.",
+      "ledgerKnown": true,
+      "events": [
+        {
+          "label": "Đã tiếp nhận",
+          "day": "2026-09-09",
+          "time": "16:10",
+          "id": "BH-002-E1",
+          "actor": "Minh Anh",
+          "description": "Đại lý Thành Công · Không quét được mã vạch"
+        },
+        {
+          "id": "BH-002-XLK-0003",
+          "label": "Đã xuất linh kiện",
+          "day": "2026-09-10",
+          "time": "09:15",
+          "actor": "Minh Anh",
+          "documentId": "XLK-0003",
+          "description": "XLK-0003 · 1 mã · 1 linh kiện"
+        },
+        {
+          "label": "Hoàn tất sửa chữa",
+          "day": "2026-09-10",
+          "time": "10:45",
+          "id": "BH-002-E2",
+          "actor": "Minh Anh",
+          "description": "Đã thay cáp USB, kiểm tra quét liên tục 30 lượt. Thiết bị hoạt động ổn định."
+        },
+        {
+          "label": "Đã trả khách",
+          "day": "2026-09-10",
+          "time": "11:20",
+          "id": "BH-002-E3",
+          "actor": "Minh Anh",
+          "description": "Khách đã kiểm tra thiết bị và nhận đủ phụ kiện."
+        }
+      ]
+    },
+    {
+      "id": "BH-003",
+      "model": "Máy in nhiệt XP-420B",
+      "serial": "SN-XP420B-202",
+      "status": "Đã tiếp nhận",
+      "day": "2026-09-13",
+      "time": "08:32",
+      "actor": "Minh Anh",
+      "warehouse": "Kho Hoa Nam",
+      "version": 1,
+      "customerId": "KH-HN-003",
+      "customer": "Cửa hàng An Khang",
+      "contact": "0903 456 789",
+      "faultId": "paper-sensor",
+      "fault": "Không nhận giấy / Tem",
+      "diagnosis": "",
+      "note": "Máy báo hết giấy dù đã lắp cuộn tem. Khách gửi kèm cuộn tem đang sử dụng để kiểm tra.",
+      "accessories": "Adapter nguồn 24V, 01 cuộn tem 50×30 mm",
+      "ledgerKnown": true,
+      "events": [
+        {
+          "label": "Đã tiếp nhận",
+          "time": "08:32",
+          "day": "2026-09-13",
+          "id": "BH-003-E1",
+          "actor": "Minh Anh",
+          "description": "Cửa hàng An Khang · Không nhận giấy / Tem"
+        }
+      ]
+    },
+    {
+      "id": "BH-004",
+      "model": "Máy quét mã vạch ZD421",
+      "serial": "SN-ZD421-203",
+      "status": "Đã trả khách",
+      "day": "2026-09-14",
+      "time": "10:23",
+      "actor": "Lan Nguyễn",
+      "warehouse": "Kho Hoa Nam",
+      "version": 1,
+      "customerId": "KH-HN-004",
+      "customer": "Siêu thị Minh Tâm",
+      "contact": "0904 567 890",
+      "faultId": "lan",
+      "fault": "Không kết nối mạng LAN",
+      "diagnosis": "Địa chỉ IP trên thiết bị không cùng lớp mạng sau khi đổi router; phần cứng bình thường.",
+      "note": "Đã hướng dẫn nhân viên cửa hàng cách kiểm tra cấu hình mạng.",
+      "accessories": "Adapter nguồn, cáp mạng LAN",
+      "result": "Đã cấu hình lại mạng LAN và kiểm tra kết nối trên máy khách. Không cần thay linh kiện.",
+      "ledgerKnown": true,
+      "events": [
+        {
+          "label": "Đã tiếp nhận",
+          "time": "08:30",
+          "day": "2026-09-14",
+          "id": "BH-004-E1",
+          "actor": "Lan Nguyễn",
+          "description": "Siêu thị Minh Tâm · Không kết nối mạng LAN"
+        },
+        {
+          "label": "Hoàn tất sửa chữa",
+          "time": "10:15",
+          "day": "2026-09-14",
+          "id": "BH-004-E2",
+          "actor": "Lan Nguyễn",
+          "description": "Đã cấu hình lại mạng LAN và kiểm tra kết nối trên máy khách. Không cần thay linh kiện."
+        },
+        {
+          "label": "Đã trả khách",
+          "time": "10:23",
+          "day": "2026-09-14",
+          "id": "BH-004-E3",
+          "actor": "Lan Nguyễn",
+          "description": "Khách đã kiểm tra thiết bị và nhận đủ phụ kiện."
+        }
+      ]
+    },
+    {
+      "id": "BH-005",
+      "model": "Máy in nhiệt XP-420B",
+      "serial": "SN-XP420B-204",
+      "status": "Chờ bàn giao",
+      "day": "2026-09-15",
+      "time": "15:40",
+      "actor": "Minh Anh",
+      "warehouse": "Kho Hoa Nam",
+      "version": 1,
+      "customerId": "KH-HN-005",
+      "customer": "Công ty Phúc An",
+      "contact": "0905 678 901",
+      "faultId": "broken-print",
+      "fault": "Bản in bị sọc / Đứt nét",
+      "diagnosis": "Đầu in có điểm nhiệt suy giảm, trục lăn mòn khiến tem đi không đều.",
+      "note": "Ưu tiên xử lý trước đợt kiểm kê. Khách đề nghị gọi khi thiết bị sẵn sàng nhận.",
+      "accessories": "Adapter nguồn 24V, cáp USB, 02 cuộn tem",
+      "result": "Đã thay đầu in và trục lăn, hiệu chuẩn cảm biến, in thử 20 tem đạt yêu cầu.",
+      "ledgerKnown": true,
+      "events": [
+        {
+          "label": "Đã tiếp nhận",
+          "time": "08:32",
+          "day": "2026-09-15",
+          "id": "BH-005-E1",
+          "actor": "Minh Anh",
+          "description": "Công ty Phúc An · Bản in bị sọc / Đứt nét"
+        },
+        {
+          "label": "Đang kiểm tra",
+          "time": "10:24",
+          "day": "2026-09-15",
+          "id": "BH-005-E2",
+          "actor": "Minh Anh",
+          "description": "Đầu in có điểm nhiệt suy giảm, trục lăn mòn khiến tem đi không đều."
+        },
+        {
+          "id": "BH-005-XLK-0004",
+          "label": "Đã xuất linh kiện",
+          "day": "2026-09-15",
+          "time": "11:10",
+          "actor": "Minh Anh",
+          "documentId": "XLK-0004",
+          "description": "XLK-0004 · 2 mã · 2 linh kiện"
+        },
+        {
+          "label": "Hoàn tất sửa chữa",
+          "time": "14:50",
+          "day": "2026-09-15",
+          "id": "BH-005-E3",
+          "actor": "Minh Anh",
+          "description": "Đã thay đầu in và trục lăn, hiệu chuẩn cảm biến, in thử 20 tem đạt yêu cầu."
+        },
+        {
+          "label": "Chờ bàn giao",
+          "time": "15:40",
+          "day": "2026-09-15",
+          "id": "BH-005-E4",
+          "actor": "Minh Anh",
+          "description": "Thiết bị đã sẵn sàng; chờ khách nhận theo quy trình."
+        }
+      ]
+    },
+    {
+      "id": "BH-006",
+      "model": "Máy quét mã vạch ZD421",
+      "serial": "SN-ZD421-205",
+      "status": "Đã trả khách",
+      "day": "2026-09-16",
+      "time": "10:25",
+      "actor": "Minh Anh",
+      "warehouse": "Kho Hoa Nam",
+      "version": 1,
+      "customerId": "KH-HN-006",
+      "customer": "Nhà thuốc Bình An",
+      "contact": "0906 789 012",
+      "faultId": "button",
+      "fault": "Nút bấm không hoạt động",
+      "diagnosis": "Tiếp điểm cụm nút kích hoạt bị mòn, cần thay cụm nút.",
+      "note": "Khách đã kiểm tra quét mã và nhận lại thiết bị trong ngày.",
+      "accessories": "Cáp USB, dây đeo",
+      "result": "Đã thay cụm nút kích hoạt, vệ sinh thiết bị và kiểm tra chức năng quét.",
+      "ledgerKnown": true,
+      "events": [
+        {
+          "label": "Đã tiếp nhận",
+          "time": "08:30",
+          "day": "2026-09-16",
+          "id": "BH-006-E1",
+          "actor": "Minh Anh",
+          "description": "Nhà thuốc Bình An · Nút bấm không hoạt động"
+        },
+        {
+          "id": "BH-006-XLK-0005",
+          "label": "Đã xuất linh kiện",
+          "day": "2026-09-16",
+          "time": "09:10",
+          "actor": "Minh Anh",
+          "documentId": "XLK-0005",
+          "description": "XLK-0005 · 1 mã · 1 linh kiện"
+        },
+        {
+          "label": "Hoàn tất sửa chữa",
+          "time": "10:15",
+          "day": "2026-09-16",
+          "id": "BH-006-E2",
+          "actor": "Minh Anh",
+          "description": "Đã thay cụm nút kích hoạt, vệ sinh thiết bị và kiểm tra chức năng quét."
+        },
+        {
+          "label": "Đã trả khách",
+          "time": "10:25",
+          "day": "2026-09-16",
+          "id": "BH-006-E3",
+          "actor": "Minh Anh",
+          "description": "Khách đã kiểm tra thiết bị và nhận đủ phụ kiện."
+        }
+      ]
+    },
+    {
+      "id": "BH-007",
+      "model": "Máy in nhiệt XP-420B",
+      "serial": "SN-XP420B-206",
+      "status": "Đang kiểm tra",
+      "day": "2026-09-17",
+      "time": "10:26",
+      "actor": "Lan Nguyễn",
+      "warehouse": "Kho Hoa Nam",
+      "version": 1,
+      "customerId": "KH-HN-007",
+      "customer": "Công ty Sông Việt",
+      "contact": "0907 890 123",
+      "faultId": "usb",
+      "fault": "Không kết nối USB",
+      "diagnosis": "Máy không nhận lệnh in sau khi cập nhật driver; đang kiểm tra cấu hình cổng USB và phần mềm.",
+      "note": "Nguồn và cơ cấu cấp tem bình thường. Khách đã cung cấp phiên bản phần mềm đang sử dụng.",
+      "accessories": "Adapter nguồn 24V, cáp USB",
+      "ledgerKnown": true,
+      "events": [
+        {
+          "label": "Đã tiếp nhận",
+          "time": "08:32",
+          "day": "2026-09-17",
+          "id": "BH-007-E1",
+          "actor": "Lan Nguyễn",
+          "description": "Công ty Sông Việt · Không kết nối USB"
+        },
+        {
+          "label": "Đang kiểm tra",
+          "time": "10:26",
+          "day": "2026-09-17",
+          "id": "BH-007-E2",
+          "actor": "Lan Nguyễn",
+          "description": "Máy không nhận lệnh in sau khi cập nhật driver; đang kiểm tra cấu hình cổng USB và phần mềm."
+        }
+      ]
+    },
+    {
+      "id": "BH-008",
+      "model": "Máy quét mã vạch ZD421",
+      "serial": "SN-ZD421-207",
+      "status": "Đã trả khách",
+      "day": "2026-09-18",
+      "time": "10:27",
+      "actor": "Minh Anh",
+      "warehouse": "Kho Hoa Nam",
+      "version": 1,
+      "customerId": "KH-HN-008",
+      "customer": "Đại lý Nam Phương",
+      "contact": "0908 901 234",
+      "faultId": "usb",
+      "fault": "Không kết nối USB",
+      "diagnosis": "Bo giao tiếp USB không ổn định, kiểm tra cổng kết nối và thay bo tương ứng.",
+      "note": "Khách đã kiểm tra thiết bị, xác nhận đủ phụ kiện và nhận lại tại quầy.",
+      "accessories": "Cáp USB, chân đế",
+      "result": "Đã thay bo giao tiếp USB và kiểm tra kết nối liên tục. Thiết bị hoạt động bình thường.",
+      "ledgerKnown": true,
+      "events": [
+        {
+          "label": "Đã tiếp nhận",
+          "time": "08:30",
+          "day": "2026-09-18",
+          "id": "BH-008-E1",
+          "actor": "Minh Anh",
+          "description": "Đại lý Nam Phương · Không kết nối USB"
+        },
+        {
+          "id": "BH-008-XLK-0006",
+          "label": "Đã xuất linh kiện",
+          "day": "2026-09-18",
+          "time": "09:15",
+          "actor": "Minh Anh",
+          "documentId": "XLK-0006",
+          "description": "XLK-0006 · 1 mã · 1 linh kiện"
+        },
+        {
+          "label": "Hoàn tất sửa chữa",
+          "time": "10:15",
+          "day": "2026-09-18",
+          "id": "BH-008-E2",
+          "actor": "Minh Anh",
+          "description": "Đã thay bo giao tiếp USB và kiểm tra kết nối liên tục. Thiết bị hoạt động bình thường."
+        },
+        {
+          "label": "Đã trả khách",
+          "time": "10:27",
+          "day": "2026-09-18",
+          "id": "BH-008-E3",
+          "actor": "Minh Anh",
+          "description": "Khách đã kiểm tra thiết bị và nhận đủ phụ kiện."
+        }
+      ]
+    }
+  ],
+  "ledger": [
+    {
+      "id": "XLK-0002",
+      "caseId": "BH-001",
+      "day": "2026-09-10",
+      "time": "14:45",
+      "lines": [
+        {
+          "code": "LK0001-HN001",
+          "sku": "LK-0001",
+          "name": "Đầu in nhiệt XP-420B",
+          "quantity": 1
+        },
+        {
+          "code": "BOX-LK-0002-01",
+          "sku": "LK-0002",
+          "name": "Adapter nguồn 24V",
+          "quantity": 2
+        }
+      ],
+      "status": "POSTED",
+      "version": 3,
+      "actor": "Minh Anh",
+      "warehouse": "Kho Hoa Nam",
+      "at": "10/09/2026 14:45"
+    },
+    {
+      "id": "XLK-0003",
+      "caseId": "BH-002",
+      "day": "2026-09-10",
+      "time": "09:15",
+      "lines": [
+        {
+          "code": "LK0004-HN011",
+          "sku": "LK-0004",
+          "name": "Cáp tín hiệu USB",
+          "quantity": 1
+        }
+      ],
+      "status": "POSTED",
+      "version": 1,
+      "actor": "Minh Anh",
+      "warehouse": "Kho Hoa Nam",
+      "at": "10/09/2026 09:15"
+    },
+    {
+      "id": "XLK-0004",
+      "caseId": "BH-005",
+      "day": "2026-09-15",
+      "time": "11:10",
+      "lines": [
+        {
+          "code": "LK0001-HN012",
+          "sku": "LK-0001",
+          "name": "Đầu in nhiệt XP-420B",
+          "quantity": 1
+        },
+        {
+          "code": "LK0003-HN008",
+          "sku": "LK-0003",
+          "name": "Trục lăn máy in XP-420B",
+          "quantity": 1
+        }
+      ],
+      "status": "POSTED",
+      "version": 1,
+      "actor": "Minh Anh",
+      "warehouse": "Kho Hoa Nam",
+      "at": "15/09/2026 11:10"
+    },
+    {
+      "id": "XLK-0005",
+      "caseId": "BH-006",
+      "day": "2026-09-16",
+      "time": "09:10",
+      "lines": [
+        {
+          "code": "LK0005-HN006",
+          "sku": "LK-0005",
+          "name": "Cụm nút kích hoạt",
+          "quantity": 1
+        }
+      ],
+      "status": "POSTED",
+      "version": 1,
+      "actor": "Minh Anh",
+      "warehouse": "Kho Hoa Nam",
+      "at": "16/09/2026 09:10"
+    },
+    {
+      "id": "XLK-0006",
+      "caseId": "BH-008",
+      "day": "2026-09-18",
+      "time": "09:15",
+      "lines": [
+        {
+          "code": "LK0006-HN004",
+          "sku": "LK-0006",
+          "name": "Bo giao tiếp USB",
+          "quantity": 1
+        }
+      ],
+      "status": "POSTED",
+      "version": 1,
+      "actor": "Minh Anh",
+      "warehouse": "Kho Hoa Nam",
+      "at": "18/09/2026 09:15"
+    }
+  ]
+}

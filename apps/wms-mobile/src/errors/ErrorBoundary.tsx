@@ -12,6 +12,7 @@ import { messageForUser, toAppError } from './AppError';
 import { Button } from '../ui/Button';
 import { Text } from '../ui/Text';
 import { tokens } from '../theme/tokens';
+import { ScreenRetryContext } from './recoverableLazy';
 
 const styles = StyleSheet.create({
   container: {
@@ -25,16 +26,19 @@ const styles = StyleSheet.create({
 
 interface Props {
   children: ReactNode;
+  /** A deliberate route change can recover a failed route independently. */
+  resetKey?: unknown;
 }
 
 interface State {
   error?: Error;
+  retryEpoch: number;
 }
 
 export class ErrorBoundary extends Component<Props, State> {
-  state: State = {};
+  state: State = {retryEpoch:0};
 
-  static getDerivedStateFromError(error: Error): State {
+  static getDerivedStateFromError(error: Error): Partial<State> {
     return { error };
   }
 
@@ -46,13 +50,19 @@ export class ErrorBoundary extends Component<Props, State> {
   }
 
   private handleRetry = (): void => {
-    this.setState({});
+    // setState merges: an empty object left the original error latched.
+    this.setState(state=>({error:undefined,retryEpoch:state.retryEpoch+1}));
   };
+
+  componentDidUpdate(previous:Props):void {
+    if(previous.resetKey!==this.props.resetKey&&this.state.error!==undefined)
+      this.setState(state=>({error:undefined,retryEpoch:state.retryEpoch+1}));
+  }
 
   render(): ReactNode {
     const { error } = this.state;
     if (error === undefined) {
-      return this.props.children;
+      return <ScreenRetryContext.Provider value={this.state.retryEpoch}>{this.props.children}</ScreenRetryContext.Provider>;
     }
 
     return (

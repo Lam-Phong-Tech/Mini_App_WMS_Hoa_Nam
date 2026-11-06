@@ -1,3 +1,4 @@
+import {UI_KIT_COLORS} from '../theme/uiKitV3';
 /**
  * `Sheet` — hộp thoại trượt lên từ đáy màn.
  *
@@ -30,12 +31,13 @@ import {
 import { useTheme } from '../theme/ThemeProvider';
 import { Text } from './Text';
 import { KeyboardViewportContext, type KeyboardViewportTarget } from './Page';
+import { sheetKeyboardSpace } from './sheetKeyboard';
 
 const styles = StyleSheet.create({
   backdrop: {
     flex: 1,
     justifyContent: 'flex-end',
-    backgroundColor: 'rgba(47, 43, 61, 0.55)',
+    backgroundColor: UI_KIT_COLORS['overlay.scrim'],
   },
   /**
    * Phủ riêng vùng nền để panel không trở thành con của một nút bấm trên Web.
@@ -66,6 +68,8 @@ export interface SheetProps {
   title?: string;
   message?: string;
   children?: React.ReactNode;
+  /** Opt in for the P04 supplier picker; existing sheets retain their layout. */
+  keyboardLayout?: 'legacy' | 'viewport';
 }
 
 export function Sheet({
@@ -74,17 +78,43 @@ export function Sheet({
   title,
   message,
   children,
+  keyboardLayout = 'legacy',
 }: SheetProps): React.ReactElement {
   const theme = useTheme();
   const scrollRef = useRef<React.ComponentRef<typeof ScrollView>>(null);
   const scrollY = useRef(0);
   const keyboardTop = useRef(Dimensions.get('window').height);
   const [keyboardHeight, setKeyboardHeight] = useState(0);
+  const backdrop = useRef<React.ComponentRef<typeof View>>(null);
+  const [geometry, setGeometry] = useState({
+    top: 0,
+    height: Dimensions.get('window').height,
+  });
+  const resizeViewport =
+    keyboardLayout === 'viewport' && Platform.OS === 'android';
+  useEffect(() => {
+    if (resizeViewport && !visible) Keyboard.dismiss();
+  }, [resizeViewport, visible]);
+  const measureBackdrop = useCallback(() => {
+    backdrop.current?.measureInWindow((_x, top, _w, height) => {
+      setGeometry(current =>
+        current.top === top && current.height === height
+          ? current
+          : { top, height },
+      );
+    });
+  }, []);
+  const space = sheetKeyboardSpace(
+    geometry.top,
+    geometry.height,
+    keyboardHeight > 0 ? keyboardTop.current : undefined,
+  );
 
   useEffect(() => {
     const shown = Keyboard.addListener('keyboardDidShow', event => {
       keyboardTop.current = event.endCoordinates.screenY;
       setKeyboardHeight(event.endCoordinates.height);
+      if (resizeViewport) requestAnimationFrame(measureBackdrop);
     });
     const hidden = Keyboard.addListener('keyboardDidHide', () => {
       keyboardTop.current = Dimensions.get('window').height;
@@ -94,25 +124,28 @@ export function Sheet({
       shown.remove();
       hidden.remove();
     };
-  }, []);
+  }, [resizeViewport, measureBackdrop]);
 
-  const revealFocusedInput = useCallback((input: KeyboardViewportTarget | null) => {
-    if (input === null) return;
-    const reveal = () => {
-      input.measureInWindow((_x, y, _width, height) => {
-        const safeBottom = keyboardTop.current - 20;
-        const coveredByKeyboard = y + height - safeBottom;
-        if (coveredByKeyboard > 0) {
-          scrollRef.current?.scrollTo({
-            y: Math.max(0, scrollY.current + coveredByKeyboard),
-            animated: true,
-          });
-        }
-      });
-    };
-    requestAnimationFrame(reveal);
-    setTimeout(reveal, 280);
-  }, []);
+  const revealFocusedInput = useCallback(
+    (input: KeyboardViewportTarget | null) => {
+      if (input === null) return;
+      const reveal = () => {
+        input.measureInWindow((_x, y, _width, height) => {
+          const safeBottom = keyboardTop.current - 20;
+          const coveredByKeyboard = y + height - safeBottom;
+          if (coveredByKeyboard > 0) {
+            scrollRef.current?.scrollTo({
+              y: Math.max(0, scrollY.current + coveredByKeyboard),
+              animated: true,
+            });
+          }
+        });
+      };
+      requestAnimationFrame(reveal);
+      setTimeout(reveal, 280);
+    },
+    [],
+  );
 
   return (
     <Modal
@@ -123,7 +156,14 @@ export function Sheet({
       // hành vi back của app cũ chưa từng được test; ở đây nối rõ ràng.
       onRequestClose={onDismiss}
     >
-      <View style={styles.backdrop}>
+      <View
+        ref={backdrop}
+        onLayout={resizeViewport ? measureBackdrop : undefined}
+        style={[
+          styles.backdrop,
+          resizeViewport && { paddingBottom: space.bottomInset },
+        ]}
+      >
         {/*
          * Vùng đóng là sibling nằm sau panel, không phải wrapper của panel.
          * Nhờ vậy bấm trong Sheet không đóng, còn button bên trong không lồng
@@ -138,6 +178,9 @@ export function Sheet({
         <View
           style={[
             styles.panel,
+            resizeViewport && {
+              maxHeight: Math.max(0, space.availableHeight - 16),
+            },
             {
               backgroundColor: theme.colors.surface,
               borderTopLeftRadius: theme.radius.sheet,
@@ -149,16 +192,27 @@ export function Sheet({
         >
           <KeyboardViewportContext.Provider value={revealFocusedInput}>
             <KeyboardAvoidingView
-              behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+              behavior={
+                resizeViewport
+                  ? undefined
+                  : Platform.OS === 'ios'
+                  ? 'padding'
+                  : 'height'
+              }
               style={styles.keyboardContainer}
             >
               <ScrollView
                 ref={scrollRef}
+                style={
+                  resizeViewport
+                    ? { maxHeight: Math.max(0, space.availableHeight - 64) }
+                    : undefined
+                }
                 keyboardShouldPersistTaps="handled"
                 keyboardDismissMode="on-drag"
                 contentContainerStyle={[
                   { gap: theme.spacing.lg },
-                  keyboardHeight > 0
+                  keyboardHeight > 0 && !resizeViewport
                     ? { paddingBottom: keyboardHeight + 20 }
                     : null,
                 ]}

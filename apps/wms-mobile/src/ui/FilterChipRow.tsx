@@ -1,3 +1,4 @@
+import {HN_UI} from '../theme/uiKitV3';
 /**
  * `FilterChipRow` — hàng chip lọc, cuộn ngang.
  *
@@ -17,9 +18,11 @@
 
 import React from 'react';
 import {
+  Platform,
   Pressable,
   ScrollView,
   StyleSheet,
+  View,
   type StyleProp,
   type ViewStyle,
 } from 'react-native';
@@ -35,6 +38,10 @@ const styles = StyleSheet.create({
   label: {
     fontWeight: '600',
   },
+  historyScroll: {flexGrow:0,flexShrink:0,minWidth:0,minHeight:44},
+  historyContent: {flexGrow:1,minHeight:44,gap:6,alignItems:'stretch'},
+  historyChip: {flexShrink:0,flexBasis:'auto',minWidth:44,minHeight:44,paddingHorizontal:6,borderRadius:10,alignItems:'center',justifyContent:'center'},
+  historyLabel: {fontSize:16,lineHeight:20,fontWeight:'400',fontFamily:Platform.OS==='web'?'Arial':undefined},
 });
 
 export interface FilterChip {
@@ -49,6 +56,8 @@ export interface FilterChipRowProps {
   activeKey: string;
   onSelect: (key: string) => void;
   style?: StyleProp<ViewStyle>;
+  /** History choices use a single row; overflow scrolls rather than breaking a label. */
+  variant?: 'default' | 'history' | 'history-tabs' | 'history-wrap';
 }
 
 export function FilterChipRow({
@@ -56,8 +65,82 @@ export function FilterChipRow({
   activeKey,
   onSelect,
   style,
+  variant = 'default',
 }: FilterChipRowProps): React.ReactElement {
   const theme = useTheme();
+
+  if(variant==='history') return (
+    <ScrollView horizontal keyboardShouldPersistTaps="handled" showsHorizontalScrollIndicator={false} alwaysBounceHorizontal={false}
+      style={[styles.historyScroll,style]} contentContainerStyle={styles.historyContent}>
+      {chips.map(chip=>{
+        const active=chip.key===activeKey;
+        return <Pressable key={chip.key} accessibilityRole="button" accessibilityLabel={chip.label}
+          accessibilityState={{selected:active}} onPress={()=>onSelect(chip.key)}
+          style={[styles.historyChip,{flexGrow:chip.key==='ALL'?1.2:chip.key==='NFC'?0.7:1,
+            backgroundColor:active?HN_UI.textLink:HN_UI.selected,
+            ...(Platform.OS==='web'&&active?{backgroundImage:`linear-gradient(120deg,${HN_UI.primary},${HN_UI.primary})`}:{}),
+          }]}>
+          <Text numberOfLines={1} style={[styles.historyLabel,{color:active?HN_UI.onBrand:HN_UI.textPrimary}]}>{chip.label}</Text>
+        </Pressable>;
+      })}
+    </ScrollView>
+  );
+
+  if (variant !== 'default') {
+    const tabs = variant === 'history-tabs';
+    return (
+      <View
+        style={[
+          {
+            flexDirection: 'row',
+            flexWrap: variant === 'history-wrap' ? 'wrap' : 'nowrap',
+            gap: tabs ? 4 : 6,
+            ...(tabs?{borderBottomWidth:1,borderBottomColor:HN_UI.border}:{}),
+          },
+          style,
+        ]}
+      >
+        {chips.map(chip => {
+          const active = chip.key === activeKey;
+          return (
+            <Pressable
+              key={chip.key}
+              accessibilityRole="button"
+              accessibilityLabel={chip.label}
+              accessibilityState={{ selected: active }}
+              onPress={() => onSelect(chip.key)}
+              style={{
+                flex: variant === 'history-wrap' ? undefined : 1,
+                width: variant === 'history-wrap' ? '31.8%' : undefined,
+                minWidth: 0,
+                minHeight: tabs?48:44,
+                paddingHorizontal: tabs?3:5,
+                alignItems: 'center',
+                justifyContent: 'center',
+                borderRadius: tabs ? 0 : 10,
+                ...(tabs?{borderTopLeftRadius:8,borderTopRightRadius:8}:{}),
+                borderBottomWidth: tabs&&active ? 3 : 0,
+                borderBottomColor: HN_UI.border,
+                backgroundColor: tabs?(active?HN_UI.selected:'transparent'):(active?HN_UI.textLink:HN_UI.selected),
+              }}
+            >
+              <Text
+                style={{
+                  fontSize: tabs?17:16,
+                  fontFamily: Platform.OS === 'web' ? 'Arial' : undefined,
+                  lineHeight: tabs?23:20,
+                  fontWeight: tabs && active ? '600' : '400',
+                  color: tabs?(active?HN_UI.textLink:HN_UI.textSecondary):(active?HN_UI.onBrand:HN_UI.textPrimary),
+                }}
+              >
+                {chip.label}
+              </Text>
+            </Pressable>
+          );
+        })}
+      </View>
+    );
+  }
 
   return (
     <ScrollView
@@ -70,7 +153,10 @@ export function FilterChipRow({
       // Android có thể đo ScrollView ngang là 0px khi nó nằm giữa ô nhập và
       // FlashList co giãn. Giữ đúng chiều cao vùng chạm của chip để hai hàng
       // lọc của Lịch sử luôn hiện, cả khi máy đang xoay ngang.
-      style={[{ minHeight: theme.touchTarget.min, maxHeight: theme.touchTarget.min }, style]}
+      style={[
+        { minHeight: theme.touchTarget.min, maxHeight: theme.touchTarget.min },
+        style,
+      ]}
     >
       {chips.map(chip => {
         const active = chip.key === activeKey;
@@ -78,6 +164,11 @@ export function FilterChipRow({
           <Pressable
             key={chip.key}
             accessibilityRole="button"
+            accessibilityLabel={
+              chip.count === undefined
+                ? chip.label
+                : chip.label + ' · ' + String(chip.count)
+            }
             accessibilityState={{ selected: active }}
             onPress={() => onSelect(chip.key)}
             style={[

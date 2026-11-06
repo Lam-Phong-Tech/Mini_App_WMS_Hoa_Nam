@@ -9,17 +9,10 @@ import {
   createApiClient,
   WMS_TOKEN_TRANSPORT_HEADER,
 } from '../src/api/client';
-import {
-  allowsIfMatch,
-  approvedWriteFor,
-} from '../src/api/writeGate';
+import { allowsIfMatch, approvedWriteFor } from '../src/api/writeGate';
 import { AppError } from '../src/errors/AppError';
 import type { AppEnvironment } from '../src/config/env';
-import {
-  clearSession,
-  getSession,
-  setSession,
-} from '../src/auth/session';
+import { clearSession, getSession, setSession } from '../src/auth/session';
 import { resetRefreshState } from '../src/auth/tokenRefresh';
 import { hasServerTime, resetServerClock } from '../src/auth/serverClock';
 import {
@@ -178,6 +171,22 @@ describe('môi trường chưa cấu hình', () => {
 });
 
 describe('phân tích lỗi từ server', () => {
+  it('403 HTML with a request ID remains a transport parse error, not an RBAC denial', async () => {
+    const client = clientWith(blockedEnvironment, async () => ({
+      ok: false,
+      status: 403,
+      headers: {
+        get: (name: string) =>
+          name.toLowerCase() === 'x-request-id' ? 'test-proxy-trace' : null,
+      },
+      text: async () => '<html>Proxy denied request</html>',
+    }));
+    await expect(client.get('/x')).rejects.toMatchObject({
+      kind: 'parse',
+      status: 403,
+      code: 'HTTP_NON_JSON_RESPONSE',
+    });
+  });
   it('401 thành kind auth', async () => {
     const client = clientWith(blockedEnvironment, async () =>
       jsonResponse(401, { message: 'hết hạn' }),
@@ -203,7 +212,9 @@ describe('phân tích lỗi từ server', () => {
     const client = clientWith(approvedEnvironment, async () => ({
       ok: false,
       status: 409,
-      headers: { get: (name: string) => (name === 'x-request-id' ? 'req-409-01' : null) },
+      headers: {
+        get: (name: string) => (name === 'x-request-id' ? 'req-409-01' : null),
+      },
       text: async () =>
         JSON.stringify({
           error_code: 'DUPLICATE_ITEM_IN_BATCH',
@@ -212,7 +223,10 @@ describe('phân tích lỗi từ server', () => {
     }));
 
     await expect(
-      client.request({ method: 'POST', path: '/api/v1/mini-app/inbound/record' }),
+      client.request({
+        method: 'POST',
+        path: '/api/v1/mini-app/inbound/record',
+      }),
     ).rejects.toMatchObject({
       kind: 'http',
       status: 409,
@@ -229,6 +243,33 @@ describe('phân tích lỗi từ server', () => {
       text: async () => 'không-phải-json',
     }));
     await expect(client.get('/x')).rejects.toMatchObject({ kind: 'parse' });
+  });
+
+  it('429 giữ Retry-After và Request-ID cho màn recovery', async () => {
+    const client = clientWith(blockedEnvironment, async () => ({
+      ok: false,
+      status: 429,
+      headers: {
+        get: (name: string) =>
+          name.toLowerCase() === 'retry-after'
+            ? '17'
+            : name.toLowerCase() === 'x-request-id'
+            ? 'req-recovery-429'
+            : null,
+      },
+      text: async () => JSON.stringify({ message: 'Too many attempts' }),
+    }));
+    await expect(
+      client.request({
+        method: 'POST',
+        path: '/api/v1/auth/forgot-password',
+        body: { email: 'test@example.com' },
+      }),
+    ).rejects.toMatchObject({
+      status: 429,
+      retryAfterSeconds: 17,
+      requestId: 'req-recovery-429',
+    });
   });
 });
 
@@ -261,29 +302,45 @@ describe('phiên đăng nhập', () => {
     ).toBeUndefined();
   });
 
+  it.each(['/api/v1/auth/login', '/api/v1/auth/refresh'])(
+    '%s gửi refresh token trong JSON body, không dùng Bearer',
+    async path => {
+      const fetchSpy = jest.fn(async (_url: string, _init: RequestInit) =>
+        jsonResponse(200, {}),
+      );
+      const client = clientWith(blockedEnvironment, fetchSpy, {
+        accessToken: 'access-cu',
+      });
+
+      await client.request({
+        path,
+        method: 'POST',
+        body: { refresh_token: 'refresh-cu' },
+      });
+
+      const init = fetchSpy.mock.calls[0][1] as RequestInit;
+      const headers = init.headers as Record<string, string>;
+      expect(headers[WMS_TOKEN_TRANSPORT_HEADER]).toBe('body');
+      expect(headers.Authorization).toBeUndefined();
+      expect(init.body).toBe(JSON.stringify({ refresh_token: 'refresh-cu' }));
+    },
+  );
+
   it.each([
-    '/api/v1/auth/login',
-    '/api/v1/auth/refresh',
-    '/api/v1/auth/logout',
-  ])('%s gửi refresh token trong JSON body, không dùng Bearer', async path => {
+    '/api/v1/auth/forgot-password',
+    '/api/v1/auth/verify-otp',
+    '/api/v1/auth/reset-password',
+  ])('%s không gửi Bearer hoặc cookie phiên cũ', async path => {
     const fetchSpy = jest.fn(async (_url: string, _init: RequestInit) =>
-      jsonResponse(200, {}),
+      jsonResponse(200, { success: true, data: null }),
     );
     const client = clientWith(blockedEnvironment, fetchSpy, {
       accessToken: 'access-cu',
     });
-
-    await client.request({
-      path,
-      method: 'POST',
-      body: { refresh_token: 'refresh-cu' },
-    });
-
+    await client.request({ method: 'POST', path, body: {} });
     const init = fetchSpy.mock.calls[0][1] as RequestInit;
-    const headers = init.headers as Record<string, string>;
-    expect(headers[WMS_TOKEN_TRANSPORT_HEADER]).toBe('body');
-    expect(headers.Authorization).toBeUndefined();
-    expect(init.body).toBe(JSON.stringify({ refresh_token: 'refresh-cu' }));
+    expect((init.headers as Record<string, string>).Authorization).toBeUndefined();
+    expect(init.credentials).toBe('omit');
   });
 });
 
@@ -367,7 +424,7 @@ describe('401 → gia hạn ngầm rồi gửi lại đúng một lần', () => 
         return jsonResponse(200, refreshOk());
       }
       // Lượt đầu 401, lượt sau (đã có token mới) thì 200.
-      return calls.filter((c) => c.endsWith('/x')).length === 1
+      return calls.filter(c => c.endsWith('/x')).length === 1
         ? jsonResponse(401, unauthorized)
         : jsonResponse(200, { data: { ok: true }, meta: {} });
     };
@@ -479,7 +536,11 @@ describe('POST tới đường auth vẫn qua được cổng chặn ghi', () =>
       jsonResponse(200, { data: {}, meta: {} }),
     );
     await expect(
-      client.request({ path: '/api/v1/auth/refresh', method: 'POST', body: {} }),
+      client.request({
+        path: '/api/v1/auth/refresh',
+        method: 'POST',
+        body: {},
+      }),
     ).resolves.toMatchObject({ status: 200 });
   });
 
@@ -652,13 +713,13 @@ describe('GATE_WMS §2e–§2h — cổng ghi hẹp', () => {
 
     it('client thật gắn được header lên record', async () => {
       let sentHeaders: Record<string, string> = {};
-      const client = clientWith(blockedEnvironment, async (
-        _url: string,
-        init: { headers: Record<string, string> },
-      ) => {
-        sentHeaders = init.headers;
-        return jsonResponse(200, { data: {}, meta: {} });
-      });
+      const client = clientWith(
+        blockedEnvironment,
+        async (_url: string, init: { headers: Record<string, string> }) => {
+          sentHeaders = init.headers;
+          return jsonResponse(200, { data: {}, meta: {} });
+        },
+      );
       await client.request({
         path: RECORD,
         method: 'POST',
@@ -694,7 +755,10 @@ describe('GATE_WMS §2e–§2h — cổng ghi hẹp', () => {
       // 🔧 2026-09-06 (`§2h`): trước đó chỉ post-receipt. Nay hai thao tác
       // `post-*` đều gửi If-Match, và đó cũng đúng là hai lệnh đổi tồn kho.
       expect(
-        allowsIfMatch('POST', '/api/v1/mini-app/outbound-documents/1/post-issue'),
+        allowsIfMatch(
+          'POST',
+          '/api/v1/mini-app/outbound-documents/1/post-issue',
+        ),
       ).toBe(true);
     });
 
@@ -702,9 +766,9 @@ describe('GATE_WMS §2e–§2h — cổng ghi hẹp', () => {
       expect(
         allowsIfMatch('POST', '/api/v1/mini-app/outbound-documents/1/unmatch'),
       ).toBe(false);
-      expect(
-        allowsIfMatch('POST', '/api/v1/mini-app/warranty-cases'),
-      ).toBe(false);
+      expect(allowsIfMatch('POST', '/api/v1/mini-app/warranty-cases')).toBe(
+        false,
+      );
     });
   });
 });

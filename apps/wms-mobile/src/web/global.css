@@ -1,3 +1,8 @@
+@import '../theme/kitV3/hn-tokens.css';
+:root { color-scheme:light; }
+@font-face {font-family:Inter;font-style:normal;font-weight:100 900;font-display:swap;src:url('../../assets/ui-kit-v3/fonts/Inter-Variable.woff2') format('woff2')}
+@font-face {font-family:Inter;font-style:italic;font-weight:100 900;font-display:swap;src:url('../../assets/ui-kit-v3/fonts/Inter-Italic-Variable.woff2') format('woff2')}
+
 @font-face {
   font-family: 'Public Sans';
   font-style: normal;
@@ -33,6 +38,113 @@
 html,
 body,
 #root {
-  font-family: 'Public Sans', Arial, sans-serif;
-  background: #f3f8fb;
+  font-family: Inter, sans-serif;
+  font-optical-sizing: none;
+  background: var(--hn-bg-canvas);
+}
+
+html {
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+}
+
+html[data-hn-frame='host'],
+body[data-hn-frame='host'] {
+  overflow: hidden;
+}
+
+body[data-hn-frame='host'] {
+  align-items: flex-start;
+  display: flex;
+  justify-content: center;
+}
+
+html[data-hn-frame='inner'],
+body[data-hn-frame='inner'],
+html[data-hn-frame='inner'] #root {
+  height: 950px;
+  width: 494px;
+}
+
+/* P01 focus must not add a browser outline/inner ring to the LOCKED field. */
+input:focus,
+textarea:focus,
+select:focus {
+  box-shadow: none;
+}
+
+/* Buttons need an outer focus ring; text fields already own their frame. */
+[role='button']:focus-visible,button:focus-visible {
+  outline:2px solid var(--hn-focus-ring);
+  outline-offset:3px;
+  box-shadow:0 0 0 3px var(--hn-focus-offset);
+}
+
+/* A white outer shadow on an inner input masks its composite field's border.
+   Keep a focus outline for bare controls; component-owned outlines still win. */
+input:focus-visible,textarea:focus-visible,select:focus-visible {
+  outline:2px solid var(--hn-focus-ring);
+  outline-offset:3px;
+  box-shadow:none;
+}
+
+/* Text inputs with icons focus their existing frame, never the inner text box.
+   Direct-child matching avoids lighting a whole form, card, modal or page.
+   No wrapper nodes/listeners are added, preserving refs, selection and IME. */
+[data-hn-input='inner']:focus,
+[data-hn-input='inner']:focus-visible {
+  outline:none !important;
+  box-shadow:none !important;
+}
+
+:where(div):has(> [data-hn-input='inner'][data-hn-disabled='false']):focus-within,
+[data-hn-input='self'][data-hn-disabled='false']:focus {
+  border-color:var(--hn-focus-ring) !important;
+  outline:2px solid var(--hn-focus-ring) !important;
+  outline-offset:3px !important;
+  box-shadow:0 0 0 3px color-mix(in srgb,var(--hn-focus-ring) 20%,var(--hn-input-bg)) !important;
+}
+
+/* An eye/clear button belongs to the same field frame, not a second square. */
+:where(div):has(> [data-hn-input='inner'][data-hn-disabled='false']) [role='button']:focus-visible,
+:where(div):has(> [data-hn-input='inner'][data-hn-disabled='false']) button:focus-visible {
+  outline:none;
+  box-shadow:none;
+}
+
+:where(div):has(> [data-hn-input='inner'][data-hn-invalid='true'][data-hn-disabled='false']):focus-within,
+[data-hn-input='self'][data-hn-invalid='true'][data-hn-disabled='false']:focus {
+  border-color:var(--hn-input-invalid-border) !important;
+  outline-color:var(--hn-input-invalid-border) !important;
+  box-shadow:0 0 0 3px color-mix(in srgb,var(--hn-input-invalid-border) 20%,var(--hn-input-bg)) !important;
+}
+
+[data-hn-input='self'][data-hn-disabled='true']:focus {
+  outline:none !important;
+  box-shadow:none !important;
+}
+
+/* The browser's autofill paint must not create a blue rectangle between icons.
+   Preserve the real input, password manager, ref, selection and IME. */
+[data-hn-input]:autofill,
+[data-hn-input]:-webkit-autofill {
+  -webkit-box-shadow:0 0 0 1000px var(--hn-input-bg) inset !important;
+  box-shadow:0 0 0 1000px var(--hn-input-bg) inset !important;
+  -webkit-text-fill-color:var(--hn-text-primary) !important;
+  caret-color:var(--hn-focus-ring);
+}
+[data-hn-readonly='true']:autofill,
+[data-hn-readonly='true']:-webkit-autofill {
+  -webkit-box-shadow:0 0 0 1000px var(--hn-input-readonly-bg) inset !important;
+  box-shadow:0 0 0 1000px var(--hn-input-readonly-bg) inset !important;
+}
+[data-hn-disabled='true']:autofill,
+[data-hn-disabled='true']:-webkit-autofill {
+  -webkit-box-shadow:0 0 0 1000px var(--hn-action-disabled-bg) inset !important;
+  box-shadow:0 0 0 1000px var(--hn-action-disabled-bg) inset !important;
+  -webkit-text-fill-color:var(--hn-action-disabled-fg) !important;
+}
+[data-hn-input]::selection {
+  background:var(--hn-selection-bg);
+  color:var(--hn-selection-fg);
 }

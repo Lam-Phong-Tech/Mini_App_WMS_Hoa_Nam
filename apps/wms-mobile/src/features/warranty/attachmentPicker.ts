@@ -176,12 +176,9 @@ export async function pickFromLibrary(
   deps: PickerDeps = {},
 ): Promise<PickOutcome> {
   const launch = deps.fromLibrary ?? launchImageLibrary;
-  const remaining = Math.max(
-    0,
-    ATTACHMENT_LIMITS.maxImages -
-      counts.images +
-      (ATTACHMENT_LIMITS.maxVideos - counts.videos),
-  );
+  const remaining =
+    Math.max(0, ATTACHMENT_LIMITS.maxImages - counts.images) +
+    Math.max(0, ATTACHMENT_LIMITS.maxVideos - counts.videos);
   if (remaining === 0) {
     return { kind: 'error', message: 'Hồ sơ đã đủ số ảnh và video cho phép.' };
   }

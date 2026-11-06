@@ -27,6 +27,7 @@
  * **Post Issue** (trừ tồn).
  */
 
+import { vietnamTimeParts } from '../../time/vietnamTime';
 import {
   parseScanPayload,
   type ScanSource,
@@ -39,7 +40,7 @@ export const OUTBOUND_STEPS = [
   'Thông tin',
   'Quét mã',
   'Kiểm tra',
-  'Gửi duyệt',
+  'Gửi phiếu',
 ] as const;
 
 export type OutboundStep = 0 | 1 | 2 | 3;
@@ -623,17 +624,9 @@ export interface OutboundOutboxPayload {
  * sách, và một hàng không tên thì không phân biệt được với hàng khác.
  */
 export function defaultOutboundName(at: Date): string {
-  const pad = (value: number): string => String(value).padStart(2, '0');
-  return (
-    'Phiếu xuất ' +
-    pad(at.getHours()) +
-    ':' +
-    pad(at.getMinutes()) +
-    ' ' +
-    pad(at.getDate()) +
-    '/' +
-    pad(at.getMonth() + 1)
-  );
+  const p = vietnamTimeParts(at.getTime());
+  if (!p) throw new Error('INVALID_DOCUMENT_DATE');
+  return `Phiếu xuất ${p.hour}:${p.minute} ${p.day}/${p.month}`;
 }
 
 /**

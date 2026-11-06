@@ -293,7 +293,7 @@ describe('phân loại lỗi — quyết định gửi lại hay dừng', () => 
     );
   });
 
-  it('giữ nguyên phản hồi nghiệp vụ của WMS để màn Gửi duyệt chỉ đúng lỗi', () => {
+  it('giữ nguyên phản hồi nghiệp vụ của WMS để màn Gửi phiếu chỉ đúng lỗi', () => {
     const result = classifyFailure(
       new AppError({
         kind: 'http',

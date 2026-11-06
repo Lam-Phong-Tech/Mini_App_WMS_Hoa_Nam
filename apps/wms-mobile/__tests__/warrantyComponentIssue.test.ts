@@ -24,6 +24,7 @@ import {
   type WarrantyComponentSkuLookupClient,
 } from '../src/features/warranty/warrantyComponentSkuLookup';
 import { fetchPostedWarrantyComponentHistory } from '../src/services/wms/warrantyComponentRead';
+import { clearSession, setSession } from '../src/auth/session';
 import type { ReadClient } from '../src/services/wms/readOnlyClient';
 import type { RequestOptions } from '../src/api/client';
 import {
@@ -101,14 +102,14 @@ describe('nháp xuất linh kiện bảo hành', () => {
     expect(() => addWarrantyComponent(draft, 'BOX-SEED-RPT-001')).toThrow(
       'Số lượng trong hộp phải là số nguyên dương',
     );
-    expect(() => addWarrantyComponent(draft, 'BOX-SEED-RPT-001', '0')).toThrow();
+    expect(() =>
+      addWarrantyComponent(draft, 'BOX-SEED-RPT-001', '0'),
+    ).toThrow();
 
-    const added = addWarrantyComponent(
-      draft,
-      'BOX-SEED-RPT-001',
-      '3',
-      { skuId: 'sku-carbon-brush', skuCode: 'DCA-CARBONBRUSH' },
-    );
+    const added = addWarrantyComponent(draft, 'BOX-SEED-RPT-001', '3', {
+      skuId: 'sku-carbon-brush',
+      skuCode: 'DCA-CARBONBRUSH',
+    });
     expect(added.items[0]).toMatchObject({
       kind: 'BOX',
       sku: 'SEED-RPT',
@@ -136,15 +137,15 @@ describe('nháp xuất linh kiện bảo hành', () => {
 
   it('giữ khoá Post ổn định trong cùng phiên nháp', () => {
     const draft = createWarrantyComponentDraft('case-1', 'session-1');
-    expect(warrantyComponentPostIdempotencyKey(draft.caseId, draft.sessionId)).toBe(
-      warrantyComponentPostIdempotencyKey('case-1', 'session-1'),
-    );
+    expect(
+      warrantyComponentPostIdempotencyKey(draft.caseId, draft.sessionId),
+    ).toBe(warrantyComponentPostIdempotencyKey('case-1', 'session-1'));
     expect(warrantyComponentPostIdempotencyKey('case-1', 'session-1')).toMatch(
       /^wmshn-wcomponent-post-/,
     );
-    expect(warrantyComponentIdempotencyKey('case-1', 'session-1', 'ITEM-1')).toMatch(
-      /^wmshn-wcomponent-/,
-    );
+    expect(
+      warrantyComponentIdempotencyKey('case-1', 'session-1', 'ITEM-1'),
+    ).toMatch(/^wmshn-wcomponent-/);
   });
 });
 
@@ -263,7 +264,9 @@ describe('API gốc xuất linh kiện bảo hành', () => {
         {},
         client,
       ),
-    ).rejects.toThrow('Hồ sơ bảo hành chưa ở trạng thái Đang kiểm tra hoặc Đang sửa chữa.');
+    ).rejects.toThrow(
+      'Hồ sơ bảo hành chưa ở trạng thái Đang kiểm tra hoặc Đang sửa chữa.',
+    );
   });
 
   it('diễn giải lỗi linh kiện serial quét nhầm mã hộp', async () => {
@@ -350,7 +353,11 @@ describe('API gốc xuất linh kiện bảo hành', () => {
         postIdempotencyKey: 'stable-post-key',
         items: [
           { skuId: 'sku-component-a', codeValue: 'SERIAL-001', quantity: 1 },
-          { skuId: 'sku-component-b', codeValue: 'BOX-SEED-RPT-001', quantity: 3 },
+          {
+            skuId: 'sku-component-b',
+            codeValue: 'BOX-SEED-RPT-001',
+            quantity: 3,
+          },
         ],
       },
       { ensureTier, loadCase },
@@ -519,7 +526,9 @@ describe('API gốc xuất linh kiện bảo hành', () => {
     });
     const noWriteClient: WarrantyComponentWriteClient = {
       request: async () => {
-        throw new Error('Không được scan/Create/Post khi marker chưa đối chiếu.');
+        throw new Error(
+          'Không được scan/Create/Post khi marker chưa đối chiếu.',
+        );
       },
     };
 
@@ -628,7 +637,10 @@ describe('API gốc xuất linh kiện bảo hành', () => {
 
 describe('khóa kho của phiên linh kiện bảo hành', () => {
   it('giữ mốc khóa riêng cả khi nhân viên đã xóa toàn bộ dòng nháp', () => {
-    const draft = createWarrantyComponentDraft('case-warehouse-lock', 'session-1');
+    const draft = createWarrantyComponentDraft(
+      'case-warehouse-lock',
+      'session-1',
+    );
     saveWarrantyComponentSession({
       caseId: draft.caseId,
       draft,
@@ -663,89 +675,144 @@ describe('khóa kho của phiên linh kiện bảo hành', () => {
 });
 
 describe('lịch sử linh kiện đã xuất', () => {
-  it('chỉ đọc phiếu POSTED của đúng hồ sơ rồi hiển thị lượng quét thực tế', async () => {
+  const id = (n: number) =>
+    '20000000-0000-4000-8000-' + String(n).padStart(12, '0');
+  beforeEach(() => {
+    clearSession();
+    setSession({
+      accessToken: 'offline-only',
+      userId: id(10),
+      authSessionId: id(11),
+      activeWarehouseId: id(12),
+    });
+  });
+  afterEach(() => clearSession());
+  it('P20 reads POSTED owner proof, not required/scanned defaults or display IDs', async () => {
     const sent: Array<{ path: string; options?: unknown }> = [];
+    const meta = {
+      component_history_contract: 'p20-component-history-v1',
+      warehouse_id: id(12),
+      read_only: true,
+      operation_receipt: false,
+    };
+    const posted = '2026-09-09T14:48:59Z';
     const client: ReadClient = {
       async get<T>(
         path: string,
         options?: Omit<RequestOptions, 'path' | 'method'>,
       ) {
         sent.push({ path, options });
-        if (path === '/api/v1/component-issue-documents') {
-          return {
-            status: 200,
-            data: {
-              success: true,
-              data: [
+        const data = path.endsWith('/component-issues')
+          ? [
+              {
+                component_issue_document_id: id(3),
+                document_no: 'CID-source',
+                warranty_case_id: id(2),
+                warehouse_id: id(12),
+                status: 'POSTED',
+                posted_at: posted,
+                can_open: true,
+                detail_url:
+                  '/api/v1/mini-app/warranty-component-issues/' + id(3),
+              },
+            ]
+          : {
+              document: {
+                id: id(3),
+                component_issue_no: 'CID-source',
+                warranty_case_id: id(2),
+                warehouse_id: id(12),
+                status: 'POSTED',
+                posted_at: posted,
+              },
+              lines: [
                 {
-                  id: 'document-posted-1',
-                  component_issue_no: 'CID-20260909144859-2EUF',
-                  status: 'POSTED',
-                  posted_at: '2026-09-09 14:48:59+00',
+                  id: id(4),
+                  sku_code: 'AABC',
+                  sku_name: 'ABC',
+                  unit: 'chiếc',
+                  unit_source: 'CURRENT_SKU_CATALOG',
+                  required_qty: 90,
+                  scanned_qty: 1,
+                  issued_qty: 1,
+                  quantity_status: 'CONFIRMED',
+                  items: [
+                    {
+                      status: 'POSTED',
+                      line_id: id(4),
+                      raw_code: 'ORIGINAL-SOURCE',
+                      raw_code_status: 'RECORDED',
+                    },
+                  ],
                 },
               ],
-            } as T,
-            header: () => undefined,
-          };
-        }
+              history: {
+                contract: 'p20-component-history-v1',
+                is_operation_receipt: false,
+                read_stock_effect: 'NONE',
+                quantity_total: 1,
+                quantity_status: 'CONFIRMED',
+                totals_by_unit: { chiếc: 1 },
+              },
+            };
         return {
           status: 200,
           data: {
             success: true,
-            data: {
-              document: {
-                id: 'document-posted-1',
-                component_issue_no: 'CID-20260909144859-2EUF',
-                posted_at: '2026-09-09 14:48:59+00',
-              },
-              lines: [
-                {
-                  id: 'component-line-1',
-                  sku_code: 'AABC',
-                  sku_name: 'ABC',
-                  required_qty: 1,
-                  scanned_qty: 1,
-                  items: [{ quantity: 1 }],
-                },
-              ],
+            data,
+            meta: {
+              ...meta,
+              total: 1,
+              page: 1,
+              per_page: 20,
+              hasMore: false,
+              nextCursor: null,
+              nextPage: null,
             },
           } as T,
-          header: () => undefined,
         };
       },
     };
-
-    await expect(
-      fetchPostedWarrantyComponentHistory('case-1', {}, client),
-    ).resolves.toEqual([
+    const history = await fetchPostedWarrantyComponentHistory(
+      id(2),
+      {},
+      client,
+    );
+    expect(history).toEqual([
       {
-        id: 'document-posted-1',
-        documentNumber: 'CID-20260909144859-2EUF',
-        postedAt: '2026-09-09 14:48:59+00',
+        id: id(3),
+        documentNumber: 'CID-source',
+        postedAt: posted,
+        quantityTotal: 1,
+        quantityStatus: 'CONFIRMED',
+        totalsByUnit: { chiếc: 1 },
         lines: [
           {
-            id: 'component-line-1',
+            id: id(4),
             skuCode: 'AABC',
             skuName: 'ABC',
+            unit: 'chiếc',
+            unitSource: 'CURRENT_SKU_CATALOG',
             quantity: 1,
+            quantityStatus: 'CONFIRMED',
             scannedCodeCount: 1,
+            codes: [{ rawCode: 'ORIGINAL-SOURCE', status: 'RECORDED' }],
           },
         ],
       },
     ]);
     expect(sent).toHaveLength(2);
     expect(sent[0]).toMatchObject({
-      path: '/api/v1/component-issue-documents',
+      path: '/api/v1/mini-app/warranty-cases/' + id(2) + '/component-issues',
       options: {
-        query: {
-          warranty_case_id: 'case-1',
-          status: 'POSTED',
-          per_page: 10,
-        },
+        headers: { 'X-Component-History-Contract': 'p20-component-history-v1' },
+        query: { warehouse_id: id(12), per_page: 20, page: 1 },
       },
     });
     expect(sent[1]).toMatchObject({
-      path: '/api/v1/component-issue-documents/document-posted-1',
+      path: '/api/v1/mini-app/warranty-component-issues/' + id(3),
+      options: { query: { warehouse_id: id(12) } },
     });
+    expect(history[0].lines[0].quantity).not.toBe(90);
   });
 });

@@ -41,15 +41,18 @@ import { Input, type InputProps } from './Input';
 export type CodeInputProps = Omit<
   InputProps,
   'keyboardType' | 'autoCorrect' | 'autoCapitalize' | 'spellCheck'
->;
+> & { preserveCase?: boolean };
 
-export function CodeInput(props: CodeInputProps): React.ReactElement {
+export function CodeInput({
+  preserveCase = false,
+  ...props
+}: CodeInputProps): React.ReactElement {
   return (
     <Input
       {...props}
       // Thứ tự quan trọng: đặt sau `props` để bên gọi không vô tình ghi đè.
       keyboardType="visible-password"
-      autoCapitalize="characters"
+      autoCapitalize={preserveCase ? 'none' : 'characters'}
       autoCorrect={false}
       spellCheck={false}
     />

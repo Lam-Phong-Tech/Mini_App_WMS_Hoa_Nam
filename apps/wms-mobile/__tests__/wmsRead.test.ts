@@ -253,6 +253,7 @@ describe('`auth/me` — adapter cùng cấu trúc staff/user với Mini App', ()
       email: undefined,
       avatar_url: 'https://example.invalid/avatar.png',
       role: 'Warehouse Operator',
+      roles: [{ role_name: 'Warehouse Operator' }],
       permissions: undefined,
     });
   });

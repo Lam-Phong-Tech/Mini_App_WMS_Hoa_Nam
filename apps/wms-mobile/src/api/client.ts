@@ -1,3 +1,23 @@
+import { p10DevTestAllowed, verifyP10DevRuntime } from '../config/p10DevTest';
+import { assertP19DevConnected } from '../config/p19Release';
+import {
+  getSessionGeneration,
+  isTerminalSessionCode,
+  terminateAuthSession,
+  observeAccountSessionPolicy,
+  markPasswordChangeRequired,
+} from '../auth/session';
+import {
+  assertP10Connected,
+  isP10CommandOrSessions,
+} from '../config/p10Release';
+import {
+  assertP11Connected,
+  isP11Request,
+  p11DevRequestAllowed,
+  verifyP11DevRuntime,
+} from '../config/p11Release';
+import { asRecord, decodePasswordPolicy } from '../contracts/p11Security';
 /**
  * API client — nền tảng HTTP.
  *
@@ -26,11 +46,22 @@ import {
 } from '../errors/AppError';
 import { USER_AGENT, isEdgeBlocked } from './userAgent';
 import {
+  skuCodeFromErrorBody,
+  skuInactiveMessage,
+} from '../errors/skuInactiveMessage';
+import {
   allowsIdempotencyKey,
   allowsIfMatch,
   approvedWriteFor,
   usesMultipart,
+  isP09Command,
 } from './writeGate';
+import {
+  assertP09Connected,
+  assertP09ReadConnected,
+  p09DevReadPath,
+  isP09Request,
+} from '../config/p09Release';
 import { getActiveSession, getSession } from '../auth/session';
 import {
   usesBodyTokenTransport,
@@ -41,6 +72,18 @@ import { refreshSession, REFRESH_PATH } from '../auth/tokenRefresh';
 import { getCurrentEnvironment, type AppEnvironment } from '../config/env';
 import { CLIENT_TIER_HEADER } from '../config/deployment';
 import { logger, type Logger } from '../logging/logger';
+import { contextReleaseVerified } from '../config/homeContextRelease';
+import {
+  p12ReadPath,
+  p12BinaryPath,
+  verifyP12Runtime,
+} from '../config/p12Release';
+import { bindShiftOwnerHeaders } from '../shift/ownerHeaders';
+import { p14ClosurePath, verifyP14Runtime } from '../config/p14Release';
+import { assertP14ClosureRequest } from '../shift/p14RequestGuard';
+import { wmsFetch } from './wmsFetch';
+import { assertBeAppRead } from '../config/beAppReadRelease';
+import { assertP12TimelineRead } from './p12TimelineRead';
 
 export type HttpMethod = 'GET' | 'HEAD' | 'POST' | 'PUT' | 'PATCH' | 'DELETE';
 
@@ -78,18 +121,29 @@ const FORBIDDEN_HEADERS: readonly string[] = ['idempotency-key', 'if-match'];
  */
 const GATE_EXEMPT_AUTH_PATHS: readonly string[] = [
   '/api/v1/auth/login',
+  '/api/v1/auth/mfa/verify',
   '/api/v1/auth/refresh',
   '/api/v1/auth/logout',
   '/api/v1/auth/forgot-password',
   '/api/v1/auth/verify-otp',
   '/api/v1/auth/reset-password',
 ];
+const PASSWORD_RECOVERY_PATHS: readonly string[] = [
+  '/api/v1/auth/forgot-password',
+  '/api/v1/auth/verify-otp',
+  '/api/v1/auth/reset-password',
+];
+
+export function isPasswordRecoveryPath(path: string): boolean {
+  return PASSWORD_RECOVERY_PATHS.includes(path);
+}
 
 /** BE auth contract: tokens are returned/accepted in JSON body for the whole
  * auth triplet. This marker makes Login return the refresh token too. */
 export const WMS_TOKEN_TRANSPORT_HEADER = 'X-WMS-Token-Transport';
 const BODY_TOKEN_AUTH_PATHS: readonly string[] = [
   '/api/v1/auth/login',
+  '/api/v1/auth/mfa/verify',
   '/api/v1/auth/refresh',
   '/api/v1/auth/logout',
 ];
@@ -103,6 +157,16 @@ export function isGateExemptAuthPath(path: string): boolean {
 }
 
 export interface RequestOptions {
+  /** Explicit read representation, limited to the released P13/BOX GET owners. */
+  beAppRead?: 'p13' | 'p18-boxes' | 'p18-location';
+  /** Opt-in P18 upload contract; only owner multipart upload may use its stable key. */
+  p18Upload?: true;
+  /** User-approved P12 DEV GET only; does not enable standalone P09 commands. */
+  p12Read?: true;
+  /** Only P09 command/reconcile receipts may survive HTTP error envelopes. */
+  receiptTransport?: 'p09';
+  /** Only the P09 attachment download GET supports authenticated binary. */
+  responseType?: 'blob';
   method?: HttpMethod;
   /** Đường dẫn tương đối, ví dụ `/api/v1/...`. */
   path: string;
@@ -157,11 +221,17 @@ export function assertNoForbiddenHeaders(
   headers: Record<string, string>,
   path = '',
   method: HttpMethod = 'GET',
+  p18Upload = false,
 ): void {
   for (const key of Object.keys(headers)) {
     const lower = key.toLowerCase();
 
-    if (lower === 'idempotency-key' && allowsIdempotencyKey(method, path)) {
+    if (
+      lower === 'idempotency-key' &&
+      (allowsIdempotencyKey(method, path) ||
+        (p18Upload &&
+          headers['X-Upload-Contract'] === 'owner-attachment-upload-v1'))
+    ) {
       continue;
     }
 
@@ -220,14 +290,160 @@ function responseHeader(response: Response, name: string): string | undefined {
   return headers.get(name) ?? undefined;
 }
 
+function retryAfterSeconds(response: Response): number | undefined {
+  const value = responseHeader(response, 'retry-after')?.trim();
+  if (!value) return undefined;
+  if (/^\d+$/.test(value)) return Math.max(0, Number(value));
+  const at = Date.parse(value);
+  return Number.isFinite(at)
+    ? Math.max(0, Math.ceil((at - Date.now()) / 1000))
+    : undefined;
+}
+
 export function createApiClient(deps: ApiClientDeps = {}) {
   const log = deps.log ?? logger;
-  const fetchImpl = deps.fetchImpl ?? fetch;
+  const fetchImpl = deps.fetchImpl ?? wmsFetch;
   const readSession = deps.getSession ?? getActiveSession;
 
   async function sendOnce<T>(options: RequestOptions): Promise<ApiResponse<T>> {
+    const authGeneration = getSessionGeneration();
     const environment = deps.environment ?? getCurrentEnvironment();
     const method: HttpMethod = options.method ?? 'GET';
+    assertP12TimelineRead(options, environment);
+    if (
+      method === 'POST' &&
+      [
+        '/api/v1/mini-app/warranty-component-issues/resolve-code',
+        '/api/v1/mini-app/warranty-component-issues/record',
+      ].includes(options.path)
+    )
+      assertP19DevConnected();
+    options = { ...options, headers: bindShiftOwnerHeaders(options) };
+    if (
+      approvedWriteFor(method, options.path) === 'workShift.end' ||
+      p14ClosurePath(method, options.path)
+    ) {
+      assertP14ClosureRequest({ ...options, method }, environment);
+      await verifyP14Runtime(fetchImpl, environment);
+      assertP14ClosureRequest({ ...options, method }, environment);
+    }
+    assertBeAppRead(options, environment);
+    if (options.beAppRead) await verifyP12Runtime(fetchImpl, environment);
+    const p12 = options.p12Read === true;
+    if (p12) {
+      if (
+        !p12ReadPath(method, options.path) ||
+        Object.prototype.hasOwnProperty.call(options, 'body') ||
+        Object.keys(options.headers ?? {}).some(k =>
+          [
+            'authorization',
+            'idempotency-key',
+            'if-match',
+            'x-request-id',
+          ].includes(k.toLowerCase()),
+        )
+      )
+        throw new AppError({
+          kind: 'blocked_by_gate',
+          code: 'P12_GET_ONLY',
+          message: 'Chứng từ chỉ đọc đúng nguồn đã chốt.',
+        });
+      await verifyP12Runtime(fetchImpl, environment);
+    }
+    // GET me is the shared P01/P02 identity read, not a P10/P11 command or
+    // security rollout. A security runtime pin must not lock the whole app
+    // before it can read its authenticated user. Dedicated profile decoders,
+    // P11 session reads/commands and the deployment-tier preflight stay intact.
+    const sharedIdentityRead =
+      method === 'GET' &&
+      '/' + options.path.split('?')[0].split('/').filter(Boolean).join('/') ===
+        '/api/v1/auth/me';
+    if (
+      !sharedIdentityRead &&
+      p11DevRequestAllowed(method, options.path, environment)
+    )
+      await verifyP11DevRuntime(fetchImpl, environment);
+    else if (
+      !sharedIdentityRead &&
+      p10DevTestAllowed(method, options.path, environment)
+    )
+      await verifyP10DevRuntime(fetchImpl, environment);
+    if (isP11Request(method, options.path))
+      assertP11Connected(method, options.path, environment);
+    else if (isP10CommandOrSessions(method, options.path))
+      assertP10Connected(method, options.path, environment);
+    if (
+      isP11Request(method, options.path) &&
+      Object.keys(options.headers ?? {}).some(k =>
+        ['idempotency-key', 'if-match', 'x-request-id'].includes(
+          k.toLowerCase(),
+        ),
+      )
+    )
+      throw new AppError({
+        kind: 'config',
+        code: 'P11_UNSUPPORTED_COMMAND_HEADER',
+        message: 'API bảo mật chưa hỗ trợ khóa retry hoặc phiên bản ghi.',
+      });
+    if (isP09Request(method, options.path) && !p12) {
+      if (p09DevReadPath(method, options.path)) assertP09ReadConnected();
+      else assertP09Connected();
+    }
+    const p09Receipt =
+      isP09Command(method, options.path) ||
+      (method === 'GET' &&
+        /^\/api\/v1\/mini-app\/warranty-requests\/[^/?]+$/.test(options.path));
+    const p09Binary =
+      method === 'GET' &&
+      /^\/api\/v1\/mini-app\/warranty-attachments\/[0-9a-f-]+\/download$/i.test(
+        options.path,
+      );
+    if (
+      (options.receiptTransport && !p09Receipt) ||
+      (options.responseType &&
+        !p09Binary &&
+        !(p12 && p12BinaryPath(options.path)))
+    ) {
+      throw new AppError({
+        kind: 'blocked_by_gate',
+        message: 'Transport chỉ được phép cho đúng endpoint P09.',
+      });
+    }
+    if (
+      isP09Command(method, options.path) &&
+      Object.keys(options.headers ?? {}).some(k =>
+        k.toLowerCase().startsWith('x-draft-'),
+      )
+    ) {
+      throw new AppError({
+        kind: 'blocked_by_gate',
+        code: 'P09_P03_LINK_PENDING',
+        message: 'Liên kết phiếu P03 đang chờ BE xác nhận compatibility.',
+      });
+    }
+
+    if (isP09Command(method, options.path)) {
+      const supplied = Object.fromEntries(
+        Object.entries(options.headers ?? {}).map(([k, v]) => [
+          k.toLowerCase(),
+          v,
+        ]),
+      );
+      const uuidPattern =
+        /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+      if (
+        !uuidPattern.test(supplied['x-request-id'] ?? '') ||
+        !uuidPattern.test(supplied['idempotency-key'] ?? '') ||
+        ((method === 'PATCH' || /\/status$/.test(options.path)) &&
+          !/^"[1-9][0-9]*"$/.test(supplied['if-match'] ?? ''))
+      ) {
+        throw new AppError({
+          kind: 'config',
+          code: 'P09_COMMAND_HEADERS_REQUIRED',
+          message: 'Thiếu định danh yêu cầu hoặc phiên bản bảo hành hợp lệ.',
+        });
+      }
+    }
 
     if (environment.apiBaseUrl === '') {
       throw new AppError({
@@ -243,6 +459,11 @@ export function createApiClient(deps: ApiClientDeps = {}) {
       !SAFE_METHODS.has(method) &&
       !environment.wmsGateApproved &&
       !isGateExemptAuthPath(options.path) &&
+      !(
+        method === 'POST' &&
+        options.path === '/api/v1/auth/switch-context' &&
+        contextReleaseVerified()
+      ) &&
       // 🔓 §2e: hai endpoint ghi của luồng nhập kho đã được duyệt bằng văn bản.
       //
       // Cờ `wmsGateApproved` VẪN `false` và cố ý không đụng tới: bật nó sẽ mở
@@ -273,10 +494,25 @@ export function createApiClient(deps: ApiClientDeps = {}) {
       // thì khoá được HAI chiều thay vì một.
       [CLIENT_TIER_HEADER]: environment.expectedTier,
     };
+    // Native versioned responses: compression can weaken ETag. Preserve the
+    // strong BE version without rewriting weak ETags.
+    if (
+      usesBodyTokenTransport &&
+      ((options.path === '/api/v1/auth/me' &&
+        (method === 'GET' || method === 'PATCH')) ||
+        p14ClosurePath(method, options.path))
+    ) {
+      headers['Accept-Encoding'] = 'identity';
+    }
     if (usesBodyTokenTransport && isTokenTransportAuthPath(options.path)) {
       headers[WMS_TOKEN_TRANSPORT_HEADER] = 'body';
     }
-    assertNoForbiddenHeaders(headers, options.path, method);
+    assertNoForbiddenHeaders(
+      headers,
+      options.path,
+      method,
+      options.p18Upload === true,
+    );
 
     // 🔓 §2i: một thao tác gửi `multipart/form-data` (tải file bảo hành).
     //
@@ -289,9 +525,16 @@ export function createApiClient(deps: ApiClientDeps = {}) {
     }
 
     const session = readSession();
-    // Auth body-token endpoints never use a bearer credential. In particular,
-    // login needs this even when an expired access token still exists locally.
-    if (session !== undefined && !isTokenTransportAuthPath(options.path)) {
+    // Login/refresh keep their transport. Logout is behind auth:api and uses
+    // the ACCESS bearer captured before local teardown, never a refresh bearer.
+    if (options.path === '/api/v1/auth/logout') {
+      if (headers.Authorization === undefined && session !== undefined)
+        headers.Authorization = 'Bearer ' + session.accessToken;
+    } else if (
+      session !== undefined &&
+      !isTokenTransportAuthPath(options.path) &&
+      !isPasswordRecoveryPath(options.path)
+    ) {
       headers.Authorization = 'Bearer ' + session.accessToken;
     }
 
@@ -307,23 +550,29 @@ export function createApiClient(deps: ApiClientDeps = {}) {
     };
     options.signal?.addEventListener('abort', onExternalAbort);
 
-    log.debug('HTTP ' + method + ' ' + url, { headers });
+    if (!p12 && !isP09Request(method, options.path))
+      log.debug('HTTP ' + method + ' ' + url, { headers });
 
     let response: Response;
     try {
       response = await fetchImpl(url, {
+        ...(p09Binary || p12 ? { redirect: 'error' as const } : {}),
         method,
         headers,
         // Browser nhận refresh token qua cookie HttpOnly. `include` giúp cookie
         // đi theo login/refresh/logout qua Vite proxy; native tiếp tục body +
         // Keystore và không nhận option này.
-        ...(usesCookieTokenTransport ? { credentials: 'include' } : {}),
+        ...(isPasswordRecoveryPath(options.path)
+          ? { credentials: 'omit' as const }
+          : usesCookieTokenTransport
+          ? { credentials: 'include' as const }
+          : {}),
         body:
           options.body === undefined
             ? undefined
             : multipart
-              ? (options.body as RequestInit['body'])
-              : JSON.stringify(options.body),
+            ? (options.body as RequestInit['body'])
+            : JSON.stringify(options.body),
         signal: timeoutController.signal,
       });
     } catch (cause) {
@@ -352,6 +601,13 @@ export function createApiClient(deps: ApiClientDeps = {}) {
       options.signal?.removeEventListener('abort', onExternalAbort);
     }
 
+    if (response.ok && options.responseType === 'blob') {
+      return {
+        status: response.status,
+        data: (await response.blob()) as T,
+        header: name => responseHeader(response, name),
+      };
+    }
     const rawText = await response.text();
     let parsed: unknown;
     if (rawText.length === 0) {
@@ -377,6 +633,75 @@ export function createApiClient(deps: ApiClientDeps = {}) {
     // hạn token và `retention_until` đều so theo mốc thời gian.
     recordServerTime(readServerTimestamp(parsed));
 
+    const refreshesCurrentFamily =
+      options.path === REFRESH_PATH &&
+      session &&
+      (usesCookieTokenTransport ||
+        (typeof options.body === 'object' &&
+          options.body !== null &&
+          (options.body as Record<string, unknown>).refresh_token ===
+            session.refreshToken));
+    if (
+      response.status === 401 &&
+      (!isGateExemptAuthPath(options.path) || refreshesCurrentFamily) &&
+      isTerminalSessionCode(extractErrorCode(parsed))
+    ) {
+      const code = extractErrorCode(parsed);
+      const requestId =
+        responseHeader(response, 'x-request-id') ?? extractRequestId(parsed);
+      // Release diagnostics for repeated session replacement: fixed route
+      // labels and transport metadata only. Never log credentials, the body,
+      // dynamic owner IDs, command keys or an authentication response.
+      log.warn('AUTH_TERMINAL_RESPONSE', {
+        code,
+        status: 401,
+        requestId,
+        routeFamily: [
+          '/api/v1/auth/me',
+          '/api/v1/auth/refresh',
+          '/api/v1/mini-app/catalog/context',
+          '/api/v1/containers',
+        ].includes(options.path)
+          ? options.path
+          : 'PROTECTED_OWNER_REQUEST',
+        appliesToCurrentGeneration: authGeneration === getSessionGeneration(),
+      });
+      await terminateAuthSession(code, authGeneration);
+      throw new AppError({
+        kind: 'auth',
+        status: 401,
+        code,
+        route: options.path,
+        requestId,
+        message: extractErrorMessage(parsed) ?? 'Cần đăng nhập lại.',
+      });
+    }
+
+    // Preserve only the P09 envelope for its strict adapter. It validates the
+    // receipt; HTTP success/error never determines command success by itself.
+    if (
+      options.receiptTransport === 'p09' &&
+      parsed &&
+      typeof parsed === 'object' &&
+      'data' in parsed &&
+      parsed.data &&
+      typeof parsed.data === 'object' &&
+      'receipt' in parsed.data
+    ) {
+      return {
+        status: response.status,
+        data: parsed as T,
+        header: name => responseHeader(response, name),
+      };
+    }
+    if (options.p18Upload && asRecord(asRecord(parsed).meta).upload_receipt) {
+      return {
+        status: response.status,
+        data: parsed as T,
+        header: name => responseHeader(response, name),
+      };
+    }
+
     if (!response.ok) {
       // Cloudflare chặn TRƯỚC khi request tới ứng dụng. Với thủ kho, 403 này
       // trông y hệt lỗi đăng nhập; phải tách ra, nếu không họ sẽ đăng nhập lại
@@ -388,29 +713,89 @@ export function createApiClient(deps: ApiClientDeps = {}) {
       );
       const kind: AppErrorKind = edgeBlocked
         ? 'blocked_by_edge'
+        : parsed === undefined
+        ? 'parse'
         : response.status === 401
-          ? 'auth'
-          : 'http';
+        ? 'auth'
+        : 'http';
       const requestId =
         responseHeader(response, 'x-request-id') ?? extractRequestId(parsed);
+      const errorCode =
+        extractErrorCode(parsed) ??
+        (kind === 'parse' ? 'HTTP_NON_JSON_RESPONSE' : undefined);
+      if (
+        response.status === 403 &&
+        errorCode === 'PASSWORD_CHANGE_REQUIRED'
+      )
+        markPasswordChangeRequired(authGeneration);
+      const authFields: Record<string, readonly string[]> = {};
+      if (
+        options.path === '/api/v1/auth/me' ||
+        options.path === '/api/v1/auth/change-password' ||
+        isPasswordRecoveryPath(options.path)
+      ) {
+        const root = parsed as
+          | {
+              errors?: Record<string, unknown>;
+              details?: Record<string, unknown>;
+              error?: { details?: Record<string, unknown> };
+            }
+          | undefined;
+        const fields = root?.errors ?? root?.details ?? root?.error?.details;
+        for (const field of [
+          'display_name',
+          'phone',
+          'current_password',
+          'email',
+          'otp',
+          'new_password',
+          'new_password_confirmation',
+        ]) {
+          const values = fields?.[field];
+          if (Array.isArray(values))
+            authFields[field] = values.filter(
+              (v): v is string => typeof v === 'string',
+            );
+        }
+      }
       const error = new AppError({
+        passwordPolicy:
+          options.path === '/api/v1/auth/change-password' &&
+          response.status === 422
+            ? decodePasswordPolicy(
+                asRecord(asRecord(parsed).data).password_policy,
+              )
+            : undefined,
+        fieldErrors: authFields,
         kind,
         status: response.status,
-        code: extractErrorCode(parsed),
+        code: errorCode,
         route: options.path,
         requestId,
+        retryAfterSeconds:
+          response.status === 429 ? retryAfterSeconds(response) : undefined,
         message: edgeBlocked
           ? 'Bị lớp bảo vệ mạng chặn (403). Request chưa tới ứng dụng.'
-          : (extractErrorMessage(parsed) ?? 'HTTP ' + String(response.status)),
+          : skuInactiveMessage(
+              errorCode,
+              extractErrorMessage(parsed) ?? 'HTTP ' + String(response.status),
+              skuCodeFromErrorBody(parsed),
+            ),
       });
-      log.warn('HTTP lỗi ' + String(response.status) + ' ' + url, {
-        code: error.code,
-        requestId: error.requestId,
-        route: error.route,
-      });
+      if (!isP09Request(method, options.path))
+        log.warn('HTTP lỗi ' + String(response.status) + ' ' + url, {
+          code: error.code,
+          requestId: error.requestId,
+          route: error.route,
+        });
       throw error;
     }
 
+    if (sharedIdentityRead && response.ok)
+      observeAccountSessionPolicy(
+        (parsed as { data?: unknown })?.data,
+        authGeneration,
+      );
     return {
       status: response.status,
       data: parsed as T,
@@ -438,13 +823,57 @@ export function createApiClient(deps: ApiClientDeps = {}) {
     options: RequestOptions,
     retried = false,
   ): Promise<ApiResponse<T>> {
+    const generation = getSessionGeneration();
     try {
-      return await sendOnce<T>(options);
+      // The pre-command read never rotates owner key/body/version/headers.
+      if (
+        !SAFE_METHODS.has(options.method ?? 'GET') &&
+        options.path.startsWith('/api/v1/mini-app/') &&
+        getSession()?.accountSessionPolicy === 'auth-session-replacement-v1'
+      ) {
+        const me = await request<{ data?: Record<string, unknown> }>({
+          path: '/api/v1/auth/me',
+          method: 'GET',
+        });
+        if (generation !== getSessionGeneration() || !getSession())
+          throw new AppError({
+            kind: 'auth',
+            code: 'STALE_AUTH_RESPONSE',
+            message: 'Phiên đã thay đổi.',
+          });
+        const current = getSession(),
+          user = me.data?.data;
+        if (
+          !user ||
+          (user.id ?? user.user_id) !== current?.userId ||
+          user.auth_session_id !== current?.authSessionId ||
+          user.active_warehouse_id !== current?.activeWarehouseId
+        )
+          throw new AppError({
+            kind: 'blocked_by_gate',
+            code: 'AUTH_COMMAND_CONTEXT_UNVERIFIED',
+            message:
+              'Chưa xác minh đúng tài khoản, phiên và kho trước thao tác. Dữ liệu được giữ nguyên.',
+          });
+      }
+      const result = await sendOnce<T>(options);
+      if (
+        !isGateExemptAuthPath(options.path) &&
+        generation !== getSessionGeneration()
+      )
+        throw new AppError({
+          kind: 'auth',
+          code: 'STALE_AUTH_RESPONSE',
+          message: 'Phiên đã thay đổi.',
+        });
+      return result;
     } catch (error) {
       const canRetry =
+        generation === getSessionGeneration() &&
         !retried &&
         error instanceof AppError &&
         error.kind === 'auth' &&
+        !isTerminalSessionCode(error.code) &&
         SAFE_METHODS.has(options.method ?? 'GET') &&
         !isGateExemptAuthPath(options.path) &&
         (usesCookieTokenTransport || getSession()?.refreshToken !== undefined);
@@ -456,8 +885,8 @@ export function createApiClient(deps: ApiClientDeps = {}) {
       log.debug('401 — thử gia hạn phiên một lượt rồi gửi lại');
       // `refreshSession` là single-flight: mười request cùng gặp 401 thì vẫn chỉ
       // một lượt gia hạn đi ra mạng. Xem ràng buộc 1 trong tokenRefresh.ts.
-      await refreshSession({
-        send: async (refreshToken) => {
+      const refreshed = await refreshSession({
+        send: async refreshToken => {
           const result = await sendOnce<unknown>({
             path: REFRESH_PATH,
             method: 'POST',
@@ -468,6 +897,13 @@ export function createApiClient(deps: ApiClientDeps = {}) {
           return result.data;
         },
       });
+      if (getSession()?.accessToken !== refreshed.accessToken) {
+        throw new AppError({
+          kind: 'auth',
+          code: 'STALE_AUTH_RESPONSE',
+          message: 'Phiên đã thay đổi.',
+        });
+      }
       return await request<T>(options, true);
     }
   }

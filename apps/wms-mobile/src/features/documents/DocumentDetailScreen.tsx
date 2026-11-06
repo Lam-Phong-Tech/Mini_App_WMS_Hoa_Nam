@@ -32,6 +32,7 @@ import { AppIcon } from '../../ui/AppIcon';
 import { useTheme } from '../../theme/ThemeProvider';
 import { messageForUser } from '../../errors/AppError';
 import { displayPii } from '../warranty/warrantyPolicy';
+import { formatVietnamDateTime } from '../../time/vietnamTime';
 import {
   entryLabel,
   useDocumentDetail,
@@ -63,12 +64,14 @@ const styles = StyleSheet.create({
 const STATUS_LABEL: Readonly<Record<string, string>> = {
   DRAFT: 'Nháp',
   SCANNING: 'Đang quét',
-  WAITING_APPROVAL: 'Chờ duyệt',
+  WAITING_APPROVAL: 'Chờ xử lý trên Web',
   POSTED: 'Đã post',
   CANCELLED: 'Đã huỷ',
 };
 
-function statusTone(status: string | undefined): 'success' | 'warning' | 'danger' {
+function statusTone(
+  status: string | undefined,
+): 'success' | 'warning' | 'danger' {
   if (status === 'POSTED') {
     return 'success';
   }
@@ -96,12 +99,22 @@ export function DocumentDetailScreen({
 
   const document = state.document;
   const outbound =
-    kind === 'outbound' ? (document as OutboundDocument | undefined) : undefined;
+    kind === 'outbound'
+      ? (document as OutboundDocument | undefined)
+      : undefined;
   const inbound =
     kind === 'inbound' ? (document as InboundDocument | undefined) : undefined;
   const status = document?.status;
-  const scanned = document?.scanned_total_qty ?? 0;
-  const expected = document?.expected_total_qty ?? 0;
+  const count = (v: unknown) =>
+    typeof v === 'number' && Number.isSafeInteger(v) && v >= 0 ? v : undefined;
+  const scanned = outbound
+    ? count(outbound.scanned_total_qty)
+    : document?.scanned_total_qty ?? 0;
+  const expected = outbound
+    ? count(outbound.required_total_qty ?? outbound.expected_total_qty)
+    : document?.expected_total_qty ?? 0;
+  const progressKnown = scanned !== undefined && expected !== undefined;
+  const waitingWeb = kind === 'outbound' && status === 'SCANNING';
 
   if (state.phase === 'loading') {
     return (
@@ -166,15 +179,19 @@ export function DocumentDetailScreen({
             label={
               status === undefined
                 ? 'Không rõ'
-                : (STATUS_LABEL[status] ?? status)
+                : waitingWeb
+                ? 'Chờ xử lý trên Web'
+                : STATUS_LABEL[status] ?? status
             }
             tone={statusTone(status)}
           />
         </View>
 
-        <ProgressBar value={scanned} target={expected} />
+        {progressKnown && <ProgressBar value={scanned} target={expected} />}
         <Text variant="caption" tone="muted">
-          {String(scanned) + '/' + String(expected) + ' mã đã quét'}
+          {progressKnown
+            ? String(scanned) + '/' + String(expected) + ' mã đã quét'
+            : 'Số lượng chưa xác minh'}
         </Text>
       </Box>
 
@@ -194,20 +211,25 @@ export function DocumentDetailScreen({
               label="Nhóm đối tượng"
               value={outbound.recipient_type ?? undefined}
             />
-            {/* Tên trường lấy từ shape ĐÃ ĐO, không đoán: máy chủ trả
-                `recipient_phone_snapshot` / `recipient_address_snapshot`,
-                không phải `recipient_phone` / `recipient_address`. */}
+            {/* Preserve historical snapshots; P05 manual-create also returns
+                contact phone/address as TEXT on this same read endpoint. */}
             <DefinitionRow
               label="Người nhận"
               value={displayPii(outbound.recipient_name)}
             />
             <DefinitionRow
               label="Số điện thoại"
-              value={displayPii(outbound.recipient_phone_snapshot)}
+              value={displayPii(
+                outbound.recipient_phone_snapshot ??
+                  outbound.recipient_contact_phone,
+              )}
             />
             <DefinitionRow
               label="Địa chỉ"
-              value={displayPii(outbound.recipient_address_snapshot)}
+              value={displayPii(
+                outbound.recipient_address_snapshot ??
+                  outbound.recipient_address,
+              )}
             />
           </>
         )}
@@ -265,7 +287,7 @@ export function DocumentDetailScreen({
                 {entry.sku_name ?? entry.sku_code ?? ''}
               </Text>
               <Text variant="caption" tone="muted">
-                {entry.scanned_at ?? entry.created_at ?? ''}
+                {formatVietnamDateTime(entry.scanned_at ?? entry.created_at, { missing: 'Chưa xác minh thời điểm' })}
               </Text>
             </View>
           </Box>
@@ -277,12 +299,21 @@ export function DocumentDetailScreen({
         <Banner
           tone="success"
           icon={<AppIcon name="check-circle" color={theme.colors.success} />}
-          title={kind === 'inbound' ? 'Phiếu đã Post Receipt' : 'Phiếu đã Post Issue'}
+          title={
+            kind === 'inbound' ? 'Phiếu đã Post Receipt' : 'Phiếu đã Post Issue'
+          }
           message={
             kind === 'inbound'
               ? 'Tồn kho đã tăng theo phiếu này.'
               : 'Tồn kho đã giảm theo phiếu này.'
           }
+        />
+      ) : waitingWeb ? (
+        <Banner
+          tone="warning"
+          icon={<AppIcon name="clock" color={theme.colors.warningText} />}
+          title="Chờ xử lý trên Web"
+          message="Chưa ghi sổ · Chưa đổi tồn."
         />
       ) : (
         <Banner
@@ -290,8 +321,8 @@ export function DocumentDetailScreen({
           icon={<AppIcon name="clock" color={theme.colors.warningText} />}
           title={
             kind === 'inbound'
-              ? 'Phiếu nhập đang chờ duyệt'
-              : 'Phiếu xuất đang chờ duyệt'
+              ? 'Chờ xử lý trên Web'
+              : 'Chờ xử lý trên Web'
           }
           message={
             kind === 'inbound'

@@ -624,7 +624,7 @@ describe('tồn kho GIẢM, và giảm ở mốc thứ ba', () => {
     expect(MESSAGE_NOT_ISSUED_BODY).toContain('Post Issue');
   });
 
-  it('trạng thái là "Chờ duyệt xuất kho", KHÔNG phải "Đã xuất"', async () => {
+  it('trạng thái là "Chờ xử lý trên Web", chưa xác nhận đã xuất kho', async () => {
     let tree: ReactTestRenderer.ReactTestRenderer | undefined;
     await ReactTestRenderer.act(() => {
       tree = ReactTestRenderer.create(
@@ -642,7 +642,8 @@ describe('tồn kho GIẢM, và giảm ở mốc thứ ba', () => {
       );
     });
     const text = JSON.stringify(tree?.toJSON());
-    expect(text).toContain('Chờ duyệt xuất kho');
+    expect(text).toContain('Chờ xử lý trên Web');
+    expect(text).not.toContain('Chờ duyệt xuất kho');
     expect(text).toContain('Đã gửi duyệt phiếu xuất');
     // Hàng chưa rời kho ở mốc này.
     expect(text).not.toContain('Đã xuất kho thành công');
@@ -741,7 +742,7 @@ describe('payload phiếu xuất', () => {
   it('tên phiếu để trống thì tự sinh, KHÔNG gửi chuỗi rỗng', () => {
     // `name` là thứ người duyệt nhìn thấy đầu tiên; hàng không tên thì không
     // phân biệt được với hàng khác.
-    const payload = toOutboundPayload(scanned(), new Date(2026, 8, 6, 14, 5));
+    const payload = toOutboundPayload(scanned(), new Date('2026-09-06T14:05:00+07:00'));
     expect(payload.name).toBe('Phiếu xuất 14:05 06/09');
   });
 

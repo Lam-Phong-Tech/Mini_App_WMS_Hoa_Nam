@@ -43,10 +43,11 @@ export const initialLoginForm: LoginFormState = {
   fieldErrors: {},
 };
 
-/** Nguyên văn từ ảnh 03. Không diễn đạt lại. */
-export const MESSAGE_EMAIL_REQUIRED = 'Vui lòng nhập email.';
-/** Nguyên văn từ AuthStatePage của Mini App hiện hành. */
-export const MESSAGE_EMAIL_INVALID = 'Vui lòng nhập đúng định dạng email.';
+/** BE login contract hiện chỉ nhận email. */
+export const MESSAGE_LOGIN_IDENTIFIER = 'Vui lòng nhập email.';
+/** Giữ export cũ để các consumer không phải đổi import. */
+export const MESSAGE_EMAIL_REQUIRED = MESSAGE_LOGIN_IDENTIFIER;
+export const MESSAGE_EMAIL_INVALID = 'Vui lòng nhập email hợp lệ.';
 export const MESSAGE_PASSWORD_REQUIRED = 'Vui lòng nhập mật khẩu.';
 
 /**
@@ -83,10 +84,7 @@ export function hasErrors(errors: LoginFieldErrors): boolean {
 // Chuyển trạng thái
 // ---------------------------------------------------------------------------
 
-export function setEmail(
-  state: LoginFormState,
-  email: string,
-): LoginFormState {
+export function setEmail(state: LoginFormState, email: string): LoginFormState {
   // Gõ lại thì xoá lỗi của **chính ô đó**, giữ lỗi ô kia. Xoá cả hai sẽ khiến
   // câu lỗi dưới ô mật khẩu biến mất khi người dùng mới chỉ sửa email.
   return {
@@ -125,12 +123,22 @@ export function beginSubmit(state: LoginFormState): {
   const errors = validateLogin(state);
   if (hasErrors(errors)) {
     return {
-      next: { ...state, fieldErrors: errors, phase: 'idle', formError: undefined },
+      next: {
+        ...state,
+        fieldErrors: errors,
+        phase: 'idle',
+        formError: undefined,
+      },
       canSubmit: false,
     };
   }
   return {
-    next: { ...state, fieldErrors: {}, phase: 'submitting', formError: undefined },
+    next: {
+      ...state,
+      fieldErrors: {},
+      phase: 'submitting',
+      formError: undefined,
+    },
     canSubmit: true,
   };
 }

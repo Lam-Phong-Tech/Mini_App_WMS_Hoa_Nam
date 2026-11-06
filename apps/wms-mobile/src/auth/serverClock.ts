@@ -16,6 +16,8 @@
  */
 
 /** Độ lệch = giờ máy chủ − giờ máy. Dương nghĩa là máy đang chậm. */
+import { parseDocumentTimestamp } from '../services/wms/documentTimestamps';
+
 let skewMs = 0;
 
 /** Đã từng nhận được giờ máy chủ lần nào chưa. */
@@ -40,11 +42,11 @@ export function recordServerTime(
   if (typeof iso !== 'string' || iso.length === 0) {
     return;
   }
-  const serverMs = Date.parse(iso);
-  if (Number.isNaN(serverMs)) {
-    return;
-  }
-  const observed = serverMs - deviceNowMs;
+  // A naive or invalid source must not change expiry/retention on one device
+  // differently from another. Server clock metadata is contracted RFC3339.
+  const timestamp = parseDocumentTimestamp(iso);
+  if (timestamp.status !== 'RECORDED' || !Number.isFinite(deviceNowMs)) return;
+  const observed = timestamp.epochMs - deviceNowMs;
   synced = true;
   skewMs = Math.abs(observed) < SKEW_IGNORE_MS ? 0 : observed;
 }

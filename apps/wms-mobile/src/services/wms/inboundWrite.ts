@@ -314,6 +314,8 @@ export interface RecordInput {
   /** `YYYY-MM-DD` theo giờ máy. Bỏ trống thì để máy chủ tự quyết. */
   readonly docDate?: string;
   readonly note?: string;
+  /** P03 staging draft link; omitted for legacy owner calls. */
+  readonly p03Draft?: { readonly draftId: string; readonly scanSessionId: string; readonly version: number };
 }
 
 /**
@@ -430,7 +432,14 @@ export async function record(
     INBOUND_WRITE_PATHS.record,
     body,
     {
-      headers: { 'Idempotency-Key': idempotencyKey },
+      headers: {
+        'Idempotency-Key': idempotencyKey,
+        ...(input.p03Draft ? {
+          'X-Draft-ID': input.p03Draft.draftId,
+          'X-Draft-Scan-Session-ID': input.p03Draft.scanSessionId,
+          'X-Draft-Version': String(input.p03Draft.version),
+        } : {}),
+      },
       signal: options.signal,
       timeoutMs: options.timeoutMs ?? RECORD_TIMEOUT_MS,
     },

@@ -251,13 +251,13 @@ describe('If-Match — version lấy từ data.version (2026-09-05)', () => {
     expect(REAL_DETAIL_HEADERS['X-Request-ID']).toMatch(/^[0-9a-f-]{36}$/);
   });
 
-  it('🔒 If-Match chỉ được GỬI từ bốn tệp tầng ghi', () => {
+  it('If-Match stays within reviewed owner serializers and offline inspectors', () => {
     // 🔧 Đổi khung 2026-09-06 (`GATE_WMS §2f`). Trước đây test này đòi **không
     // tệp nào** nhắc tới If-Match, vì chưa thao tác nào được gửi nó. Nay
     // `post-receipt` đã duyệt và bắt buộc phải có header ấy.
     //
     // Nhưng nới không có nghĩa là bỏ canh. Danh sách dưới đây khoá **phạm vi**:
-    // chỉ bốn tệp tầng ghi được gửi header này, và mỗi tệp chỉ gửi cho đúng
+    // chỉ năm tệp tầng ghi được gửi header này, và mỗi tệp chỉ gửi cho đúng
     // thao tác của luồng mình. Ngày ai đó gắn If-Match vào một endpoint khác,
     // test này đỏ.
     //
@@ -272,6 +272,23 @@ describe('If-Match — version lấy từ data.version (2026-09-05)', () => {
       'src/services/wms/outboundWrite.ts',
       'src/services/wms/warrantyWrite.ts',
       'src/services/wms/warrantyComponentWrite.ts',
+      // Prompt 10: PATCH /auth/me dùng optimistic locking theo contract đã chốt.
+      'src/services/wms/profile.ts',
+      'src/services/wms/p03Drafts.ts',
+      // P09 contract 41bdbae: exact PATCH/status allowlist, verified by p09Transport.
+      'src/services/wms/p09Warranty.ts',
+      // Typed P04 and P05 serializers are exercised by their exact-path transport suites.
+      'src/services/wms/p04Inbound.ts',
+      'src/services/wms/p05Outbound.ts',
+      'src/services/wms/p05Create.ts',
+      'src/features/outbound/p05CreateOwner.ts',
+      // P14 owns its independent, disabled-by-default closure transport.
+      'src/shift/p14ShiftService.ts',
+      // Approved FCM design05/11: DELETE own installation, strong binding version only.
+      'src/features/notifications/delivery/registrationService.ts',
+      // Inspect incoming mock headers only; these do not dispatch live HTTP.
+      'src/features/profile/local/P10LocalHarness.tsx',
+      'src/web/p04ReviewService.ts',
     ];
 
     const fs = require('fs');

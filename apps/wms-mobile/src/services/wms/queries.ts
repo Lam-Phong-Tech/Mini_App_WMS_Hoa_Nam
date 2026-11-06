@@ -1,3 +1,5 @@
+import { apiClient } from '../../api/client';
+import { decodeAccountSessionPolicy } from '../../auth/session';
 /**
  * Các phép đọc WMS mà màn hình dùng.
  *
@@ -95,26 +97,38 @@ function withPaging(
 export async function fetchCurrentUser(
   options: ReadOptions = {},
 ): Promise<CurrentUser> {
-  // `/auth/me` có hai dạng đã được Mini App chịu: `{ data: { user } }` và
-  // `{ data: { staff } }`. `readOne` đã bóc envelope ngoài, nên adapter này
-  // nhận phần `data` còn lại và luôn trả cùng cấu trúc phẳng cho UI native.
-  const payload = await readOne<unknown>(WMS_READ_PATHS.me, options);
-  return mapCurrentUser(payload);
+  if (options.query && Object.values(options.query).some(v => v !== undefined))
+    throw new Error('GET /auth/me không nhận query.');
+  const response = await apiClient.get<{
+    data: unknown;
+    meta?: Record<string, unknown>;
+  }>(WMS_READ_PATHS.me, {
+    signal: options.signal,
+    timeoutMs: options.timeoutMs,
+  });
+  return {
+    ...mapCurrentUser(response.data?.data),
+    profile_meta: response.data?.meta,
+    etag: response.header?.('etag'),
+  };
 }
 
 /** Chuẩn hoá biến thể `staff` / `user` của `/auth/me` như Mini App. */
 export function mapCurrentUser(payload: unknown): CurrentUser {
   const root = asRecord(payload);
-  const nested = asRecord(root?.staff) ?? asRecord(root?.user) ?? root;
-  if (nested === undefined) {
+  if (root === undefined) {
     return {};
   }
+  const nested = {
+    ...root,
+    ...(asRecord(root.staff) ?? asRecord(root.user) ?? {}),
+  };
 
   const roles = Array.isArray(nested.roles) ? nested.roles : [];
   const primaryRole = asRecord(roles[0]);
   const name = firstText(
-    nested.name,
     nested.display_name,
+    nested.name,
     nested.full_name,
     nested.username,
     nested.email,
@@ -127,21 +141,68 @@ export function mapCurrentUser(payload: unknown): CurrentUser {
   const id = firstText(nested.id, nested.user_id, nested.zalo_user_id);
   const avatarUrl = firstText(nested.avatar_url);
   const permissions = Array.isArray(nested.permissions)
-    ? nested.permissions.filter((item): item is string => typeof item === 'string')
+    ? nested.permissions.filter(
+        (item): item is string => typeof item === 'string',
+      )
     : undefined;
 
   return {
     id,
+    status: firstText(nested.status),
+    accountSessionPolicy: decodeAccountSessionPolicy(
+      nested.account_session_policy,
+    ),
+    warehouse_context:
+      asRecord(nested.warehouse_context) &&
+      typeof asRecord(nested.warehouse_context)?.status === 'string'
+        ? {
+            status: asRecord(nested.warehouse_context)!.status as string,
+            error_code:
+              typeof asRecord(nested.warehouse_context)?.error_code === 'string'
+                ? (asRecord(nested.warehouse_context)!.error_code as string)
+                : null,
+          }
+        : undefined,
+    available_warehouses: Array.isArray(nested.available_warehouses)
+      ? nested.available_warehouses.flatMap(value => {
+          const row = asRecord(value);
+          return typeof row?.warehouse_id === 'string' &&
+            typeof row.status === 'string'
+            ? [
+                {
+                  warehouse_id: row.warehouse_id,
+                  code: firstText(row.code),
+                  name: firstText(row.name),
+                  status: row.status,
+                },
+              ]
+            : [];
+        })
+      : undefined,
+    auth_session_id: firstText(nested.auth_session_id),
+    active_warehouse_id:
+      nested.active_warehouse_id === null
+        ? null
+        : firstText(nested.active_warehouse_id),
     name,
     email: firstText(nested.email),
+    phone:
+      nested.phone === null
+        ? null
+        : firstText(nested.phone, nested.phone_number),
     avatar_url: avatarUrl,
     role,
     permissions,
-    warehouse_scope_ids: Array.isArray(nested.warehouse_scope_ids)
-      ? nested.warehouse_scope_ids.filter(
-          (item): item is string => typeof item === 'string',
-        )
-      : undefined,
+    roles,
+    warehouse_scope_ids:
+      nested.warehouse_scope_ids === null
+        ? null
+        : Array.isArray(nested.warehouse_scope_ids)
+        ? nested.warehouse_scope_ids.filter(
+            (item): item is string => typeof item === 'string',
+          )
+        : undefined,
+    version: firstText(nested.version) ?? firstNumberText(nested.version),
   };
 }
 
@@ -154,9 +215,16 @@ function asRecord(value: unknown): Record<string, unknown> | undefined {
 function firstText(...values: readonly unknown[]): string | undefined {
   for (const value of values) {
     if (typeof value === 'string' && value.trim() !== '') return value;
-    if (typeof value === 'number' && Number.isFinite(value)) return String(value);
+    if (typeof value === 'number' && Number.isFinite(value))
+      return String(value);
   }
   return undefined;
+}
+
+function firstNumberText(value: unknown): string | undefined {
+  return typeof value === 'number' && Number.isFinite(value)
+    ? String(value)
+    : undefined;
 }
 
 export function fetchWarehouses(
@@ -269,7 +337,10 @@ export function fetchInboundScanEntries(
       '/' +
       encodeURIComponent(documentId) +
       '/scan-entries',
-    { ...options, query: { status: 'ACTIVE', per_page: 200, ...options.query } },
+    {
+      ...options,
+      query: { status: 'ACTIVE', per_page: 200, ...options.query },
+    },
   );
 }
 

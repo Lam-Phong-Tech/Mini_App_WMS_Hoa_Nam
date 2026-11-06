@@ -1,0 +1,58 @@
+{
+  "source": "/api/v1/mini-app/drafts/c0c93aaa-9e0e-4235-97f2-703c451558b7",
+  "http": 200,
+  "etag": "W/\"3\"",
+  "success": true,
+  "meta": {
+    "contract": "mini-app-p03-v1",
+    "request_id": "3eb95853-d32c-46f1-8e59-39315708da8f",
+    "timestamp": "2026-10-09T18:14:34+07:00"
+  },
+  "data": {
+    "document_id": "c0c93aaa-9e0e-4235-97f2-703c451558b7",
+    "document_kind": "STAGING_DRAFT",
+    "scan_session_id": "3e5f3821-9382-4bcc-bbc7-ddbcc03b0c40",
+    "auth_session_id": "ff2d4ed2-77a4-4272-8353-6b23348e1dcc",
+    "warehouse_id": "01a06f33-6bff-70b8-a089-3c68a83b11a8",
+    "operation": "OUTBOUND",
+    "version": 3,
+    "status": "RECORDED",
+    "title": "E2E-P05-20261009-01",
+    "codes": [
+      {
+        "raw_code": "SN-PN-RW-20261006-001",
+        "scan_source": "MANUAL"
+      }
+    ],
+    "form": {
+      "p05_create": {
+        "name": "E2E-P05-20261009-01",
+        "recipientId": "walk-in",
+        "originalAddress": "",
+        "recipient": "HN E2E 01",
+        "phone": "0901234567",
+        "province": "79",
+        "provinceName": "Thành phố Hồ Chí Minh",
+        "ward": "25747",
+        "wardName": "Phường Thủ Dầu Một",
+        "address": "12 Hoa Nam",
+        "plannedInput": "1",
+        "group": "Máy chuyên dụng khác",
+        "note": "E2E P05 20261009",
+        "address_dataset": "provinces.open-api.vn/v2"
+      }
+    },
+    "codes_validated": false,
+    "summary": {
+      "code_count": 1,
+      "quantity_total": 1
+    },
+    "business_document_id": "ec317150-be9c-4d7a-a9db-e8c73af55d74",
+    "business_status": "SCANNING",
+    "last_request_id": "be8f811b-bb50-4d2a-aa9d-e14f02d00d2b",
+    "created_at": "2026-10-09T07:50:07.927541Z",
+    "updated_at": "2026-10-09T08:11:51.158254Z",
+    "cancel_reason": null,
+    "stock_effect": "NONE"
+  }
+}

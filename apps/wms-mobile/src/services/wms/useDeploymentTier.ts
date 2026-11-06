@@ -15,7 +15,7 @@
  * định bật/tắt giao diện.
  */
 
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import {
   checkDeploymentTier,
   getLastTierCheck,
@@ -25,21 +25,35 @@ import {
 
 export function useDeploymentTier(): TierCheckResult & {
   readonly allowed: boolean;
+  readonly checking: boolean;
   readonly recheck: () => void;
 } {
   const [result, setResult] = useState<TierCheckResult>(() =>
     getLastTierCheck(),
   );
+  const [checking, setChecking] = useState(false);
+  const inFlight = useRef(false);
+  const mounted = useRef(true);
 
   const run = useCallback(() => {
+    if (inFlight.current) return;
+    inFlight.current = true;
+    setChecking(true);
     // `checkDeploymentTier` không bao giờ ném — mọi hỏng hóc đã thành một kết
     // quả có trạng thái. `catch` chỉ để chắc chắn không có unhandled rejection.
     checkDeploymentTier()
-      .then(setResult)
-      .catch(() => undefined);
+      .then(next => {
+        if (mounted.current) setResult(next);
+      })
+      .catch(() => undefined)
+      .finally(() => {
+        inFlight.current = false;
+        if (mounted.current) setChecking(false);
+      });
   }, []);
 
   useEffect(() => {
+    mounted.current = true;
     // Đã có kết quả từ lần kiểm trước thì không hỏi lại lúc mount — tránh mỗi
     // lần dựng lại cây React là một request thừa.
     if (getLastTierCheck().status === 'unchecked') {
@@ -47,7 +61,15 @@ export function useDeploymentTier(): TierCheckResult & {
     } else {
       setResult(getLastTierCheck());
     }
+    return () => {
+      mounted.current = false;
+    };
   }, [run]);
 
-  return { ...result, allowed: scanningAllowed(result), recheck: run };
+  return {
+    ...result,
+    allowed: scanningAllowed(result),
+    checking,
+    recheck: run,
+  };
 }

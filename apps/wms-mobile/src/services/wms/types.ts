@@ -143,6 +143,9 @@ export interface OutboundDocument extends Versioned, ServerProgress {
   readonly recipient_name?: string | null;
   readonly recipient_phone_snapshot?: string | null;
   readonly recipient_address_snapshot?: string | null;
+  /** P05 manual-create TEXT fields, observed on DEV 2026-10-11. */
+  readonly recipient_contact_phone?: string | null;
+  readonly recipient_address?: string | null;
   readonly recipient_type?: string | null;
   readonly note?: string | null;
   readonly create_idempotency_key?: string | null;
@@ -263,13 +266,39 @@ export interface Warehouse {
 }
 
 export interface CurrentUser {
+  readonly status?: string;
+  readonly accountSessionPolicy?: 'auth-session-replacement-v1';
+  readonly warehouse_context?: {
+    readonly status: string;
+    readonly error_code?: string | null;
+  };
+  readonly available_warehouses?: readonly {
+    readonly warehouse_id: string;
+    readonly code?: string;
+    readonly name?: string;
+    readonly status: string;
+  }[];
+  readonly profile_meta?: Readonly<Record<string, unknown>>;
+  readonly etag?: string;
+  readonly canonical_profile?: Readonly<Record<string, unknown>>;
+  readonly user_id?: string;
+  readonly display_name?: string;
   readonly id?: string;
+  /** Phiên kỹ thuật ổn định qua refresh, do BE cấp; không dò từ auth/sessions. */
+  readonly auth_session_id?: string;
+  /** Kho đang hoạt động của phiên, dùng nguyên UUID này khi bắt đầu ca. */
+  readonly active_warehouse_id?: string | null;
   readonly name?: string;
   readonly email?: string;
+  readonly phone?: string | null;
   /** Ảnh đại diện có thể được `auth/me` trả về cho tài khoản Mini App. */
   readonly avatar_url?: string;
   readonly role?: string;
   readonly permissions?: readonly string[];
   /** Phạm vi kho do BE trả; UI chỉ hiển thị, không biến thành lựa chọn kho. */
-  readonly warehouse_scope_ids?: readonly string[];
+  readonly warehouse_scope_ids?: readonly string[] | null;
+  readonly roles?: readonly unknown[];
+  /** Version optimistic-locking của `/auth/me`. */
+  readonly version?: string;
+  readonly must_change_password?: boolean;
 }

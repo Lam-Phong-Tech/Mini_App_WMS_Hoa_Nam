@@ -1,4 +1,5 @@
 import React, { useEffect, useRef } from 'react';
+import { loadCameraDecoder } from './loadCameraDecoder';
 
 export const CameraType = { Back: 'back', Front: 'front' } as const;
 
@@ -69,6 +70,7 @@ export function Camera({
     let stopFallbackReader: (() => void) | undefined;
     let disposed = false;
     let reading = false;
+    let decoderMode: 'none' | 'native' | 'fallback' = 'none';
 
     const stopTrack = (): void => {
       stream?.getTracks().forEach(track => track.stop());
@@ -105,10 +107,17 @@ export function Camera({
     const startNativeDetector = (
       Detector: BarcodeDetectorConstructor,
     ): void => {
-      const detector = new Detector();
+      let detector: BarcodeDetectorLike;
+      try {
+        detector = new Detector();
+        decoderMode = 'native';
+      } catch {
+        void startFallbackDecoder();
+        return;
+      }
 
       const schedule = (): void => {
-        if (!disposed) {
+        if (!disposed && decoderMode === 'native') {
           detectorTimer = window.setTimeout(() => {
             inspect().catch(() => undefined);
           }, scanIntervalRef.current);
@@ -116,6 +125,7 @@ export function Camera({
       };
 
       const inspect = async (): Promise<void> => {
+        if (disposed || decoderMode !== 'native') return;
         if (
           disposed ||
           reading ||
@@ -131,8 +141,11 @@ export function Camera({
           if (code?.rawValue !== undefined) {
             deliverCode(code.rawValue, code.format ?? 'unknown');
           }
-        } catch (error) {
-          reportCameraError(error, 'Không đọc được mã từ camera.');
+        } catch {
+          // Some Android builds expose BarcodeDetector but cannot run it.
+          // Change decoder once, on the same real stream; do not keep a
+          // functioning preview with no decoder, or reopen getUserMedia.
+          void startFallbackDecoder();
         } finally {
           reading = false;
           // Luôn hẹn frame kế tiếp, kể cả vừa đọc được mã. Trước đây nhánh
@@ -153,7 +166,7 @@ export function Camera({
       }
       // Dynamic import để Chrome/Android không gánh bộ giải mã JavaScript. Nó
       // chỉ tải ở Safari/iOS hoặc trình duyệt chưa có BarcodeDetector.
-      const { BrowserMultiFormatReader } = await import('@zxing/browser');
+      const { BrowserMultiFormatReader } = await loadCameraDecoder();
       if (disposed) {
         return;
       }
@@ -177,6 +190,17 @@ export function Camera({
       stopFallbackReader = controls.stop;
       if (disposed) {
         controls.stop();
+      }
+    };
+    const startFallbackDecoder = async (): Promise<void> => {
+      if (disposed || decoderMode === 'fallback') return;
+      decoderMode = 'fallback';
+      if (detectorTimer !== undefined) window.clearTimeout(detectorTimer);
+      try {
+        await startSafariFallback();
+      } catch (error) {
+        if (!disposed)
+          reportCameraError(error, 'Không khởi động được bộ đọc QR/Barcode.');
       }
     };
 
@@ -211,7 +235,7 @@ export function Camera({
           }
         ).BarcodeDetector;
         if (Detector === undefined) {
-          await startSafariFallback();
+          await startFallbackDecoder();
         } else {
           startNativeDetector(Detector);
         }

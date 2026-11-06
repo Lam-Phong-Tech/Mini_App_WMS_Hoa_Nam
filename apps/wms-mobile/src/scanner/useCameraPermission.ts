@@ -53,10 +53,14 @@ export function useCameraPermission(
 ): CameraPermissionView {
   const [state, setState] = useState<CameraPermissionState>('checking');
   const mounted = useRef(true);
+  const sequence = useRef(0);
+  const pendingRequest = useRef<Promise<void> | undefined>(undefined);
 
   const recheck = useCallback(async () => {
+    if (pendingRequest.current) return pendingRequest.current;
+    const ticket = ++sequence.current;
     const next = await checkCameraPermission(backend);
-    if (mounted.current) {
+    if (mounted.current && ticket === sequence.current) {
       // Đã bị chặn vĩnh viễn thì `check()` vẫn trả `denied`; giữ nguyên
       // `blocked` để UI không đổi sang nút "Xin quyền" vô tác dụng.
       setState(current =>
@@ -65,14 +69,22 @@ export function useCameraPermission(
     }
   }, [backend]);
 
-  const request = useCallback(async () => {
-    const next = await requestCameraPermission(backend);
-    if (mounted.current) {
-      setState(next);
-    }
+  const request = useCallback(() => {
+    if (pendingRequest.current) return pendingRequest.current;
+    const ticket = ++sequence.current;
+    const operation = (async () => {
+      const next = await requestCameraPermission(backend);
+      if (mounted.current && ticket === sequence.current) setState(next);
+    })().finally(() => {
+      if (pendingRequest.current === operation)
+        pendingRequest.current = undefined;
+    });
+    pendingRequest.current = operation;
+    return operation;
   }, [backend]);
 
   useEffect(() => {
+    const sequenceRef = sequence;
     mounted.current = true;
     recheck().catch(() => undefined);
 
@@ -85,6 +97,7 @@ export function useCameraPermission(
 
     return () => {
       mounted.current = false;
+      sequenceRef.current++;
       subscription.remove();
     };
   }, [recheck]);

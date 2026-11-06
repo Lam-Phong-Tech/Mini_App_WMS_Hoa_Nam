@@ -39,6 +39,7 @@ export interface WarehouseState {
 
 export interface UseWarehousesDeps {
   readonly fetch?: typeof fetchWarehouses;
+  readonly enabled?:boolean;
 }
 
 /**
@@ -78,10 +79,11 @@ export function useWarehouses(deps: UseWarehousesDeps = {}): WarehouseState & {
   }, [load]);
 
   useEffect(() => {
+    if(deps.enabled===false)return;
     // `catch` rỗng có chủ đích: `run` đã tự bắt lỗi và đưa vào state. Ở đây chỉ
     // cần chặn unhandled rejection — cùng quy ước với `useHomeSummary`.
     run().catch(() => undefined);
-  }, [run]);
+  }, [run,deps.enabled]);
 
   const reload = useCallback(() => {
     run().catch(() => undefined);

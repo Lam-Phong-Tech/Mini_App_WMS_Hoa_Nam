@@ -252,6 +252,10 @@ export function InboundFlow({
   const [pendingScan, setPendingScan] = useState<PendingInboundScan>();
   const [boxQuantity, setBoxQuantity] = useState('');
   const [boxQuantityError, setBoxQuantityError] = useState<string>();
+  const [metadataDependency,setMetadataDependency]=useState(false);
+  const scanEpoch=useRef(0),ownerActive=useRef(true);
+  useEffect(()=>{ownerActive.current=true;const epoch=scanEpoch;return()=>{ownerActive.current=false;epoch.current++;};},[]);
+  useEffect(()=>{scanEpoch.current++;},[draft.step]);
 
   const hasDraftContent =
     draft.name.trim() !== '' || draft.codes.length > 0 || draft.step !== 0;
@@ -280,8 +284,10 @@ export function InboundFlow({
     onExit();
   }, [onExit]);
 
-  const handleScan = useCallback(
+  const resolveScan = useCallback(
     async (raw: string, source: ScanSource): Promise<ScanFeedback> => {
+      const epoch=scanEpoch.current;
+      const assertCurrent=()=>{if(!ownerActive.current||epoch!==scanEpoch.current)throw new AppError({kind:'cancelled',message:'Đã rời phiên quét; dữ liệu cũ không được thêm vào phiếu.'});};
       const warehouseId = draft.warehouseId ?? '';
       if (warehouseId === '') {
         throw new AppError({
@@ -297,6 +303,7 @@ export function InboundFlow({
       let resolved: ResolvedCode;
       try {
         resolved = await resolveCode({ warehouseId, rawCode: raw });
+        assertCurrent();
       } catch (error) {
         const appError = toAppError(error);
         if (componentBox !== undefined && isInactiveSkuError(appError)) {
@@ -355,6 +362,7 @@ export function InboundFlow({
         resolverSaysNew && !resolverHasExistingSku
           ? await lookupExistingSku(raw)
           : undefined;
+      assertCurrent();
       const resolvedSku =
         resolved.sku_code?.trim() ?? knownSku?.skuCode ?? parsed.sku;
       const productId =
@@ -481,6 +489,19 @@ export function InboundFlow({
     [draft, lookupExistingSku, resolveCode],
   );
 
+  const handleScan=useCallback(async(raw:string,source:ScanSource):Promise<ScanFeedback>=>{
+    const epoch=scanEpoch.current;
+    try{
+      const feedback=await resolveScan(raw,source);
+      if(!ownerActive.current||epoch!==scanEpoch.current)return {accepted:false,message:'Đã rời phiên quét.'};
+      if(!feedback.requiresInput)setDraft(current=>({...current,scanAttempts:[...(current.scanAttempts??[]),{raw,at:serverNow(),kind:feedback.accepted===false?'duplicate':'valid',reason:feedback.accepted===false?feedback.message:undefined}]}));
+      return feedback;
+    }catch(error){
+      if(ownerActive.current&&epoch===scanEpoch.current)setDraft(current=>({...current,scanAttempts:[...(current.scanAttempts??[]),{raw,at:serverNow(),kind:'invalid',reason:toAppError(error).message}]}));
+      throw error;
+    }
+  },[resolveScan]);
+
   const dismissPendingScan = useCallback(() => {
     setPendingScan(undefined);
     setBoxQuantity('');
@@ -544,6 +565,9 @@ export function InboundFlow({
   }, [boxQuantity, dismissPendingScan, draft, pendingScan]);
 
   const handleRecord = useCallback(async () => {
+    // The existing native sender is legacy and does not carry these P04
+    // metadata fields. Do not silently drop them or manufacture a receipt.
+    if(draft.supplierId||draft.note?.trim()) {setMetadataDependency(true);return;}
     // Chống double submit — Prompt 4 §A.
     if (recordingRef.current) {
       return;
@@ -602,14 +626,17 @@ export function InboundFlow({
   }, [dataLayer, draft]);
 
   const restart = useCallback(() => {
+    if(result?.outcome==='queued'||result?.outcome==='reconcile'||recordingRef.current)return;
+    scanEpoch.current++;
     draftIdRef.current = 'draft-inbound-' + String(Date.now());
     setDraft(initialInboundDraft);
     setResult(undefined);
     setResumeOpen(false);
-  }, []);
+  }, [result]);
 
   const dialogs = (
     <>
+      <Dialog visible={metadataDependency} title="Chưa thể gửi đầy đủ thông tin phiếu" message="Nhà cung cấp và ghi chú chưa được nối vào API P04 mới. Phiếu được giữ nguyên; chưa gửi lên Web. Cần hoàn tất contract và adapter trước khi gửi." onDismiss={()=>setMetadataDependency(false)}><Button label="Đóng" onPress={()=>setMetadataDependency(false)}/></Dialog>
       <Dialog
         visible={resumeOpen}
         dismissible={false}
@@ -645,8 +672,10 @@ export function InboundFlow({
         documentName={result.name}
         documentRef={result.documentRef}
         quantity={result.quantity}
+        codeCount={draft.codes.length}
         outcome={result.outcome}
         reason={result.reason}
+        warehouseName={draft.warehouseName}
         onHome={onExit}
         onNext={restart}
       />
@@ -671,6 +700,7 @@ export function InboundFlow({
       return (
         <>
           <BusinessScanScreen
+            p04Context={{warehouseName:draft.warehouseName,supplierName:draft.supplierName,codes:draft.codes,attempts:draft.scanAttempts??draft.codes.map(c=>({raw:c.raw,at:c.at,kind:'valid' as const}))}}
             title="Nhập kho"
             documentName={draft.name}
             stepLabel="Bước 2/3"

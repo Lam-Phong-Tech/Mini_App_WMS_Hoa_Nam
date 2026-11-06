@@ -1,3 +1,4 @@
+import {HN_UI} from '../../theme/uiKitV3';
 import React, { useEffect, useRef, useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 import { gsap } from 'gsap';
@@ -11,7 +12,7 @@ const styles = StyleSheet.create({
     top: 8,
     height: 2,
     borderRadius: 2,
-    backgroundColor: '#ffffff',
+    backgroundColor: HN_UI.surface,
     opacity: 0.9,
     zIndex: 2,
   },

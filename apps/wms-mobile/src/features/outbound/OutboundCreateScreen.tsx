@@ -1,3 +1,4 @@
+import {HN_UI} from '../../theme/uiKitV3';
 /**
  * Xuất kho — bước 1: thông tin phiếu.
  *
@@ -69,7 +70,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
   },
   readonlyCopy: { flex: 1 },
-  headerStep: { color: '#ffffff', fontWeight: '600' },
+  headerStep: { color: HN_UI.onBrand, fontWeight: '600' },
 });
 
 export interface OutboundCreateScreenProps {

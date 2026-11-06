@@ -1,3 +1,7 @@
+import {UI_KIT_COLORS} from '../../theme/uiKitV3';
+import {HN_UI} from '../../theme/uiKitV3';
+import {P04ScanFooter} from '../inbound/P04ScanFooter';
+import {SCANNER_ARIAL_FAMILY} from '../../theme/scannerTypography';
 /**
  * Màn quét **nghiệp vụ** — dùng trong luồng Nhập kho và Xuất kho.
  *
@@ -40,12 +44,7 @@ import React, {
   useRef,
   useState,
 } from 'react';
-import {
-  AppState,
-  Pressable,
-  StyleSheet,
-  View,
-} from 'react-native';
+import { AppState, Modal, Pressable, StyleSheet, View } from 'react-native';
 import { Camera, CameraType } from 'react-native-camera-kit';
 
 import { Text } from '../../ui/Text';
@@ -53,6 +52,12 @@ import { AppIcon } from '../../ui/AppIcon';
 import { CodeInput } from '../../ui/CodeInput';
 import { Button } from '../../ui/Button';
 import { Sheet } from '../../ui/Sheet';
+import { Dialog } from '../../ui/Dialog';
+import { P04Action, P04Info, p04 as p04Styles } from '../inbound/P04Frame';
+import { P04Icon } from '../inbound/P04Icon';
+import {P04_ASSET,p04Asset} from '../inbound/P04AssetTheme';
+import { P04ScanPresentation } from '../inbound/P04ScanPresentation';
+import type { P04ViewState } from '../inbound/p04View';
 import { Page } from '../../ui/Page';
 import { Box } from '../../ui/Box';
 import { Banner } from '../../ui/Banner';
@@ -69,6 +74,7 @@ import {
   permissionMessage,
 } from '../../scanner/cameraPermission';
 import { useCameraPermission } from '../../scanner/useCameraPermission';
+import { useP15ScannerDeviceGuide } from '../system/P15ScannerDeviceGuide';
 import { parseScanPayload, type ScanSource } from '../../scanner/scanPayload';
 import { useIsScreenFocused } from '../../navigation/useIsScreenFocused';
 import {
@@ -108,7 +114,7 @@ function wrongEnvironmentBody(tier: TierCheckResult): string {
 const styles = StyleSheet.create({
   root: {
     flex: 1,
-    backgroundColor: '#221f35',
+    backgroundColor: HN_UI.shell,
   },
   camera: {
     position: 'absolute',
@@ -130,14 +136,14 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: 'rgba(255,255,255,0.14)',
+    backgroundColor: UI_KIT_COLORS['nav.hover'],
   },
   headerTitle: {
-    color: '#ffffff',
+    color: HN_UI.onBrand,
     fontWeight: '700',
   },
   headerSubtitle: {
-    color: 'rgba(255,255,255,0.66)',
+    color: UI_KIT_COLORS['nav.muted'],
   },
   countBadge: {
     borderRadius: 999,
@@ -145,7 +151,7 @@ const styles = StyleSheet.create({
     paddingVertical: 6,
   },
   countText: {
-    color: '#ffffff',
+    color: HN_UI.onBrand,
     fontWeight: '700',
   },
   countBadgePrimary: { backgroundColor: tokens.colors.primary },
@@ -164,19 +170,19 @@ const styles = StyleSheet.create({
     position: 'absolute',
     width: 44,
     height: 44,
-    borderColor: '#ffffff',
+    borderColor: HN_UI.surface,
   },
   cornerTL: { top: 0, left: 0, borderTopWidth: 3, borderLeftWidth: 3 },
   cornerTR: { top: 0, right: 0, borderTopWidth: 3, borderRightWidth: 3 },
   cornerBL: { bottom: 0, left: 0, borderBottomWidth: 3, borderLeftWidth: 3 },
   cornerBR: { bottom: 0, right: 0, borderBottomWidth: 3, borderRightWidth: 3 },
   hint: {
-    color: '#ffffff',
+    color: HN_UI.onBrand,
     textAlign: 'center',
     fontWeight: '600',
   },
   hintSub: {
-    color: 'rgba(255,255,255,0.66)',
+    color: UI_KIT_COLORS['nav.muted'],
     textAlign: 'center',
   },
   /** Thẻ trắng đè giữa khi chưa cấp quyền. */
@@ -217,14 +223,14 @@ const styles = StyleSheet.create({
     borderRadius: 26,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: 'rgba(255,255,255,0.18)',
+    backgroundColor: UI_KIT_COLORS['nav.hover'],
   },
   floatingButtonDisabled: {
     opacity: 0.45,
   },
   floatingGlyph: {
     fontSize: 20,
-    color: '#ffffff',
+    color: HN_UI.onBrand,
   },
   /** Thanh hành động dưới cùng. */
   bottomBar: {
@@ -276,7 +282,7 @@ const styles = StyleSheet.create({
     aspectRatio: 4 / 3,
     borderRadius: 12,
     overflow: 'hidden',
-    backgroundColor: '#18384a',
+    backgroundColor: HN_UI.shell,
   },
   boardCamera: {
     position: 'absolute',
@@ -307,10 +313,99 @@ const styles = StyleSheet.create({
   },
   boardStat: { flex: 1 },
   boardStatDivider: { borderLeftWidth: 1 },
-  boardHeaderStep: { color: '#ffffff', fontWeight: '600' },
+  boardHeaderStep: { color: HN_UI.onBrand, fontWeight: '600' },
+  p04Tool: {
+    flex: 1,
+    minWidth: 0,
+    minHeight: 48,
+    paddingHorizontal: 8,
+    borderWidth: 0,
+    borderRadius: 10,
+    backgroundColor: HN_UI.canvas,
+  },
+  p04ToolLabel: {
+    color: HN_UI.textPrimary,
+    fontSize: 14,
+    lineHeight: 20,
+    flexShrink: 1,
+  },
+  p04ToolLabelWhite: {
+    color: HN_UI.onBrand,
+    fontSize: 14,
+    lineHeight: 20,
+    flexShrink: 1,
+  },
+  p04Manual: {
+    padding: 10,
+    backgroundColor: HN_UI.surface,
+    borderWidth: 1,
+    borderColor: HN_UI.border,
+    borderRadius: 12,
+    gap: 8,
+  },
+  p04ManualHeading: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: 8,
+  },
+  p04ManualTitle: {
+    flex: 1,
+    minWidth: 0,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  p04Collapse: {
+    minHeight: 44,
+    paddingHorizontal: 8,
+    justifyContent: 'center',
+  },
+  p04CodeRow: { flexDirection: 'row', alignItems: 'flex-end', gap: 10 },
+  p04CodeField: { flex: 1, minWidth: 0 },
+  p04CheckCode: {
+    minHeight: 52,
+    width: 112,
+    paddingHorizontal: 8,
+    borderRadius: 8,
+    backgroundColor: HN_UI.primary,
+  },
+  p04CodeError: { color: HN_UI.danger },
+  p04FooterActions: { flexDirection: 'row', gap: 8 },
+  p04Half: { flex: 1, minWidth: 0, paddingHorizontal: 8 },
 });
 
 export interface BusinessScanScreenProps {
+  /** Locked P04 presentation; omitted by all other scanner owners. */
+  p04Context?: {
+    documentRef?: string;
+    typeLabel?: string;
+    warehouseName?: string;
+    supplierName?: string;
+    processing?: boolean;
+    ownerNotice?: boolean;
+    viewState?: P04ViewState;
+    onViewChange?: (patch: P04ViewState) => void;
+    codes: readonly {
+      raw: string;
+      sku?: string;
+      quantity: number;
+      at: number;
+    }[];
+    attempts: readonly {
+      raw: string;
+      at: number;
+      kind: 'valid' | 'duplicate' | 'invalid';
+      reason?: string;
+      timeLabel?: string;
+    }[];
+  };
+  p05Context?: BusinessScanScreenProps['p04Context'] & {
+    planned: number;
+    documentNumber?: string | null;
+    snapshotSaved?: boolean;
+    notices?: React.ReactNode;
+  };
   /** Tiêu đề, ví dụ *"Quét hàng nhập"* / *"Quét hàng xuất"*. */
   title: string;
   /** Phụ đề — bộ ảnh dùng **tên phiếu**. */
@@ -340,12 +435,16 @@ export interface BusinessScanScreenProps {
   doneLabel?: string;
   /** Bố cục card camera theo board Nhập/Xuất kho. */
   layout?: 'immersive' | 'board';
+  /** Optional caller route with its own NFC permission/context guard. */
+  onOpenNfcDeviceGuide?: (isCurrent: () => boolean) => void | Promise<void>;
 }
 
 /** Kết quả ngắn gọn để luồng nghiệp vụ báo lại ngay tại màn camera. */
 export interface ScanFeedback {
   /** `false` giữ mã ngoài danh sách, ví dụ WMS không resolve được SKU. */
   readonly accepted?: boolean;
+  /** Valid local code retained while its SAVE is not yet confirmed. */
+  readonly retained?: boolean;
   /**
    * Mã chưa được thêm vào danh sách vì luồng cha cần hỏi thêm dữ liệu (loại
    * hàng hoặc số kiểm đếm hộp). Đây không phải lỗi quét; màn nhập mã thủ công
@@ -370,7 +469,6 @@ interface CameraReadEvent {
 }
 
 const SUCCESS_NOTICE_DURATION_MS = 1400;
-const FAILURE_NOTICE_DURATION_MS = 2600;
 // Mini App giữ khoá callback 520ms sau một kết quả. Không giữ nhịp này, stream
 // đang nhìn một cụm tem sẽ nhận ngay QR nằm kế bên vừa khi request trước xong,
 // làm card kết quả đổi liên tục dù camera không hề lỗi. Web App giữ stream mở
@@ -378,6 +476,8 @@ const FAILURE_NOTICE_DURATION_MS = 2600;
 const POST_SCAN_SETTLE_MS = 520;
 
 export function BusinessScanScreen({
+  p04Context: inboundContext,
+  p05Context,
   title,
   documentName,
   stepLabel,
@@ -390,8 +490,16 @@ export function BusinessScanScreen({
   onDone,
   doneLabel = 'Kiểm tra phiếu',
   layout = 'immersive',
+  onOpenNfcDeviceGuide,
 }: BusinessScanScreenProps): React.ReactElement {
+  const p04Context = inboundContext ?? p05Context;
   const permission = useCameraPermission();
+  const [p04CameraEnabled, setP04CameraEnabled] = useState(false);
+  const [p04Filter, setP04Filter] = useState<
+    'all' | 'valid' | 'duplicate' | 'invalid'
+  >(p04Context?.viewState?.filter ?? 'all');
+  const [p04All, setP04All] = useState(p04Context?.viewState?.all ?? false);
+  const [p04ContextOpen, setP04ContextOpen] = useState(false);
   // Không dùng `useIsFocused()` của react-navigation: nó ném lỗi khi màn được
   // render ngoài navigator. Xem `navigation/useIsScreenFocused.ts`.
   const isFocused = useIsScreenFocused();
@@ -401,12 +509,43 @@ export function BusinessScanScreen({
   );
   const [torchOn, setTorchOn] = useState(false);
   const [cameraError, setCameraError] = useState<string | undefined>();
-  const [manualOpen, setManualOpen] = useState(false);
-  const [manualCode, setManualCode] = useState('');
+  const [manualOpen, setManualOpen] = useState(
+    p04Context?.viewState?.manual ?? false,
+  );
+  const [manualCode, setManualCode] = useState(
+    p04Context?.viewState?.rawInput ?? '',
+  );
+  const viewChangeRef = useRef(p04Context?.onViewChange);
+  viewChangeRef.current = p04Context?.onViewChange;
+  useEffect(() => {
+    viewChangeRef.current?.({
+      filter: p04Filter,
+      all: p04All,
+      manual: manualOpen,
+      rawInput: manualCode,
+    });
+  }, [p04Filter, p04All, manualOpen, manualCode]);
+  const manualValueRef = useRef(manualCode);
+  manualValueRef.current = manualCode;
+  const retainedManualRef = useRef<string | undefined>(undefined);
+  const rejectedCameraRaw = useRef<string | undefined>(undefined);
   // Toast kết quả nằm sau Sheet nhập tay. Giữ lỗi riêng trong Sheet để thủ kho
   // thấy ngay kết luận WMS, thay vì tưởng app không phản hồi.
   const [manualError, setManualError] = useState<string | undefined>();
   const [isProcessing, setIsProcessing] = useState(false);
+  useEffect(() => {
+    const raw = retainedManualRef.current;
+    if (
+      p05Context?.snapshotSaved &&
+      raw &&
+      manualCode.trim() === raw.trim() &&
+      p05Context.codes.some(c => c.raw === raw.trim())
+    ) {
+      retainedManualRef.current = undefined;
+      setManualCode('');
+      setManualError(undefined);
+    }
+  }, [p05Context, manualCode]);
   const [imagePickerOpen, setImagePickerOpen] = useState(false);
   const [isDecodingImage, setIsDecodingImage] = useState(false);
   const [scanResult, setScanResult] = useState<ScanResultNotice>();
@@ -432,13 +571,39 @@ export function BusinessScanScreen({
   // mà vẫn cho quét là để thủ kho quét cả lô rồi mới biết không gửi được — mất
   // công ở đúng chỗ tốn công nhất.
   const tier = useDeploymentTier();
+  const imageWorkRef = useRef(false);
+  const deviceGuide = useP15ScannerDeviceGuide({
+    permission,
+    // Owner actions entered manually remain valid while this mounted screen is
+    // foregrounded, even when no navigator supplies a focus context. Camera
+    // decoding is still separately gated by `isFocused` in `cameraCanRun`.
+    active: appActive,
+    busy: () => processingRef.current || isProcessing || imageWorkRef.current ||
+      imagePickerOpen || isDecodingImage || scanPaused ||
+      p04Context?.processing === true || p04Context?.ownerNotice === true ||
+      p04ContextOpen || (!p04Context && manualOpen) ||
+      (!!p04Context && !!scanResult && !manualOpen),
+    onOpenNfc: onOpenNfcDeviceGuide,
+  });
+  const scannerReadEpoch = deviceGuide.epoch;
+  const deviceGuideHelp = ['denied', 'blocked', 'unavailable'].includes(permission.state) || cameraError
+    ? <Button label="Hướng dẫn Camera và NFC" variant="secondary"
+        disabled={isProcessing || scanPaused || p04Context?.processing === true ||
+          p04Context?.ownerNotice === true || imagePickerOpen || isDecodingImage}
+        onPress={deviceGuide.open} />
+    : null;
+  const deviceGuideModal = deviceGuide.visible ? <Modal testID="p15-scanner-device-guide"
+    visible animationType="none" presentationStyle="fullScreen"
+    onRequestClose={deviceGuide.close}>{deviceGuide.screen}</Modal> : null;
 
   const cameraCanRun =
     isCameraUsable(permission.state) &&
     isFocused &&
     appActive &&
     tier.allowed &&
-    !scanPaused;
+    !cameraError &&
+    !scanPaused &&
+    (!p04Context || (p04CameraEnabled && !manualOpen));
 
   /**
    * Thông báo và request không được tắt Camera. Tháo component Camera sau mỗi
@@ -447,7 +612,7 @@ export function BusinessScanScreen({
    */
   // Mini App dừng stream đúng lúc bộ chọn ảnh mở để camera không giữ phần cứng
   // sau hộp chọn tệp. Xong việc, render lại Camera và tiếp tục phiên quét.
-  const cameraActive = cameraCanRun && !imagePickerOpen && !isDecodingImage;
+  const cameraActive = cameraCanRun && !deviceGuide.cameraSuspended && !imagePickerOpen && !isDecodingImage;
 
   const isScanResultVisible =
     isProcessing || isDecodingImage || scanResult !== undefined;
@@ -483,17 +648,12 @@ export function BusinessScanScreen({
    * lại. Kết quả thất bại giữ lâu hơn để thủ kho kịp đọc lý do từ WMS.
    */
   useEffect(() => {
-    if (scanResult === undefined) {
+    if (scanResult === undefined || scanResult.tone === 'failure') {
       return undefined;
     }
-    const timeout = setTimeout(
-      () => {
-        setScanResult(undefined);
-      },
-      scanResult.tone === 'success'
-        ? SUCCESS_NOTICE_DURATION_MS
-        : FAILURE_NOTICE_DURATION_MS,
-    );
+    const timeout = setTimeout(() => {
+      setScanResult(undefined);
+    }, SUCCESS_NOTICE_DURATION_MS);
     return () => clearTimeout(timeout);
   }, [scanResult]);
 
@@ -515,8 +675,18 @@ export function BusinessScanScreen({
   }, []);
 
   const submitAcceptedCode = useCallback(
-    async (code: string, source: ScanSource): Promise<boolean> => {
-      if (processingRef.current || scanPaused) {
+    async (code: string, source: ScanSource, fromImage = false): Promise<boolean> => {
+      const ownerCurrent = () =>
+        source === 'MANUAL'
+          ? deviceGuide.isOwnerCurrent(scannerReadEpoch)
+          : deviceGuide.canRunOwner(scannerReadEpoch);
+      if (
+        processingRef.current ||
+        !ownerCurrent() ||
+        (source !== 'MANUAL' && !fromImage && !deviceGuide.canUseCamera(scannerReadEpoch)) ||
+        scanPaused ||
+        (source !== 'MANUAL' && scanResult?.tone === 'failure')
+      ) {
         return false;
       }
       processingRef.current = true;
@@ -524,6 +694,7 @@ export function BusinessScanScreen({
       setTorchOn(false);
       try {
         const feedback = await onScan(code, source);
+        if (!ownerCurrent()) return false;
         if (source === 'MANUAL') {
           setManualError(undefined);
         }
@@ -535,7 +706,7 @@ export function BusinessScanScreen({
           // vài giây rồi nhả, camera vẫn đang nhìn cùng tem sẽ gửi nó lại và
           // thay phiên card “đang kiểm tra”/“lỗi” liên tục. Mã khác không bị
           // ảnh hưởng, nên đưa tem kế tiếp vào là quét được ngay.
-          if (!feedback.requiresInput) {
+          if (!feedback.requiresInput && source !== 'MANUAL') {
             guard.current.reject(parseScanPayload(code).dedupeKey);
           }
           // `requiresInput` là nhánh có chủ đích: mã BOX đã được nhận diện,
@@ -544,11 +715,15 @@ export function BusinessScanScreen({
           // Nhánh này đã mở sheet chọn loại/nhập số lượng ở luồng cha; không
           // phủ nó bằng popup kết quả chung.
           if (!feedback.requiresInput) {
+            if (source !== 'MANUAL') rejectedCameraRaw.current = code;
             showScanResult('failure', message);
           }
+          if (source === 'MANUAL' && feedback.retained)
+            retainedManualRef.current = code;
           if (source === 'MANUAL' && !feedback.requiresInput) {
             setManualError(message);
           }
+          if (feedback.requiresInput && p04Context) setManualOpen(false);
           return feedback.requiresInput === true;
         }
         showScanResult(
@@ -558,36 +733,49 @@ export function BusinessScanScreen({
         );
         return true;
       } catch (error) {
+        if (!ownerCurrent()) return false;
         const message =
           error instanceof Error ? error.message : 'Không kiểm tra được mã.';
-        guard.current.reject(parseScanPayload(code).dedupeKey);
+        if (source !== 'MANUAL')
+          guard.current.reject(parseScanPayload(code).dedupeKey);
+        if (source !== 'MANUAL') rejectedCameraRaw.current = code;
         showScanResult('failure', message);
         if (source === 'MANUAL') {
           setManualError(message);
         }
         return false;
       } finally {
-        setIsProcessing(false);
+        if (!deviceGuide.isOwnerCurrent(scannerReadEpoch)) {
+          processingRef.current = false;
+        } else {
+          setIsProcessing(false);
         // Không nhả callback ngay khi request kết thúc. Nhờ vậy một tem lỗi
         // hoặc QR nằm sát bên không lập tức thay thế thông báo đang hiển thị;
         // camera vẫn chạy, sẵn sàng nhận mã kế tiếp sau 520ms như Mini App.
-        releaseScanInputAfterResult();
+          if (source === 'MANUAL') processingRef.current = false;
+          else releaseScanInputAfterResult();
+        }
       }
     },
     [
       onScan,
+      deviceGuide,
+      scannerReadEpoch,
       releaseScanInputAfterResult,
       scannedCount,
       scanPaused,
+      scanResult,
       showScanResult,
+      p04Context,
     ],
   );
 
   const handleReadCode = useCallback(
     (event: CameraReadEvent) => {
       const raw = event.nativeEvent.codeStringValue;
-      const code = typeof raw === 'string' ? raw.trim() : '';
-      if (code.length === 0 || processingRef.current || scanPaused) {
+      const code =
+        typeof raw === 'string' ? (p04Context ? raw : raw.trim()) : '';
+      if (!deviceGuide.canUseCamera(scannerReadEpoch) || code.trim().length === 0 || processingRef.current || scanPaused) {
         return;
       }
       const parsed = parseScanPayload(code);
@@ -598,7 +786,7 @@ export function BusinessScanScreen({
       }
       submitAcceptedCode(code, 'CAMERA').then(() => undefined);
     },
-    [scanPaused, submitAcceptedCode],
+    [p04Context, scanPaused, submitAcceptedCode, deviceGuide, scannerReadEpoch],
   );
 
   /**
@@ -608,6 +796,8 @@ export function BusinessScanScreen({
   const selectImageAndScan = useCallback(async () => {
     if (
       !supportsImageQrScan ||
+      !deviceGuide.canRunOwner(scannerReadEpoch) ||
+      imageWorkRef.current ||
       imagePickerOpen ||
       isDecodingImage ||
       processingRef.current ||
@@ -617,35 +807,36 @@ export function BusinessScanScreen({
       return;
     }
 
+    imageWorkRef.current = true;
     setImagePickerOpen(true);
     let image: unknown;
     try {
       image = await pickQrImage();
+      if (!deviceGuide.canRunOwner(scannerReadEpoch)) { imageWorkRef.current = false; return; }
     } catch (error) {
       const message =
         error instanceof Error ? error.message : 'Không mở được bộ chọn ảnh.';
+      imageWorkRef.current = false;
+      if (!deviceGuide.canRunOwner(scannerReadEpoch)) return;
       showScanResult('failure', message);
       return;
     } finally {
-      setImagePickerOpen(false);
+      if (deviceGuide.isOwnerCurrent(scannerReadEpoch)) setImagePickerOpen(false);
     }
 
-    if (image === undefined) return;
+    if (image === undefined) { imageWorkRef.current = false; return; }
 
     setIsDecodingImage(true);
     try {
       const detected = await decodeQrImage(image);
+      if (!deviceGuide.canRunOwner(scannerReadEpoch)) return;
       const code = detected.code.trim();
       if (code === '') {
         throw new Error('Không tìm thấy QR/Barcode trong ảnh.');
       }
       const parsed = parseScanPayload(code);
       if (
-        !guard.current.accept(
-          parsed.dedupeKey,
-          undefined,
-          parsed.dedupeScope,
-        )
+        !guard.current.accept(parsed.dedupeKey, undefined, parsed.dedupeScope)
       ) {
         showScanResult(
           'failure',
@@ -653,17 +844,20 @@ export function BusinessScanScreen({
         );
         return;
       }
-      await submitAcceptedCode(code, 'CAMERA');
+      await submitAcceptedCode(code, 'CAMERA', true);
     } catch (error) {
       const message =
         error instanceof Error
           ? error.message
           : 'Không tìm thấy QR/Barcode trong ảnh.';
-      showScanResult('failure', message);
+      if (deviceGuide.canRunOwner(scannerReadEpoch)) showScanResult('failure', message);
     } finally {
-      setIsDecodingImage(false);
+      imageWorkRef.current = false;
+      if (deviceGuide.isOwnerCurrent(scannerReadEpoch)) setIsDecodingImage(false);
     }
   }, [
+    deviceGuide,
+    scannerReadEpoch,
     imagePickerOpen,
     isDecodingImage,
     scanPaused,
@@ -674,33 +868,313 @@ export function BusinessScanScreen({
 
   const handleError = useCallback(
     (event: { nativeEvent: { errorMessage: string } }) => {
+      if (!deviceGuide.canDecode(scannerReadEpoch)) return;
       const message = event.nativeEvent.errorMessage;
       logger.error('Camera lỗi', { message });
       setCameraError(message);
     },
-    [],
+    [deviceGuide, scannerReadEpoch],
   );
 
+  const openManual = useCallback(() => {
+    if (isProcessing || scanPaused) return;
+    if (settleTimerRef.current !== undefined) {
+      clearTimeout(settleTimerRef.current);
+      settleTimerRef.current = undefined;
+      processingRef.current = false;
+    }
+    setTorchOn(false);
+    setScanResult(undefined);
+    if (rejectedCameraRaw.current !== undefined) {
+      setManualCode(rejectedCameraRaw.current);
+      rejectedCameraRaw.current = undefined;
+    }
+    setManualError(undefined);
+    setManualOpen(true);
+  }, [isProcessing, scanPaused]);
+  const resumeP05Camera = () => {
+    if (isProcessing || scanPaused || p04Context?.processing===true || !tier.allowed || !deviceGuide.resume()) return;
+    setManualOpen(false);
+    setManualError(undefined);
+    setScanResult(undefined);
+    setTorchOn(false);
+    setCameraError(undefined);
+    setP04CameraEnabled(true);
+    if (canRequestAgain(permission.state))
+      permission.request().catch(() => undefined);
+  };
+
   const submitManual = useCallback(() => {
-    const code = manualCode.trim();
-    if (code === '' || processingRef.current || scanPaused) {
+    if (!tier.allowed) {
+      setManualError(wrongEnvironmentBody(tier));
       return;
     }
-    const parsed = parseScanPayload(code);
-    // Mã nhập tay đi qua **cùng** bộ chống trùng với mã quét — đúng như câu ghi
-    // trong ảnh: *"Mã nhập tay cũng kiểm tra trùng và tồn tại trên WMS"*.
-    if (guard.current.accept(parsed.dedupeKey, undefined, parsed.dedupeScope)) {
-      submitAcceptedCode(code, 'MANUAL').then(accepted => {
-        if (accepted) {
-          setManualCode('');
-          setManualOpen(false);
-        }
-      });
+    const code = p04Context ? manualCode : manualCode.trim();
+    if (p05Context && code.length > 512) {
+      setManualError('Mã không được vượt quá 512 ký tự.');
+      return;
     }
-  }, [manualCode, scanPaused, submitAcceptedCode]);
+    if (!deviceGuide.isOwnerCurrent(scannerReadEpoch) || code.trim() === '' || processingRef.current || scanPaused) {
+      return;
+    }
+    // Manual attempts always reach the owner. A resolver rejection must remain
+    // retryable; the camera dedupe guard cannot silently suppress typed input.
+    const submittedValue = manualCode;
+    submitAcceptedCode(code, 'MANUAL').then(accepted => {
+      if (accepted && manualValueRef.current === submittedValue) {
+        setManualCode('');
+        if (!p04Context) setManualOpen(false);
+      }
+    });
+  }, [
+    p04Context,
+    p05Context,
+    deviceGuide,
+    scannerReadEpoch,
+    manualCode,
+    scanPaused,
+    submitAcceptedCode,
+    tier,
+  ]);
 
   const badgeText = progressLabel ?? String(scannedCount) + ' MÃ';
 
+  if (layout === 'board' && p04Context) {
+    const busy = isProcessing || p04Context.processing === true || scanPaused;
+    return (
+      <P04ScanPresentation
+        operation={p05Context ? 'outbound' : 'inbound'}
+        planned={p05Context?.planned}
+        documentRef={p04Context.documentRef}
+        typeLabel={p04Context.typeLabel}
+        supplierName={p04Context.supplierName}
+        attempts={p04Context.attempts}
+        codeCount={p04Context.codes.length}
+        quantity={p04Context.codes.reduce(
+          (sum, code) => sum + code.quantity,
+          0,
+        )}
+        manual={manualOpen}
+        filter={p04Filter}
+        all={p04All}
+        busy={busy}
+        showContext={!p05Context}
+        viewState={p04Context.viewState}
+        onViewChange={p04Context.onViewChange}
+        onBack={onBack}
+        onFilter={kind => {
+          setP04Filter(kind);
+          setP04All(false);
+        }}
+        onAll={() => setP04All(value => !value)}
+        onContext={() => setP04ContextOpen(true)}
+        cameraLabel={cameraActive ? undefined : 'Camera chưa bật'}
+        camera={
+          cameraActive ? (
+            <Camera
+              style={styles.boardCamera}
+              cameraType={CameraType.Back}
+              scanBarcode
+              showFrame={false}
+              scanThrottleDelay={140}
+              focusMode="on"
+              torchMode={torchOn ? 'on' : 'off'}
+              onReadCode={handleReadCode}
+              onError={handleError}
+            />
+          ) : undefined
+        }
+        tools={<>
+          <View style={[styles.boardTools, { gap: 12 }]}>
+            <Button
+              label={
+                cameraActive ? (torchOn ? 'Tắt đèn' : 'Bật đèn') : 'Bật camera'
+              }
+              leading={<P04Icon name="torch" assetPack color={P04_ASSET.primary} size={20} />}
+              variant="secondary"
+              style={[styles.p04Tool,p04Asset.tool]}
+              labelStyle={[styles.p04ToolLabel,p04Asset.toolLabel]}
+              disabled={!tier.allowed || busy}
+              onPress={() => {
+                if (cameraActive) setTorchOn(value => !value);
+                else {
+                  if (!deviceGuide.resume()) return;
+                  setManualOpen(false);
+                  setCameraError(undefined);
+                  setTorchOn(false);
+                  setP04CameraEnabled(true);
+                  if (canRequestAgain(permission.state))
+                    permission.request().catch(() => undefined);
+                }
+              }}
+            />
+            <Button
+              label="Nhập tay"
+              leading={<P04Icon name="keyboard" assetPack color={P04_ASSET.primary} size={20} />}
+              variant="secondary"
+              style={[styles.p04Tool,p04Asset.tool]}
+              labelStyle={[styles.p04ToolLabel,p04Asset.toolLabel]}
+              disabled={busy}
+              onPress={openManual}
+            />
+          </View>
+        </>}
+        manualForm={
+          <View style={styles.p04Manual}>
+            <View style={styles.p04ManualHeading}>
+              <View style={styles.p04ManualTitle}>
+                <P04Icon name="keyboard" size={20} />
+                <Text
+                  style={[
+                    p04Styles.rowValue,
+                    !p05Context && {
+                      fontSize: 15,
+                      fontFamily: SCANNER_ARIAL_FAMILY,
+                    },
+                  ]}
+                >
+                  Nhập mã sản phẩm
+                </Text>
+              </View>
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel="Thu gọn nhập tay"
+                disabled={busy}
+                onPress={() => setManualOpen(false)}
+                style={styles.p04Collapse}
+              >
+                <Text style={p04Styles.small}>Thu gọn</Text>
+              </Pressable>
+            </View>
+            <View style={styles.p04CodeRow}>
+              <CodeInput
+                label="Mã QR/Serial/SKU"
+                accessibilityLabel="Mã QR/Serial/SKU"
+                fieldHeight={!p05Context ? 52 : undefined}
+                labelStyle={
+                  !p05Context
+                    ? {
+                        fontFamily: SCANNER_ARIAL_FAMILY,
+                        fontSize: 13,
+                        lineHeight: 18,
+                      }
+                    : undefined
+                }
+                inputStyle={
+                  !p05Context
+                    ? {
+                        fontFamily: SCANNER_ARIAL_FAMILY,
+                        fontSize: 16,
+                        lineHeight: 24,
+                      }
+                    : undefined
+                }
+                preserveCase={!!p05Context}
+                placeholder={
+                  p05Context ? 'Nhập mã trên sản phẩm' : 'Ví dụ: HN12345'
+                }
+                containerStyle={styles.p04CodeField}
+                value={manualCode}
+                editable={!busy}
+                onChangeText={value => {
+                  manualValueRef.current = value;
+                  retainedManualRef.current = undefined;
+                  setManualCode(value);
+                  setManualError(undefined);
+                }}
+                returnKeyType="done"
+                submitBehavior={p05Context ? 'submit' : undefined}
+                blurOnSubmit={p05Context ? false : undefined}
+                onSubmitEditing={submitManual}
+              />
+              <Button
+                label="Kiểm tra mã"
+                onPress={submitManual}
+                style={[styles.p04CheckCode, !p05Context && { width: 126,backgroundColor:P04_ASSET.primary,backgroundImage:'none' }]}
+                labelStyle={styles.p04ToolLabelWhite}
+                disabled={!manualCode.trim() || busy}
+                loading={isProcessing}
+              />
+            </View>
+            <Text
+              accessibilityLiveRegion="polite"
+              style={[
+                p04Styles.small,
+                !p05Context && {
+                  minHeight: 40,
+                  fontFamily: SCANNER_ARIAL_FAMILY,
+                },
+                manualError && styles.p04CodeError,
+              ]}
+            >
+              {manualError ?? 'Nhập từng mã, rồi nhấn Enter hoặc Kiểm tra mã.'}
+            </Text>
+          </View>
+        }
+        footer={
+          <P04ScanFooter operation={p05Context?'outbound':'inbound'} busy={busy} canReview={scannedCount>0} onReview={onDone} onContinue={resumeP05Camera}/>
+        }
+        notices={
+          <>
+            {deviceGuideModal}
+            {deviceGuideHelp}
+            {p05Context?.notices}
+            {!tier.allowed && (
+              <P04Info title={MESSAGE_WRONG_ENVIRONMENT}>
+                {wrongEnvironmentBody(tier)}
+              </P04Info>
+            )}
+            {!!cameraError && (
+              <P04Info title="Camera gặp lỗi">{cameraError}</P04Info>
+            )}
+            <Dialog
+              visible={p04ContextOpen && !deviceGuide.visible}
+              title={p05Context ? 'Phiếu đang xuất' : 'Phiếu đang nhập'}
+              message={`Mã phiếu: ${
+                p05Context
+                  ? p05Context.documentNumber || 'Chưa được cấp'
+                  : p04Context.documentRef ?? 'Chưa xác minh'
+              }\nTên phiếu: ${documentName}\n${
+                p05Context ? 'Loại phiếu' : 'Loại nhập'
+              }: ${p04Context.typeLabel ?? 'Chưa xác minh'}\nKho: ${
+                p04Context.warehouseName ?? 'Chưa xác minh'
+              }\n${p05Context ? 'Người nhận' : 'Nhà cung cấp'}: ${
+                p04Context.supplierName ?? 'Không chọn'
+              }\n${p04Context.codes.length} mã hợp lệ`}
+              onDismiss={() => setP04ContextOpen(false)}
+            >
+              <P04Action
+                label="Đóng"
+                onPress={() => setP04ContextOpen(false)}
+              />
+            </Dialog>
+            <Dialog
+              visible={
+                scanResult !== undefined &&
+                !deviceGuide.visible &&
+                !manualOpen &&
+                !scanPaused &&
+                !p04Context.ownerNotice
+              }
+              title={
+                scanResult?.tone === 'success'
+                  ? 'Đã thêm mã'
+                  : 'Không thể thêm mã'
+              }
+              message={scanResult?.message}
+              dismissOnBackdrop={false}
+              onDismiss={() => setScanResult(undefined)}
+            >
+              <P04Action
+                label="Đã hiểu"
+                onPress={() => setScanResult(undefined)}
+              />
+            </Dialog>
+          </>
+        }
+      />
+    );
+  }
   if (layout === 'board') {
     return (
       <Page
@@ -716,12 +1190,19 @@ export function BusinessScanScreen({
       >
         <Box card padding="lg" gap="md">
           <View style={[styles.header, { gap: tokens.spacing.md }]}>
-            <View style={[styles.permissionIcon, { backgroundColor: tokens.colors.primarySoft }]}>
+            <View
+              style={[
+                styles.permissionIcon,
+                { backgroundColor: tokens.colors.primarySoft },
+              ]}
+            >
               <AppIcon name="scan" color={tokens.colors.primary} size={24} />
             </View>
             <View style={styles.headerBody}>
               <Text variant="cardTitle" tone="strong">
-                {title === 'Nhập kho' ? 'Quét hàng nhập vào' : 'Quét hàng xuất kho'}
+                {title === 'Nhập kho'
+                  ? 'Quét hàng nhập vào'
+                  : 'Quét hàng xuất kho'}
               </Text>
               <Text variant="caption" tone="muted">
                 Hướng camera vào mã QR/Serial/SKU
@@ -741,11 +1222,13 @@ export function BusinessScanScreen({
                 torchMode={torchOn ? 'on' : 'off'}
                 onReadCode={handleReadCode}
                 onError={handleError}
-                {...(allowedTypes.length > 0 ? { barcodeFrameSize: undefined } : {})}
+                {...(allowedTypes.length > 0
+                  ? { barcodeFrameSize: undefined }
+                  : {})}
               />
             ) : (
               <View style={styles.boardFallback}>
-                <AppIcon name="camera" color="#ffffff" size={34} />
+                <AppIcon name="camera" color={HN_UI.onBrand} size={34} />
               </View>
             )}
             <View style={styles.boardFrame}>
@@ -760,13 +1243,15 @@ export function BusinessScanScreen({
           {cameraActive ? null : (
             <Banner
               tone="info"
-              title={tier.allowed ? 'Sẵn sàng quét mã' : MESSAGE_WRONG_ENVIRONMENT}
+              title={
+                tier.allowed ? 'Sẵn sàng quét mã' : MESSAGE_WRONG_ENVIRONMENT
+              }
               message={
                 !tier.allowed
                   ? wrongEnvironmentBody(tier)
                   : permission.state === 'granted'
-                    ? 'Bấm bật camera để quét mã.'
-                    : permissionMessage(permission.state)
+                  ? 'Bấm bật camera để quét mã.'
+                  : permissionMessage(permission.state)
               }
             />
           )}
@@ -779,11 +1264,14 @@ export function BusinessScanScreen({
                 style={styles.boardTool}
                 onPress={() => setTorchOn(current => !current)}
               />
-            ) : canRequestAgain(permission.state) && tier.allowed ? (
+            ) : (canRequestAgain(permission.state) || (deviceGuide.cameraSuspended && isCameraUsable(permission.state))) && tier.allowed ? (
               <Button
                 label="Bật camera"
                 style={styles.boardTool}
-                onPress={() => { permission.request().catch(() => undefined); }}
+                onPress={() => {
+                  if (!deviceGuide.resume()) return;
+                  if (canRequestAgain(permission.state)) permission.request().catch(() => undefined);
+                }}
               />
             ) : (
               <Button
@@ -798,34 +1286,56 @@ export function BusinessScanScreen({
               variant="secondary"
               style={styles.boardTool}
               disabled={scanPaused}
-              onPress={() => {
-                setManualError(undefined);
-                setManualOpen(true);
-              }}
+              onPress={openManual}
             />
           </View>
+          {deviceGuideHelp}
 
           <View
             style={[
               styles.boardStats,
-              { borderColor: tokens.colors.divider, backgroundColor: tokens.colors.surface },
+              {
+                borderColor: tokens.colors.divider,
+                backgroundColor: tokens.colors.surface,
+              },
             ]}
           >
-            <View style={[styles.boardStat, { padding: tokens.spacing.md, gap: tokens.spacing.xs }]}>
-              <Text variant="caption" tone="muted">Tổng đã quét</Text>
-              <Text variant="metric" tone="strong">{String(scannedCount)}</Text>
-              <Text variant="caption" tone="muted">lượt quét</Text>
+            <View
+              style={[
+                styles.boardStat,
+                { padding: tokens.spacing.md, gap: tokens.spacing.xs },
+              ]}
+            >
+              <Text variant="caption" tone="muted">
+                Tổng đã quét
+              </Text>
+              <Text variant="metric" tone="strong">
+                {String(scannedCount)}
+              </Text>
+              <Text variant="caption" tone="muted">
+                lượt quét
+              </Text>
             </View>
             <View
               style={[
                 styles.boardStat,
                 styles.boardStatDivider,
-                { padding: tokens.spacing.md, gap: tokens.spacing.xs, borderLeftColor: tokens.colors.divider },
+                {
+                  padding: tokens.spacing.md,
+                  gap: tokens.spacing.xs,
+                  borderLeftColor: tokens.colors.divider,
+                },
               ]}
             >
-              <Text variant="caption" tone="muted">Mã hợp lệ</Text>
-              <Text variant="metric" style={{ color: tokens.colors.success }}>{String(scannedCount)}</Text>
-              <Text variant="caption" tone="muted">đã xác minh</Text>
+              <Text variant="caption" tone="muted">
+                Mã hợp lệ
+              </Text>
+              <Text variant="metric" style={{ color: tokens.colors.success }}>
+                {String(scannedCount)}
+              </Text>
+              <Text variant="caption" tone="muted">
+                đã xác minh
+              </Text>
             </View>
           </View>
         </Box>
@@ -836,7 +1346,11 @@ export function BusinessScanScreen({
         {isScanResultVisible && scanResult !== undefined ? (
           <Banner
             tone={scanResult.tone === 'success' ? 'success' : 'danger'}
-            title={scanResult.tone === 'success' ? 'Quét thành công' : 'Không thể thêm mã'}
+            title={
+              scanResult.tone === 'success'
+                ? 'Quét thành công'
+                : 'Không thể thêm mã'
+            }
             message={scanResult.message}
           />
         ) : null}
@@ -844,11 +1358,14 @@ export function BusinessScanScreen({
         <Button
           label={doneLabel}
           onPress={onDone}
-          disabled={scannedCount === 0 || isProcessing || isDecodingImage || scanPaused}
+          disabled={
+            scannedCount === 0 || isProcessing || isDecodingImage || scanPaused
+          }
         />
 
+        {deviceGuideModal}
         <Sheet
-          visible={manualOpen}
+          visible={manualOpen && !deviceGuide.visible}
           onDismiss={() => {
             setManualError(undefined);
             setManualOpen(false);
@@ -872,8 +1389,17 @@ export function BusinessScanScreen({
               {manualError}
             </Text>
           )}
-          <Button label="Kiểm tra mã" onPress={submitManual} loading={isProcessing} disabled={manualCode.trim() === '' || isProcessing} />
-          <Button label="Huỷ" variant="secondary" onPress={() => setManualOpen(false)} />
+          <Button
+            label="Kiểm tra mã"
+            onPress={submitManual}
+            loading={isProcessing}
+            disabled={manualCode.trim() === '' || isProcessing}
+          />
+          <Button
+            label="Huỷ"
+            variant="secondary"
+            onPress={() => setManualOpen(false)}
+          />
         </Sheet>
       </Page>
     );
@@ -919,7 +1445,7 @@ export function BusinessScanScreen({
           onPress={onBack}
           style={styles.backButton}
         >
-          <AppIcon name="chevron-left" color="#ffffff" size={22} />
+          <AppIcon name="chevron-left" color={HN_UI.onBrand} size={22} />
         </Pressable>
 
         <View style={styles.headerBody}>
@@ -934,7 +1460,9 @@ export function BusinessScanScreen({
         <View
           style={[
             styles.countBadge,
-            stepLabel === undefined ? styles.countBadgePrimary : styles.countBadgeStep,
+            stepLabel === undefined
+              ? styles.countBadgePrimary
+              : styles.countBadgeStep,
           ]}
         >
           <Text variant="caption" style={styles.countText}>
@@ -956,7 +1484,7 @@ export function BusinessScanScreen({
         {cameraActive ? (
           <View style={{ marginTop: tokens.spacing.xl }}>
             <Text variant="body" style={styles.hint}>
-            {isProcessing ? 'Đã nhận diện mã' : 'Giữ thiết bị ổn định'}
+              {isProcessing ? 'Đã nhận diện mã' : 'Giữ thiết bị ổn định'}
             </Text>
             <Text variant="caption" style={styles.hintSub}>
               {isProcessing
@@ -968,7 +1496,10 @@ export function BusinessScanScreen({
       </View>
 
       {/* --- Thẻ xin quyền, đè giữa màn --- */}
-      {cameraActive || isScanResultVisible || scanPaused || imagePickerOpen ? null : (
+      {cameraActive ||
+      isScanResultVisible ||
+      scanPaused ||
+      imagePickerOpen ? null : (
         <View
           style={[
             styles.permissionCard,
@@ -1009,15 +1540,17 @@ export function BusinessScanScreen({
               variant="secondary"
               onPress={tier.recheck}
             />
-          ) : canRequestAgain(permission.state) ? (
+          ) : (canRequestAgain(permission.state) || (deviceGuide.cameraSuspended && isCameraUsable(permission.state))) ? (
             <Button
               label="Bật camera để quét"
               onPress={() => {
-                permission.request().catch(() => undefined);
+                if (!deviceGuide.resume()) return;
+                if (canRequestAgain(permission.state)) permission.request().catch(() => undefined);
               }}
             />
           ) : null}
 
+          {deviceGuideHelp}
           {/* Sai môi trường thì KHÔNG mở lối nhập tay: mã gõ tay cũng đi cùng
               một đường lên máy chủ, nên nó không cứu được gì mà chỉ khiến thủ
               kho nhập cả lô rồi mới biết hỏng. */}
@@ -1059,7 +1592,7 @@ export function BusinessScanScreen({
             onPress={() => setTorchOn(current => !current)}
             style={styles.floatingButton}
           >
-            <AppIcon name="flash" color="#ffffff" />
+            <AppIcon name="flash" color={HN_UI.onBrand} />
           </Pressable>
 
           {supportsImageQrScan ? (
@@ -1077,7 +1610,7 @@ export function BusinessScanScreen({
                   : undefined,
               ]}
             >
-              <AppIcon name="image" color="#ffffff" />
+              <AppIcon name="image" color={HN_UI.onBrand} />
             </Pressable>
           ) : null}
         </View>
@@ -1102,12 +1635,7 @@ export function BusinessScanScreen({
       )}
 
       {isScanResultVisible ? (
-        <View
-          pointerEvents="none"
-          style={[
-            styles.scanResultLayer,
-          ]}
-        >
+        <View pointerEvents="none" style={[styles.scanResultLayer]}>
           <View
             style={[
               styles.scanResultCard,
@@ -1153,11 +1681,7 @@ export function BusinessScanScreen({
               </View>
             )}
             <View style={styles.scanResultCopy}>
-              <Text
-                variant="body"
-                tone="strong"
-                style={styles.scanResultTitle}
-              >
+              <Text variant="body" tone="strong" style={styles.scanResultTitle}>
                 {isDecodingImage
                   ? 'Đang đọc mã từ ảnh…'
                   : isProcessing
@@ -1222,9 +1746,10 @@ export function BusinessScanScreen({
         </View>
       </View>
 
+      {deviceGuideModal}
       {/* --- Hộp nhập mã thủ công --- */}
       <Sheet
-        visible={manualOpen}
+        visible={manualOpen && !deviceGuide.visible}
         onDismiss={() => {
           setManualError(undefined);
           setManualOpen(false);

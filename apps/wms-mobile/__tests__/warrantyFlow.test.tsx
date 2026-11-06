@@ -1,3 +1,4 @@
+import type { P09Service } from '../src/services/wms/p09Warranty';
 /**
  * Đợt 4 của Prompt 4 — luồng Bảo hành (ảnh 39–46).
  *
@@ -188,8 +189,14 @@ describe('chuyển trạng thái — ghi chú bắt buộc (ảnh 45)', () => {
   });
 
   it('thiếu ghi chú khi Huỷ thì chặn kèm đúng câu lỗi', () => {
-    const base = { current: 'RECEIVED', target: 'CANCELLED', confirmedDefect: '' };
-    expect(validateTransition({ ...base, note: '' })).toBe(MESSAGE_NOTE_REQUIRED);
+    const base = {
+      current: 'RECEIVED',
+      target: 'CANCELLED',
+      confirmedDefect: '',
+    };
+    expect(validateTransition({ ...base, note: '' })).toBe(
+      MESSAGE_NOTE_REQUIRED,
+    );
     expect(validateTransition({ ...base, note: '   ' })).toBe(
       MESSAGE_NOTE_REQUIRED,
     );
@@ -341,9 +348,9 @@ describe('Kết quả kiểm tra — trường KHÁC với ghi chú', () => {
 describe('giới hạn tệp đính kèm (ảnh 46)', () => {
   const none = { images: 0, videos: 0 };
 
-  it('giới hạn đúng con số trong ảnh', () => {
+  it('giữ giới hạn ảnh và dùng owner upload-v1 max1 video', () => {
     expect(ATTACHMENT_LIMITS.maxImages).toBe(10);
-    expect(ATTACHMENT_LIMITS.maxVideos).toBe(2);
+    expect(ATTACHMENT_LIMITS.maxVideos).toBe(1);
     expect(ATTACHMENT_LIMITS.imageBytes).toBe(10 * 1024 * 1024);
     expect(ATTACHMENT_LIMITS.videoBytes).toBe(300 * 1024 * 1024);
     expect(ATTACHMENT_LIMITS.videoSeconds).toBe(300);
@@ -357,7 +364,10 @@ describe('giới hạn tệp đính kèm (ảnh 46)', () => {
 
   it('từ chối ảnh quá 10MB', () => {
     expect(
-      validateAttachment({ mimeType: 'image/png', bytes: 11 * 1024 * 1024 }, none),
+      validateAttachment(
+        { mimeType: 'image/png', bytes: 11 * 1024 * 1024 },
+        none,
+      ),
     ).toContain('10MB');
   });
 
@@ -383,7 +393,7 @@ describe('giới hạn tệp đính kèm (ảnh 46)', () => {
         { mimeType: 'video/mp4', bytes: 100, seconds: 10 },
         { images: 0, videos: 2 },
       ),
-    ).toContain('2 video');
+    ).toContain('1 video');
   });
 
   it('từ chối định dạng ngoài danh sách', () => {
@@ -433,7 +443,22 @@ describe('màn danh sách bảo hành (ảnh 39, 40)', () => {
   it('hồ sơ ẩn danh hiện câu của BA, KHÔNG hiện tên đã bị ghi đè', async () => {
     const view = await render(
       <WarrantyListScreen
-        fetchCases={async () => ({ items: [ANONYMIZED_CASE], meta: { total: 1 } })}
+        service={
+          {
+            contextKey: () => 'test',
+            scope: () => ({ permissions: ['warranty.view'] }),
+            list: async () => ({
+              items: [ANONYMIZED_CASE],
+              meta: {
+                total: 1,
+                hasMore: false,
+                nextCursor: null,
+                nextPage: null,
+                pagination: 'KEYSET',
+              },
+            }),
+          } as unknown as P09Service
+        }
       />,
     );
     expect(view.text).toContain(MESSAGE_ANONYMIZED);
@@ -445,9 +470,15 @@ describe('màn danh sách bảo hành (ảnh 39, 40)', () => {
   it('lỗi tải có nút thử lại, không im lặng', async () => {
     const view = await render(
       <WarrantyListScreen
-        fetchCases={async () => {
-          throw new AppError({ kind: 'network', message: 'mất mạng' });
-        }}
+        service={
+          {
+            contextKey: () => 'test',
+            scope: () => ({ permissions: ['warranty.view'] }),
+            list: async () => {
+              throw new AppError({ kind: 'network', message: 'mất mạng' });
+            },
+          } as unknown as P09Service
+        }
       />,
     );
     expect(view.text).toContain('Không tải được danh sách bảo hành');
@@ -505,6 +536,10 @@ describe('màn chi tiết hồ sơ (ảnh 44–46)', () => {
                 id: 'component-line-1',
                 skuCode: 'AABC',
                 skuName: 'ABC',
+                unit: 'chiếc',
+                unitSource: 'CURRENT_SKU_CATALOG',
+                quantityStatus: 'CONFIRMED',
+                codes: [{ rawCode: 'ORIGINAL-SCAN', status: 'RECORDED' }],
                 quantity: 1,
                 scannedCodeCount: 1,
               },
@@ -517,7 +552,7 @@ describe('màn chi tiết hồ sơ (ảnh 44–46)', () => {
     expect(view.text).toContain('1 phiếu đã xuất');
     expect(view.text).toContain('CID-20260909144859-2EUF');
     expect(view.text).toContain('AABC · ABC');
-    expect(view.text).toContain('1 linh kiện · 1 mã/hộp');
+    expect(view.text).toContain('1 chiếc · 1 mã/hộp');
     expect(view.text).not.toContain('Xuất linh kiện');
     await view.unmount();
   });
@@ -558,7 +593,7 @@ describe('màn chi tiết hồ sơ (ảnh 44–46)', () => {
     );
     expect(view.text).toContain('Chọn từ thư viện');
     expect(view.text).toContain('Chụp ảnh');
-    expect(view.text).toContain('0/10 ảnh · 0/2 video');
+    expect(view.text).toContain('0/10 ảnh · 0/1 video');
     await view.unmount();
   });
 

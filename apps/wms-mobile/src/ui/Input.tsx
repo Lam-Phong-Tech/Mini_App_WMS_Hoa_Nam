@@ -19,14 +19,8 @@
  */
 
 import React, { useContext, useRef, useState, type ReactNode } from 'react';
-import {
-  StyleSheet,
-  TextInput,
-  View,
-  type TextInputProps,
-  type StyleProp,
-  type ViewStyle,
-} from 'react-native';
+import {ScannerTextInput as TextInput} from './ScannerTextInput';
+import {StyleSheet,View,type TextInputProps,type StyleProp,type ViewStyle,type TextStyle} from 'react-native';
 import { useTheme } from '../theme/ThemeProvider';
 import { Text } from './Text';
 import { KeyboardViewportContext } from './Page';
@@ -60,6 +54,20 @@ export interface InputProps extends Omit<TextInputProps, 'style'> {
   /** Icon/nút nằm trong vùng nhập; dùng cho các màn cần bám thiết kế. */
   leftAdornment?: ReactNode;
   rightAdornment?: ReactNode;
+  /** Opt-in presentation only; cursor, focus events and keyboard accessibility stay enabled. */
+  quietFocus?: boolean;
+  /** Opt-in owner reference for field validation/focus, without remounting. */
+  inputRef?: React.RefObject<React.ComponentRef<typeof TextInput> | null>;
+  /** P01 LOCKED uses 56px fields; other screens retain the shared 50px default. */
+  fieldHeight?: number;
+  /** P01 LOCKED uses a larger field label than the shared caption default. */
+  labelStyle?: StyleProp<TextStyle>;
+  fieldStyle?: StyleProp<ViewStyle>;
+  /** Optional outer-field focus treatment; invalid fields retain their error frame. */
+  focusStyle?: StyleProp<ViewStyle>;
+  /** Optional reference tint; focus and validation borders remain authoritative. */
+  restingBorderColor?: string;
+  inputStyle?: StyleProp<TextStyle>;
 }
 
 export function Input({
@@ -69,6 +77,14 @@ export function Input({
   containerStyle,
   leftAdornment,
   rightAdornment,
+  quietFocus = false,
+  inputRef: providedInputRef,
+  fieldHeight,
+  labelStyle,
+  fieldStyle,
+  focusStyle,
+  restingBorderColor,
+  inputStyle,
   onFocus,
   onBlur,
   editable = true,
@@ -78,16 +94,21 @@ export function Input({
   ...rest
 }: InputProps): React.ReactElement {
   const theme = useTheme();
-  const inputRef = useRef<React.ComponentRef<typeof TextInput>>(null);
+  const inputFontFamily=StyleSheet.flatten(inputStyle)?.fontFamily??theme.typography.fontFamily;
+  const localInputRef = useRef<React.ComponentRef<typeof TextInput>>(null);
+  const inputRef = providedInputRef ?? localInputRef;
   const revealFocusedInput = useContext(KeyboardViewportContext);
   const [focused, setFocused] = useState(false);
   const hasError = errorText !== undefined && errorText.length > 0;
+  const disabled=editable===false||rest.accessibilityState?.disabled===true;
+  const readonly=!disabled&&rest.readOnly===true;
+  const fieldBackground=disabled?theme.field.disabledBackground:readonly?theme.field.readonlyBackground:theme.field.background;
 
-  const borderColor = hasError
+  const borderColor = disabled?theme.field.disabledBorder:hasError
     ? theme.field.borderError
-    : focused
+    : focused && !quietFocus
     ? theme.field.borderFocus
-    : theme.field.border;
+    : restingBorderColor??theme.field.border;
 
   return (
     <View style={[{ gap: theme.spacing.xs }, containerStyle]}>
@@ -95,7 +116,7 @@ export function Input({
         <Text
           variant="caption"
           tone="muted"
-          style={{ fontSize: theme.field.labelSize }}
+          style={[{ fontSize: theme.field.labelSize }, labelStyle]}
         >
           {label}
         </Text>
@@ -105,7 +126,7 @@ export function Input({
         style={[
           styles.field,
           {
-            height: theme.field.height,
+            height: fieldHeight ?? theme.field.height,
             paddingHorizontal: theme.field.paddingX,
             borderRadius: theme.field.radius,
             borderColor,
@@ -113,6 +134,9 @@ export function Input({
               ? theme.field.background
               : theme.field.disabledBackground,
           },
+          fieldStyle,
+          focused && !quietFocus && !hasError && !disabled ? focusStyle : undefined,
+          { borderColor,backgroundColor:fieldBackground,borderRadius:theme.field.radius,overflow:'hidden' },
         ]}
       >
         {leftAdornment === undefined ? null : (
@@ -124,6 +148,8 @@ export function Input({
           ref={inputRef}
           {...rest}
           editable={editable}
+          invalid={hasError}
+          focusFrame="inner"
           autoComplete={autoComplete}
           importantForAutofill={importantForAutofill}
           onFocus={event => {
@@ -135,7 +161,7 @@ export function Input({
             setFocused(false);
             onBlur?.(event);
           }}
-          placeholderTextColor={theme.colors.textMuted}
+          placeholderTextColor={theme.field.placeholder}
           accessibilityLabel={rest.accessibilityLabel ?? label}
           style={[
             styles.input,
@@ -144,6 +170,9 @@ export function Input({
               fontFamily: theme.typography.fontFamily,
               fontSize: theme.typography.body.fontSize,
             },
+            inputStyle,
+            inputFontFamily?{fontFamily:inputFontFamily}:undefined,
+            disabled?{color:theme.field.disabledText}:undefined,
           ]}
         />
         {rightAdornment === undefined ? null : (
@@ -165,7 +194,7 @@ export function Input({
         <Text
           variant="caption"
           tone="muted"
-          style={{ fontSize: theme.field.helperSize }}
+          style={{ fontSize: theme.field.helperSize,color:theme.field.helperColor }}
         >
           {helperText}
         </Text>

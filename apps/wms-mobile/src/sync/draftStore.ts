@@ -7,6 +7,19 @@
  */
 
 import { getAppStorage, type KeyValueStorage } from '../storage/storage';
+import {createRepository} from '../storage/repository';
+import type {P03Body, P03Draft, P03Identity, P03Receipt, P03RequestCommand, P03Scope} from '../services/wms/p03Drafts';
+
+/** P03 journal is device retention, never evidence of a server save. */
+export interface P03DraftEntry {
+  readonly id:string; readonly identity:P03Identity; readonly scope:P03Scope;
+  readonly body:P03Body; readonly server?:P03Draft; readonly receipt?:P03Receipt;
+  readonly viewState?:unknown;
+  readonly pending?:{readonly command:P03RequestCommand;readonly requestId:string;readonly version:number;readonly body:unknown;readonly outcome:'IN_FLIGHT'|'UNKNOWN'|'FAILED'|'CONFLICT';readonly errorCode?:string;readonly retryAllowed?:boolean};
+}
+export function p03DraftRepository(store:KeyValueStorage=getAppStorage()){
+  return createRepository<P03DraftEntry>(store,'p03.drafts.v1');
+}
 
 export type WorkflowDraftKind = 'inbound' | 'outbound';
 export type WorkflowDraftStatus = 'DRAFT' | 'CANCELLED';

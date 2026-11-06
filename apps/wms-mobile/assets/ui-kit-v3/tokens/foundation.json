@@ -1,0 +1,368 @@
+{
+  "schema": "hn-asset-pack/2.0",
+  "version": "3.0.1",
+  "date": "2026-11-03",
+  "timezone": "Asia/Ho_Chi_Minh",
+  "status": "CANDIDATE_FOR_OWNER_REVIEW",
+  "description": "Chuẩn hợp nhất mới; không phải bằng chứng đã sửa runtime hoặc Owner đã LOCKED",
+  "fontFamily": "Inter",
+  "palette": {
+    "navy": {
+      "950": "#041F2C",
+      "900": "#063145",
+      "800": "#08435C",
+      "700": "#0B5573"
+    },
+    "ocean": {
+      "50": "#EFF8FC",
+      "100": "#DAEFF8",
+      "200": "#B5DFEF",
+      "300": "#84CDE6",
+      "400": "#4AB6D8",
+      "500": "#218CB5",
+      "600": "#0C6286",
+      "700": "#0A5372",
+      "800": "#08445E",
+      "900": "#07384D"
+    },
+    "teal": {
+      "50": "#EDFCF9",
+      "100": "#CCF5ED",
+      "300": "#79DFCF",
+      "400": "#5BD6C7",
+      "600": "#0F7B74",
+      "700": "#0B635E",
+      "900": "#073F3B"
+    },
+    "neutral": {
+      "0": "#FFFFFF",
+      "25": "#FAFCFC",
+      "50": "#F5F8FA",
+      "100": "#EAF0F5",
+      "200": "#DFE7ED",
+      "300": "#C4D0DC",
+      "400": "#94A6B8",
+      "500": "#667085",
+      "600": "#475467",
+      "700": "#344054",
+      "800": "#1D2939",
+      "900": "#101828"
+    },
+    "success": {
+      "50": "#ECFDF3",
+      "200": "#ABEFC6",
+      "600": "#067647",
+      "700": "#05603A",
+      "dark": "#75E0A7",
+      "darkBg": "#102F27"
+    },
+    "warning": {
+      "50": "#FFFAEB",
+      "200": "#FEDF89",
+      "600": "#B54708",
+      "700": "#93370D",
+      "dark": "#FEC84B",
+      "darkBg": "#382A13"
+    },
+    "danger": {
+      "50": "#FEF3F2",
+      "200": "#FECDCA",
+      "600": "#B42318",
+      "700": "#912018",
+      "dark": "#FDA29B",
+      "darkBg": "#3A2025"
+    },
+    "info": {
+      "50": "#EFF8FF",
+      "200": "#B2DDFF",
+      "600": "#175CD3",
+      "700": "#1849A9",
+      "dark": "#84CAFF",
+      "darkBg": "#102D48"
+    }
+  },
+  "space": {
+    "0": 0,
+    "2": 2,
+    "4": 4,
+    "6": 6,
+    "8": 8,
+    "12": 12,
+    "16": 16,
+    "20": 20,
+    "24": 24,
+    "32": 32,
+    "40": 40,
+    "48": 48,
+    "56": 56,
+    "64": 64,
+    "80": 80,
+    "96": 96
+  },
+  "radius": {
+    "xs": 4,
+    "sm": 6,
+    "control": 8,
+    "card": 12,
+    "panel": 16,
+    "sheet": 20,
+    "pill": 9999
+  },
+  "typography": {
+    "display": {
+      "size": 40,
+      "lineHeight": 48,
+      "weight": 700
+    },
+    "h1": {
+      "size": 28,
+      "lineHeight": 36,
+      "weight": 700
+    },
+    "h2": {
+      "size": 24,
+      "lineHeight": 32,
+      "weight": 600
+    },
+    "h3": {
+      "size": 20,
+      "lineHeight": 28,
+      "weight": 600
+    },
+    "h4": {
+      "size": 18,
+      "lineHeight": 26,
+      "weight": 600
+    },
+    "body": {
+      "size": 16,
+      "lineHeight": 24,
+      "weight": 400
+    },
+    "bodySmall": {
+      "size": 14,
+      "lineHeight": 22,
+      "weight": 400
+    },
+    "label": {
+      "size": 14,
+      "lineHeight": 20,
+      "weight": 600
+    },
+    "caption": {
+      "size": 12,
+      "lineHeight": 18,
+      "weight": 400
+    },
+    "button": {
+      "size": 14,
+      "lineHeight": 20,
+      "weight": 600
+    },
+    "table": {
+      "size": 14,
+      "lineHeight": 22,
+      "weight": 400
+    },
+    "kpi": {
+      "size": 32,
+      "lineHeight": 40,
+      "weight": 700
+    },
+    "code": {
+      "size": 14,
+      "lineHeight": 22,
+      "weight": 500
+    },
+    "appTitle": {
+      "size": 22,
+      "lineHeight": 30,
+      "weight": 700
+    }
+  },
+  "motionMs": {
+    "instant": 0,
+    "fast": 120,
+    "normal": 180,
+    "panel": 240,
+    "toastEntrance": 350,
+    "toastDisplay": 3000,
+    "toastExit": 300,
+    "reduced": 0
+  },
+  "zIndex": {
+    "base": 0,
+    "sticky": 10,
+    "header": 20,
+    "sidebar": 30,
+    "dropdown": 40,
+    "scrim": 50,
+    "drawer": 60,
+    "dialog": 70,
+    "toast": 80,
+    "tooltip": 90
+  },
+  "platform": {
+    "webDesktop": {
+      "minWidth": 1200,
+      "pagePadding": 24,
+      "sectionGap": 24,
+      "cardPadding": 24,
+      "controlHeight": 40,
+      "controlLarge": 48,
+      "targetMin": 40,
+      "iconTarget": 40,
+      "rowHeight": 52,
+      "sidebarExpanded": 248,
+      "sidebarCollapsed": 72,
+      "headerHeight": 64,
+      "touchTargetMin": 48
+    },
+    "webCompact": {
+      "minWidth": 1024,
+      "maxWidth": 1199,
+      "pagePadding": 20,
+      "sectionGap": 20,
+      "cardPadding": 20,
+      "controlHeight": 44,
+      "controlLarge": 48,
+      "targetMin": 44,
+      "iconTarget": 44,
+      "rowHeight": 56,
+      "sidebarExpanded": 0,
+      "sidebarCollapsed": 72,
+      "headerHeight": 64,
+      "touchTargetMin": 48
+    },
+    "webTablet": {
+      "minWidth": 768,
+      "maxWidth": 1023,
+      "pagePadding": 16,
+      "sectionGap": 20,
+      "cardPadding": 20,
+      "controlHeight": 48,
+      "controlLarge": 48,
+      "targetMin": 48,
+      "iconTarget": 48,
+      "rowHeight": 64,
+      "sidebarExpanded": 0,
+      "sidebarCollapsed": 0,
+      "headerHeight": 64,
+      "touchTargetMin": 48
+    },
+    "appScanner": {
+      "minWidth": 320,
+      "pagePadding": 16,
+      "sectionGap": 20,
+      "cardPadding": 16,
+      "controlHeight": 48,
+      "controlLarge": 56,
+      "targetMin": 48,
+      "iconTarget": 48,
+      "rowHeight": 64,
+      "headerHeight": 56,
+      "touchTargetMin": 48
+    },
+    "webAuth": {
+      "formMaxWidth": 440,
+      "controlHeight": 56,
+      "cardPaddingDesktop": 40,
+      "cardPaddingTablet": 32,
+      "groupGap": 24,
+      "targetMin": 48,
+      "touchTargetMin": 48
+    }
+  },
+  "themes": [
+    "light",
+    "dark"
+  ],
+  "units": {
+    "web": "CSS px; rem cho chữ",
+    "native": "dp/sp hoặc logical point; tôn trọng font scale",
+    "color": "sRGB HEX; alpha ở byte cuối"
+  },
+  "themePolicy": {
+    "options": [
+      "system",
+      "light",
+      "dark"
+    ],
+    "default": "system",
+    "preferenceKey": "hn.theme.preference.v2",
+    "resolvedAttribute": "data-hn-theme",
+    "platformAttribute": "data-hn-platform"
+  },
+  "easing": {
+    "standard": "cubic-bezier(0.2,0,0,1)",
+    "linear": "linear"
+  },
+  "shadow": {
+    "light": {
+      "1": "0 1px 3px #10182812",
+      "2": "0 6px 20px #10182814",
+      "3": "0 16px 48px #10182829"
+    },
+    "dark": {
+      "1": "0 1px 3px #00000040",
+      "2": "0 6px 20px #00000052",
+      "3": "0 16px 48px #00000066"
+    }
+  },
+  "borderWidth": {
+    "default": 1,
+    "selected": 2,
+    "focus": 2
+  },
+  "icon": {
+    "grid": 24,
+    "strokeWidth": 2,
+    "sizes": [
+      16,
+      20,
+      24,
+      32,
+      48,
+      64
+    ],
+    "stroke": "currentColor",
+    "fill": "none",
+    "linecap": "round",
+    "linejoin": "round"
+  },
+  "focus": {
+    "width": 2,
+    "offset": 3,
+    "gapRole": "focus.offset",
+    "ringRole": "focus.ring"
+  },
+  "breakpoints": {
+    "webUnsupportedBelow": 768,
+    "webPortraitMin": 768,
+    "webCompactMin": 1024,
+    "webDesktopMin": 1200
+  },
+  "layout": {
+    "contentMaxWidth": 1600,
+    "contentGap": 24,
+    "formFieldMinWidth": 240,
+    "dialogSmall": 400,
+    "dialogMedium": 560,
+    "dialogLarge": 800,
+    "drawerEdit": 480,
+    "drawerDetail": 640,
+    "toastWidth": 360,
+    "overlayViewportMargin": 16
+  },
+  "brandPolicy": {
+    "default": "ocean",
+    "options": [
+      "ocean",
+      "navy",
+      "teal"
+    ],
+    "attribute": "data-hn-brand",
+    "rule": "One selected brand configuration for Web and Scanner in the same tenant/product context. Platform never selects its own palette.",
+    "legacyIdentityRole": "brand.navy is the shared shell identity role; its name is retained for v2 compatibility."
+  }
+}

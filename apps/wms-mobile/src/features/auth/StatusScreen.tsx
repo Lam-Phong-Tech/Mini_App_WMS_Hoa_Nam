@@ -25,6 +25,12 @@ import { Text } from '../../ui/Text';
 import { Button } from '../../ui/Button';
 import { AppIcon, type AppIconName } from '../../ui/AppIcon';
 import { useTheme } from '../../theme/ThemeProvider';
+import {
+  P15ExpiredScreen,
+  P15PermissionScreen,
+  type P15ExpiredScreenProps,
+  type P15PermissionScreenProps,
+} from '../system/P15Screen';
 
 const styles = StyleSheet.create({
   center: {
@@ -134,44 +140,16 @@ export function StatusScreen({
 // Ba màn dựng sẵn — câu chữ nguyên văn từ ảnh
 // ---------------------------------------------------------------------------
 
-/** Ảnh 06. */
-export function SessionExpiredScreen({
-  onRelogin,
-}: {
-  onRelogin: () => void;
-}): React.ReactElement {
-  return (
-    <StatusScreen
-      tone="warning"
-      icon="clock"
-      title="Phiên đăng nhập đã hết hạn"
-      message="Phiên đăng nhập đã hết hạn. Dữ liệu chưa gửi không được tự động gửi lại."
-      primaryLabel="Đăng nhập lại"
-      onPrimary={onRelogin}
-    />
-  );
+/** Existing auth entry; only its presentation changes, never auth ownership. */
+export function SessionExpiredScreen(props: P15ExpiredScreenProps): React.ReactElement {
+  return <P15ExpiredScreen {...props} />;
 }
 
-/** Ảnh 07 — 403 được chuyển thành lời lẽ thân thiện. */
-export function NoPermissionScreen({
-  onHome,
-  onBack,
-}: {
+/** Caller must verify denial; HTTP status alone is not evidence of RBAC. */
+export function NoPermissionScreen(props: P15PermissionScreenProps & {
   onHome: () => void;
-  onBack?: () => void;
 }): React.ReactElement {
-  return (
-    <StatusScreen
-      tone="danger"
-      icon="shield-check"
-      title="Bạn không có quyền thực hiện thao tác này"
-      message="Bạn không có quyền thực hiện thao tác này. Liên hệ quản lý nếu cần hỗ trợ."
-      primaryLabel="Về trang chủ"
-      onPrimary={onHome}
-      secondaryLabel={onBack === undefined ? undefined : 'Quay lại'}
-      onSecondary={onBack}
-    />
-  );
+  return <P15PermissionScreen {...props} />;
 }
 
 /** Trạng thái tạm thời trước khi Mini App trả người dùng về màn đăng nhập. */

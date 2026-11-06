@@ -15,6 +15,7 @@ import { ErrorBoundary } from '../errors/ErrorBoundary';
 import { ThemeProvider } from '../theme/ThemeProvider';
 import { RootNavigator } from '../navigation/RootNavigator';
 import { initDataLayer } from '../sync/bootstrap';
+import {ForegroundNotification} from '../features/notifications/delivery/ForegroundNotification';
 
 /**
  * Cây provider, tách khỏi `App` để test dựng được **một** màn với đúng ngữ cảnh
@@ -31,7 +32,7 @@ export function AppProviders({
   return (
     <SafeAreaProvider>
       <ErrorBoundary>
-        <ThemeProvider>{children}</ThemeProvider>
+        <ThemeProvider>{children}<ForegroundNotification/></ThemeProvider>
       </ErrorBoundary>
     </SafeAreaProvider>
   );

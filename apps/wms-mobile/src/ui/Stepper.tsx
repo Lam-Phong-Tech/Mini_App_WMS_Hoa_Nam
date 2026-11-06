@@ -1,3 +1,4 @@
+import {HN_UI} from '../theme/uiKitV3';
 /**
  * `Stepper` — chỉ báo tiến trình nhiều bước ở đầu màn.
  *
@@ -5,8 +6,8 @@
  *
  * | Luồng | Số bước | Nhãn | Ảnh |
  * |---|:--:|---|:--:|
- * | Nhập kho | 4 | Thông tin · Quét mã · Kiểm tra · Gửi duyệt | 18, 20, 21, 23 |
- * | Xuất kho | 4 | Thông tin · Quét mã · Kiểm tra · Gửi duyệt | 25, 29, 34 |
+ * | Nhập kho | 4 | Thông tin · Quét mã · Kiểm tra · Gửi phiếu | 18, 20, 21, 23 |
+ * | Xuất kho | 4 | Thông tin · Quét mã · Kiểm tra · Gửi phiếu | 25, 29, 34 |
  * | Bảo hành — tạo hồ sơ | 3 | Tiếp nhận · Tạo hồ sơ · Kiểm tra | 41 |
  * | Bảo hành — chi tiết | 4 | Tiếp nhận · Kiểm tra · Xử lý · Trả khách | 44 |
  *
@@ -104,7 +105,7 @@ export function Stepper({
         const circleBorder = done || active
           ? theme.colors.primary
           : theme.colors.divider;
-        const markColor = active ? '#ffffff' : done
+        const markColor = active ? HN_UI.onBrand : done
           ? theme.colors.primary
           : theme.colors.textMuted;
 

@@ -1,3 +1,5 @@
+import {UI_KIT_COLORS} from '../theme/uiKitV3';
+import {HN_UI} from '../theme/uiKitV3';
 /**
  * `Page` — khung màn hình.
  *
@@ -16,6 +18,7 @@ import React, {
 } from 'react';
 import {
   Dimensions,
+  Platform,
   Keyboard,
   Pressable,
   ScrollView,
@@ -56,11 +59,11 @@ const styles = StyleSheet.create({
     backgroundColor: tokens.colors.primaryStrong,
   },
   backButtonBrand: {
-    backgroundColor: 'rgba(255,255,255,0.14)',
+    backgroundColor: UI_KIT_COLORS['nav.hover'],
   },
-  brandEyebrow: { color: 'rgba(255,255,255,0.72)' },
-  brandTitle: { color: '#ffffff' },
-  brandSubtitle: { color: 'rgba(255,255,255,0.76)' },
+  brandEyebrow: { color: UI_KIT_COLORS['nav.fg'] },
+  brandTitle: { color: HN_UI.onBrand },
+  brandSubtitle: { color: UI_KIT_COLORS['nav.fg'] },
   backButton: {
     width: 40,
     height: 40,
@@ -91,7 +94,7 @@ export interface PageProps {
   eyebrow?: string;
   subtitle?: string;
   /** Header xanh đậm cho các màn nghiệp vụ quét theo board Scanner. */
-  headerVariant?: 'default' | 'brand';
+  headerVariant?: 'default' | 'brand' | 'history';
   /** Nhãn/trạng thái đặt ở mép phải header, ví dụ “Bước 2/3”. */
   headerRight?: ReactNode;
   /** Luồng nghiệp vụ có thể dùng nền trắng thay cho nền canvas mặc định. */
@@ -104,6 +107,12 @@ export interface PageProps {
   onPullRefresh?: () => void;
   /** Trạng thái tải lại do màn cha quản lý. */
   refreshing?: boolean;
+  /** Khôi phục vị trí cuộn khi trở lại một màn danh sách. */
+  initialScrollY?: number;
+  /** Báo vị trí cuộn cho màn cần giữ vị trí khi mở chi tiết rồi Back. */
+  onScrollPositionChange?: (scrollY: number) => void;
+  /** Giữ thanh cuộn dọc hiện rõ trên Android cho các danh sách dài. */
+  persistentScrollbar?: boolean;
   children: ReactNode;
 }
 
@@ -126,20 +135,24 @@ export const KeyboardViewportContext = createContext<
 
 /** Đọc toạ độ chạm mà không phụ thuộc shape event khác nhau của RN / RN Web. */
 function touchPageY(event: unknown): number | undefined {
-  const nativeEvent = (event as {
-    nativeEvent?: {
-      readonly pageY?: unknown;
-      readonly touches?: readonly { readonly pageY?: unknown }[];
-    };
-  }).nativeEvent;
+  const nativeEvent = (
+    event as {
+      nativeEvent?: {
+        readonly pageY?: unknown;
+        readonly touches?: readonly { readonly pageY?: unknown }[];
+      };
+    }
+  ).nativeEvent;
   const value = nativeEvent?.touches?.[0]?.pageY ?? nativeEvent?.pageY;
   return typeof value === 'number' ? value : undefined;
 }
 
 function scrollOffsetY(event: unknown): number | undefined {
-  const value = (event as {
-    nativeEvent?: { readonly contentOffset?: { readonly y?: unknown } };
-  }).nativeEvent?.contentOffset?.y;
+  const value = (
+    event as {
+      nativeEvent?: { readonly contentOffset?: { readonly y?: unknown } };
+    }
+  ).nativeEvent?.contentOffset?.y;
   return typeof value === 'number' ? value : undefined;
 }
 
@@ -154,22 +167,86 @@ export function Page({
   scroll = true,
   onPullRefresh,
   refreshing = false,
+  initialScrollY,
+  onScrollPositionChange,
+  persistentScrollbar = false,
   children,
 }: PageProps): React.ReactElement {
   const theme = useTheme();
+  const brandedHeader=headerVariant!=='default';
+  const historyHeader=headerVariant==='history';
   const scrollRef = useRef<React.ComponentRef<typeof ScrollView>>(null);
   const scrollY = useRef(0);
+  const restoredInitialScrollY = useRef<number | undefined>(undefined);
+  const pendingInitialScrollY = useRef<number | undefined>(undefined);
   const keyboardTop = useRef(Dimensions.get('window').height);
   const [keyboardHeight, setKeyboardHeight] = useState(0);
   const pullStartY = useRef<number | undefined>(undefined);
   const [pullDistance, setPullDistance] = useState(0);
 
-  const handleScroll = useCallback((event: unknown) => {
-    const y = scrollOffsetY(event);
-    if (y !== undefined) {
-      scrollY.current = y;
+  const handleScroll = useCallback(
+    (event: unknown) => {
+      const y = scrollOffsetY(event);
+      if (y !== undefined) {
+        scrollY.current = y;
+        const pendingY = pendingInitialScrollY.current;
+        if (pendingY !== undefined) {
+          if (Math.abs(y - pendingY) <= 1) {
+            pendingInitialScrollY.current = undefined;
+          } else {
+            // Android ép scrollTo về 0 khi dữ liệu bất đồng bộ chưa làm nội dung
+            // đủ cao. Không công bố giá trị tạm này vì nó sẽ ghi đè vị trí Back.
+            return;
+          }
+        }
+        onScrollPositionChange?.(y);
+      }
+    },
+    [onScrollPositionChange],
+  );
+
+  const restoreInitialScrollPosition = useCallback(() => {
+    const targetY = pendingInitialScrollY.current;
+    if (!scroll || targetY === undefined) return;
+    requestAnimationFrame(() => {
+      scrollRef.current?.scrollTo({ y: targetY, animated: false });
+    });
+  }, [scroll]);
+
+  useEffect(() => {
+    if (
+      !scroll ||
+      initialScrollY === undefined ||
+      restoredInitialScrollY.current === initialScrollY
+    ) {
+      return;
     }
-  }, []);
+    restoredInitialScrollY.current = initialScrollY;
+    // A parent may reflect onScroll back into this prop. That is observation,
+    // not a request to restore. Waiting for an event at an already reached
+    // target suppresses later user scrolls and may jump to zero on append.
+    if (Math.abs(scrollY.current - initialScrollY) <= 1) {
+      pendingInitialScrollY.current = undefined;
+      return;
+    }
+    pendingInitialScrollY.current =
+      initialScrollY > 1 ? initialScrollY : undefined;
+    if (pendingInitialScrollY.current !== undefined) {
+      restoreInitialScrollPosition();
+    } else {
+      // Reset to top still works, but zero needs no clamp/retry journal:
+      // scrollTo(0) can legitimately emit no event if native already clamped.
+      requestAnimationFrame(() => {
+        scrollRef.current?.scrollTo({ y: initialScrollY, animated: false });
+      });
+    }
+  }, [initialScrollY, restoreInitialScrollPosition, scroll]);
+
+  const handleContentSizeChange = useCallback(() => {
+    // Lịch sử tải dữ liệu sau khi Page đã mount. Thử lại tại mỗi lần chiều cao
+    // nội dung đổi cho tới khi Android thực sự cuộn tới vị trí đã lưu.
+    restoreInitialScrollPosition();
+  }, [restoreInitialScrollPosition]);
 
   const handleTouchStart = useCallback(
     (event: unknown) => {
@@ -192,7 +269,9 @@ export function Page({
         setPullDistance(0);
         return;
       }
-      setPullDistance(Math.min(100, Math.max(0, currentY - pullStartY.current)));
+      setPullDistance(
+        Math.min(100, Math.max(0, currentY - pullStartY.current)),
+      );
     },
     [onPullRefresh],
   );
@@ -224,38 +303,42 @@ export function Page({
     };
   }, []);
 
-  const revealFocusedInput = useCallback((input: KeyboardViewportTarget | null) => {
-    if (!scroll || input === null) return;
-    // Android thường phát `focus` trước `keyboardDidShow`; đo lại sau animation
-    // để cả ô ở cuối form và nút xác nhận không bị bàn phím che.
-    const reveal = () => {
-      input.measureInWindow((_x, y, _width, height) => {
-        const safeBottom = keyboardTop.current - KEYBOARD_GAP;
-        const coveredByKeyboard = y + height - safeBottom;
-        if (coveredByKeyboard > 0) {
-          scrollRef.current?.scrollTo({
-            y: Math.max(0, scrollY.current + coveredByKeyboard),
-            animated: true,
-          });
-        }
-      });
-    };
-    requestAnimationFrame(reveal);
-    setTimeout(reveal, 280);
-  }, [scroll]);
+  const revealFocusedInput = useCallback(
+    (input: KeyboardViewportTarget | null) => {
+      if (!scroll || input === null) return;
+      // Android thường phát `focus` trước `keyboardDidShow`; đo lại sau animation
+      // để cả ô ở cuối form và nút xác nhận không bị bàn phím che.
+      const reveal = () => {
+        input.measureInWindow((_x, y, _width, height) => {
+          const safeBottom = keyboardTop.current - KEYBOARD_GAP;
+          const coveredByKeyboard = y + height - safeBottom;
+          if (coveredByKeyboard > 0) {
+            scrollRef.current?.scrollTo({
+              y: Math.max(0, scrollY.current + coveredByKeyboard),
+              animated: true,
+            });
+          }
+        });
+      };
+      requestAnimationFrame(reveal);
+      setTimeout(reveal, 280);
+    },
+    [scroll],
+  );
 
   const header =
     title === undefined ? null : (
       <View
         style={[
           styles.header,
-          headerVariant === 'brand' ? styles.headerBrand : undefined,
+          brandedHeader ? styles.headerBrand : undefined,
           {
             paddingHorizontal: theme.spacing.lg,
             paddingTop: theme.spacing.lg,
             paddingBottom: theme.spacing.md,
             gap: theme.spacing.md,
           },
+          historyHeader&&{height:86,paddingHorizontal:20,paddingTop:16,paddingBottom:24,gap:18,backgroundColor:HN_UI.shell,...(Platform.OS==='web'?{backgroundImage:`linear-gradient(115deg,${HN_UI.shell},${HN_UI.shell})`}:{})},
         ]}
       >
         {onBack === undefined ? null : (
@@ -270,33 +353,45 @@ export function Page({
                 backgroundColor: theme.colors.surfaceSubtle,
               },
               headerVariant === 'brand' ? styles.backButtonBrand : undefined,
+              historyHeader&&{width:44,height:44,backgroundColor:'transparent'},
             ]}
           >
             <AppIcon
-              name="chevron-left"
-              color={headerVariant === 'brand' ? '#ffffff' : theme.colors.textStrong}
+              name={historyHeader?'arrow-left':'chevron-left'}
+              size={historyHeader?27:undefined}
+              color={
+                brandedHeader ? HN_UI.onBrand : theme.colors.textStrong
+              }
             />
           </Pressable>
         )}
         <View style={[styles.headerBody, { gap: theme.spacing.xs }]}>
-          {eyebrow === undefined ? null : (
-            headerVariant === 'brand' ? (
-              <Text variant="caption" style={styles.brandEyebrow}>{eyebrow}</Text>
-            ) : (
-              <Text variant="caption" tone="muted">{eyebrow}</Text>
-            )
-          )}
-          {headerVariant === 'brand' ? (
-            <Text variant="screenTitle" style={styles.brandTitle}>{title}</Text>
+          {eyebrow === undefined ? null : brandedHeader ? (
+            <Text variant="caption" style={styles.brandEyebrow}>
+              {eyebrow}
+            </Text>
           ) : (
-            <Text variant="screenTitle" tone="strong">{title}</Text>
+            <Text variant="caption" tone="muted">
+              {eyebrow}
+            </Text>
           )}
-          {subtitle === undefined ? null : (
-            headerVariant === 'brand' ? (
-              <Text variant="caption" style={styles.brandSubtitle}>{subtitle}</Text>
-            ) : (
-              <Text variant="caption" tone="muted">{subtitle}</Text>
-            )
+          {brandedHeader ? (
+            <Text variant="screenTitle" style={[styles.brandTitle,historyHeader&&{fontSize:26,lineHeight:31.2,fontWeight:'600'}]}>
+              {title}
+            </Text>
+          ) : (
+            <Text variant="screenTitle" tone="strong">
+              {title}
+            </Text>
+          )}
+          {subtitle === undefined ? null : brandedHeader ? (
+            <Text variant="caption" style={styles.brandSubtitle}>
+              {subtitle}
+            </Text>
+          ) : (
+            <Text variant="caption" tone="muted">
+              {subtitle}
+            </Text>
           )}
         </View>
         {headerRight}
@@ -304,7 +399,7 @@ export function Page({
     );
 
   const body = (
-    <View style={[styles.body, scroll ? null : styles.bodyFills]}>
+    <View style={[styles.body, scroll ? null : styles.bodyFills,historyHeader&&{maxWidth:494,paddingHorizontal:18,paddingTop:18,paddingBottom:28,gap:12}]}>
       {children}
     </View>
   );
@@ -312,18 +407,24 @@ export function Page({
   return (
     <SafeAreaView
       edges={['top', 'bottom']}
-      style={[styles.screen, backgroundColor === undefined ? undefined : { backgroundColor }]}
+      style={[
+        styles.screen,
+        backgroundColor === undefined ? undefined : { backgroundColor },
+      ]}
     >
       {/*
         RN 0.87 bỏ prop `backgroundColor` của StatusBar (Android chạy edge-to-edge).
         Nền sau thanh trạng thái do `SafeAreaView` ở trên đảm nhiệm.
       */}
-      <StatusBar barStyle={headerVariant === 'brand' ? 'light-content' : 'dark-content'} />
+      <StatusBar
+        barStyle={brandedHeader ? 'light-content' : 'dark-content'}
+      />
       {header}
       {scroll ? (
         <KeyboardViewportContext.Provider value={revealFocusedInput}>
           <ScrollView
             ref={scrollRef}
+            style={historyHeader?{marginTop:-12,borderTopLeftRadius:24,borderTopRightRadius:24,backgroundColor:HN_UI.canvas}:undefined}
             keyboardShouldPersistTaps="handled"
             keyboardDismissMode="on-drag"
             contentContainerStyle={[
@@ -334,6 +435,9 @@ export function Page({
             ]}
             onScroll={handleScroll}
             scrollEventThrottle={16}
+            showsVerticalScrollIndicator
+            persistentScrollbar={persistentScrollbar}
+            onContentSizeChange={handleContentSizeChange}
             onTouchStart={handleTouchStart}
             onTouchMove={handleTouchMove}
             onTouchEnd={finishPull}

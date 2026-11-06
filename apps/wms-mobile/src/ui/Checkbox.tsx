@@ -1,3 +1,4 @@
+import {HN_UI} from '../theme/uiKitV3';
 /**
  * `Checkbox` — ô chọn nhiều, kèm mô tả.
  *
@@ -36,6 +37,9 @@ const styles = StyleSheet.create({
   },
   mark: {
     fontSize: 12,
+    lineHeight: 14,
+    color: HN_UI.onBrand,
+    includeFontPadding: false,
     fontWeight: '700',
   },
   body: {
@@ -82,7 +86,8 @@ export function Checkbox({
           minHeight: theme.touchTarget.comfortable,
           gap: theme.spacing.md,
           paddingVertical: theme.spacing.md,
-          opacity: disabled ? 0.5 : pressed ? 0.7 : 1,
+          opacity: 1,
+          backgroundColor: !disabled&&pressed?theme.colors.surfaceSubtle:'transparent',
         },
         style,
       ]}
@@ -92,18 +97,18 @@ export function Checkbox({
           styles.box,
           {
             borderRadius: theme.radius.control / 2,
-            borderColor: checked ? theme.colors.primary : theme.field.border,
-            backgroundColor: checked
+            borderColor: disabled?theme.field.disabledBorder:checked ? theme.colors.primary : theme.field.border,
+            backgroundColor: disabled?theme.field.disabledBackground:checked
               ? theme.colors.primary
               : theme.colors.surface,
           },
         ]}
       >
-        {checked ? <Text style={styles.mark}>✓</Text> : null}
+        {checked ? <Text style={[styles.mark,disabled&&{color:theme.field.disabledText}]}>✓</Text> : null}
       </View>
 
       <View style={styles.body}>
-        <Text variant="body" tone="strong" style={styles.title}>
+        <Text variant="body" tone="strong" style={[styles.title,disabled&&{color:theme.field.disabledText}]}>
           {label}
         </Text>
         {description === undefined ? null : (

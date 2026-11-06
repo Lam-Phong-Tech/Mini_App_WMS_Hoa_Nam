@@ -1,308 +1,295 @@
-/**
- * Nhập kho — bước 3: kiểm tra trước khi ghi nhận. Mã màn **IN-04**.
- *
- * 🎨 Nguồn: ảnh **20, 21, 22**.
- *
- * ## Một màn, hai nguồn dữ liệu
- *
- * Bộ ảnh cho thấy cùng tiêu đề *"Xác nhận hàng nhập"* và cùng nhãn `IN-04` ở hai
- * hoàn cảnh khác nhau:
- *
- * | Ảnh | Nguồn | Dấu hiệu nhận biết |
- * |:--:|---|---|
- * | 20 | **Phiếu nháp cục bộ** | mã `local-e61804b9-…`, 0 mã, nút ghi nhận mờ |
- * | 21, 22 | **Phiếu thật từ WMS** | mã `PN-COV-P00060`, banner xanh *"Phiếu đã phê duyệt"*, nút *Đã ghi nhận* **mờ** + *Quay lại lịch sử* |
- *
- * ⇒ Không tách thành hai màn. Cùng khuôn, khác dữ liệu và khác hành động cuối.
- *
- * Bấm *Gửi phiếu lên Web* sẽ đưa phiếu vào hàng đợi trước, rồi gửi `inbound/record`
- * với khoá idempotency ổn định. Nếu không gửi được, phiếu vẫn nằm lại để người
- * dùng đối chiếu/gửi lại, không mất danh sách mã vừa quét.
- */
-
-import React from 'react';
-import { StyleSheet, View } from 'react-native';
-import { Page } from '../../ui/Page';
-import { Box } from '../../ui/Box';
-import { Text } from '../../ui/Text';
-import { Button } from '../../ui/Button';
-import { Badge } from '../../ui/Badge';
-import { Banner } from '../../ui/Banner';
-import { StatCard } from '../../ui/StatCard';
-import { AppIcon } from '../../ui/AppIcon';
+import {HN_UI} from '../../theme/uiKitV3';
+import { P04Text as Text } from './P04Text';
+import React, { useEffect, useState } from 'react';
+import { Pressable, View } from 'react-native';
+import { P04Icon as AppIcon } from './P04Icon';
+import {ProductPlaceholder} from '../../ui/ProductPlaceholder';
 import { SwipeToDelete } from '../../ui/SwipeToDelete';
-import { useTheme } from '../../theme/ThemeProvider';
 import {
-  MESSAGE_NO_CODE_BODY,
-  MESSAGE_NO_CODE_TITLE,
-  MESSAGE_POST_ONLY_BODY,
-  MESSAGE_POST_ONLY_TITLE,
   canRecord,
   groupBySku,
   totals,
   type InboundDraft,
 } from './inboundDraft';
-
-const styles = StyleSheet.create({
-  cardHead: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    justifyContent: 'space-between',
-  },
-  cardHeadBody: {
-    flex: 1,
-  },
-  row: {
-    flexDirection: 'row',
-  },
-  groupHead: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-  },
-  sectionHead: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-  },
-  groupIconLabel: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  headerStep: { color: '#ffffff', fontWeight: '600' },
-});
-
+import {
+  P04Frame,
+  P04Action,
+  P04Heading,
+  P04Info,
+  P04Row,
+  p04,
+} from './P04Frame';
+import type { P04ViewState } from './p04View';
+import { formatP04DateTime } from './p04Date';
+import { P04ReadableText } from './P04ReadableText';
+import {p04Asset} from './P04AssetTheme';
+import {P04_INBOUND_CHOICES} from './p04Choices';
 export interface InboundReviewScreenProps {
   draft: InboundDraft;
-  /** Xoá mã mới nhất của SKU. Phiếu đã ghi nhận thì không truyền callback. */
   onRemoveNewestSku?: (sku: string | undefined) => void;
-  /** Mã hiển thị ở đầu thẻ. Phiếu nháp dùng `local-…`, phiếu thật dùng `doc_no`. */
   documentRef: string;
-  /** Đã ghi nhận lên WMS chưa. `true` ⇒ hiện banner xanh và khoá nút (ảnh 21, 22). */
   recorded?: boolean;
   recording?: boolean;
+  locked?: boolean;
+  revalidationErrors?: { raw: string; message: string }[];
+  canSend?: boolean;
+  actorName?: string;
+  viewState?: P04ViewState;
+  onViewChange?: (patch: P04ViewState) => void;
   onRecord: () => void;
   onBackToScan?: () => void;
   onBackToHistory?: () => void;
 }
-
 export function InboundReviewScreen({
   draft,
-  onRemoveNewestSku,
-  documentRef,
   recorded = false,
   recording = false,
+  locked = false,
+  revalidationErrors = [],
+  documentRef,
+  canSend = true,
+  actorName,
   onRecord,
   onBackToScan,
   onBackToHistory,
+  onRemoveNewestSku,
+  viewState,
+  onViewChange,
 }: InboundReviewScreenProps): React.ReactElement {
-  const theme = useTheme();
-  const summary = totals(draft);
-  const groups = groupBySku(draft.codes);
-  const empty = !canRecord(draft);
-
+  const [expanded, setExpanded] = useState<string[]>(
+    viewState?.expandedSkus ?? [],
+  );
+  useEffect(() => {
+    onViewChange?.({ expandedSkus: expanded });
+  }, [expanded, onViewChange]);
+  const summary = totals(draft),
+    groups = groupBySku(draft.codes);
   return (
-    <Page
-      title="Nhập kho"
-      onBack={recorded ? onBackToHistory : onBackToScan}
-      scroll
-      headerVariant="brand"
-      headerRight={
-        recorded ? undefined : (
-          <Text variant="caption" style={styles.headerStep}>Bước 3/3</Text>
+    <P04Frame
+      assetPack
+      step={recorded ? undefined : 3}
+      initialScrollY={viewState?.scroll?.[3]}
+      onScrollPositionChange={y => onViewChange?.({ scroll: { 3: y } })}
+      onBack={
+        recording || locked
+          ? undefined
+          : recorded
+          ? onBackToHistory
+          : onBackToScan
+      }
+      footer={
+        recorded ? (
+          <P04Action
+            label="Quay lại lịch sử"
+            onPress={onBackToHistory ?? (() => undefined)}
+            secondary
+            disabled={recording || locked}
+          />
+        ) : (
+          <View style={{flexDirection:'row',gap:10}}>
+            <P04Action
+              label="Quay lại quét mã"
+              secondary
+              compact
+              style={{flex:1}}
+              onPress={onBackToScan??(()=>{})}
+              disabled={recording||locked||!onBackToScan}
+            />
+            <P04Action
+              label="Gửi phiếu lên Web"
+              compact
+              style={{flex:1}}
+              trailing={<AppIcon name="arrow" assetPack color={HN_UI.onBrand} size={20} />}
+              onPress={onRecord}
+              loading={recording}
+              disabled={!canSend || !canRecord(draft) || recording || locked}
+            />
+          </View>
         )
       }
     >
-      <Box card padding="lg" gap="md">
-        <View style={[styles.cardHead, { gap: theme.spacing.md }]}>
-          <View style={styles.cardHeadBody}>
-            <Text variant="cardTitle" tone="strong">
-              Kiểm tra phiếu nhập
-            </Text>
-            <Text variant="caption" tone="muted">
-              {documentRef + ' · ' + (draft.warehouseName ?? 'Kho nhận theo phiếu WMS')}
-            </Text>
-          </View>
-          <Badge
-            label={String(summary.totalScanned) + ' mã'}
-            tone={empty ? 'warning' : 'primary'}
-          />
-        </View>
-
-        <View style={[styles.row, { gap: theme.spacing.md }]}>
-          <StatCard
-            label="Tổng đã quét"
-            uppercaseLabel
-            tone="primary"
-            value={String(summary.totalScanned)}
-          />
-          <StatCard
-            label="Số SKU"
-            uppercaseLabel
-            tone="success"
-            value={String(summary.skuCount)}
-          />
-        </View>
-      </Box>
-
-      {recorded ? (
-        <Banner
-          tone="success"
-          icon={<AppIcon name="check-circle" color={theme.colors.success} />}
-          title="Phiếu đã phê duyệt"
-          message="Phiếu nhập đã được Post Receipt và cập nhật tồn kho."
-        />
-      ) : (
-        <>
-          {empty ? (
-            <Banner
-              tone="warning"
-              icon={<AppIcon name="clock" color={theme.colors.warningText} />}
-              title={MESSAGE_NO_CODE_TITLE}
-              message={MESSAGE_NO_CODE_BODY}
-            />
-          ) : null}
-          <Banner
-            tone="info"
-            icon={<AppIcon name="shield-check" color={theme.colors.infoText} />}
-            title={MESSAGE_POST_ONLY_TITLE}
-            message={MESSAGE_POST_ONLY_BODY}
-          />
-        </>
+      <P04Heading
+        title="Thông tin phiếu nhập"
+        subtitle="Kiểm tra thông tin trước khi gửi lên Web"
+      />
+      {revalidationErrors.length > 0 && (
+        <P04Info title="Mã cần kiểm tra">
+          {revalidationErrors
+            .map(row => `${row.raw}\n${row.message}`)
+            .join('\n\n')}
+        </P04Info>
       )}
-
-      <View style={styles.sectionHead}>
-        <Text variant="cardTitle" tone="strong">
-          SKU đã quét
-        </Text>
-        <Text variant="caption" tone="muted">
-          {recorded || onRemoveNewestSku === undefined
-            ? 'Tổng ' + String(summary.totalScanned) + ' sản phẩm'
-            : 'Vuốt trái để xoá'}
-        </Text>
+      <View testID="p04-review-totals" style={{flexDirection:'row',gap:12,padding:12,borderWidth:1,borderColor:HN_UI.border,borderRadius:9,backgroundColor:HN_UI.canvas}}>
+        {[['Loại phiếu','Nhập kho'],['Số lượng',String(summary.totalScanned)],['Số SKU',String(summary.skuCount)]].map(([label,value])=>(
+          <View key={label} style={{flex:1,minWidth:0,gap:3}}>
+            <Text style={p04.small}>{label}</Text>
+            <Text style={p04.rowValue}>{value}</Text>
+          </View>
+        ))}
       </View>
-
-      {groups.length === 0 ? (
-        <Box card padding="lg">
-          <Text variant="caption" tone="muted">
-            Chưa có sản phẩm nào trong phiếu.
-          </Text>
-        </Box>
-      ) : (
-        groups.map(group => {
-          const skuName = group.codes.find(
-            code => code.skuName !== undefined,
-          )?.skuName;
-          const manualCodeCount = group.codes.filter(
-            code => code.source === 'MANUAL',
-          ).length;
-          const groupQuantity = group.codes.reduce(
-            (total, code) => total + code.quantity,
-            0,
-          );
-          const componentBoxCount = group.codes.filter(
-            code => code.boxNumber !== undefined,
-          ).length;
-          const itemType = group.codes.find(
-            code => code.itemType !== undefined,
-          )?.itemType;
-          const card = (
-            <Box card padding="lg" gap="sm">
-              <View style={[styles.groupHead, { gap: theme.spacing.sm }]}>
-                <View style={[styles.groupIconLabel, { gap: theme.spacing.sm }]}>
-                  <AppIcon name="check-circle" color={theme.colors.success} />
-                  <Text variant="caption" tone="muted">
-                    SKU
+      <View style={{ gap: 4 }}>
+        <P04Row
+          icon="home"
+          tone="documents"
+          label="Kho nhập"
+          value={draft.warehouseName ?? 'Chưa xác minh'}
+          trailing={<AppIcon name="lock" color={HN_UI.textSecondary} size={17} />}
+        />
+        <P04Row icon="warehouse" label="Mã phiếu" value={documentRef} tone="documents" />
+        <P04Row icon="box" label="Loại nhập" value={P04_INBOUND_CHOICES.find(choice=>choice.id===draft.inboundCategory)?.label??'Chưa xác minh'} tone="documents" />
+        <P04Row
+          icon="warehouse"
+          tone="documents"
+          label="Nhà cung cấp"
+          value={draft.supplierName ?? 'Không chọn nhà cung cấp'}
+        />
+        <P04Row
+          icon="calendar"
+          tone="documents"
+          label="Ngày tạo"
+          value={formatP04DateTime(draft.createdAt) ?? 'Chưa xác minh'}
+        />
+        <P04Row
+          icon="user"
+          tone="documents"
+          label="Người tạo"
+          value={actorName ?? 'Chưa xác minh'}
+        />
+      </View>
+      <View
+        style={{
+          flexDirection: 'row',
+          justifyContent: 'space-between',
+          gap: 8,
+        }}
+      >
+        <Text style={[p04.h2, { fontSize: 16, flex: 1, minWidth: 0 }]}>Danh sách sản phẩm hợp lệ</Text>
+        <Text style={p04.small}>Tổng: {summary.totalScanned}</Text>
+      </View>
+      {!recorded && onRemoveNewestSku && (
+        <Text style={p04.small}>Vuốt trái để xoá mã mới nhất của SKU</Text>
+      )}
+      {groups.map((g, i) => {
+        const key = g.sku ?? 'unknown-' + i,
+          isOpen = expanded.includes(key),
+          quantity = g.codes.reduce((n, c) => n + c.quantity, 0);
+        return (
+          <View key={key} style={{ gap: 0 }}>
+            {onRemoveNewestSku && !recorded ? (
+              <SwipeToDelete
+                onDelete={() => onRemoveNewestSku(g.sku)}
+                accessibilityLabel={g.sku ?? 'SKU chưa xác minh'}
+              >
+                <Pressable
+                  accessibilityRole="button"
+                  accessibilityLabel={`${g.sku ?? 'Chưa xác minh SKU'} · ${
+                    g.codes.length
+                  } mã · số lượng ${quantity}`}
+                  accessibilityState={{ expanded: isOpen }}
+                  onPress={() =>
+                    setExpanded(current =>
+                      isOpen
+                        ? current.filter(x => x !== key)
+                        : [...current, key],
+                    )
+                  }
+                  style={[p04.row, { minHeight: 60, padding: 7, gap: 14, borderRadius: 9, borderColor: HN_UI.border }]}
+                >
+                  <View style={[p04.tile,p04Asset.productTile]}>
+                    <ProductPlaceholder/>
+                  </View>
+                  <View style={p04.rowBody}>
+                    <Text style={p04.rowValue}>
+                      {g.sku ?? 'Chưa xác minh SKU'}
+                    </Text>
+                    <Text style={p04.small}>
+                      {g.codes.length} mã ·{' '}
+                      {isOpen ? 'Thu gọn' : 'Xem mã/serial'}
+                    </Text>
+                  </View>
+                  <View>
+                    <Text style={p04.small}>Số lượng</Text>
+                    <Text style={[p04.rowValue, { textAlign: 'right' }]}>
+                      {quantity}
+                    </Text>
+                  </View>
+                  <AppIcon name={isOpen?'chevron-down':'chevron-right'} color={HN_UI.textLink} size={18}/>
+                </Pressable>
+              </SwipeToDelete>
+            ) : (
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel={`${g.sku ?? 'Chưa xác minh SKU'} · ${
+                  g.codes.length
+                } mã · số lượng ${quantity}`}
+                accessibilityState={{ expanded: isOpen }}
+                onPress={() =>
+                  setExpanded(current =>
+                    isOpen ? current.filter(x => x !== key) : [...current, key],
+                  )
+                }
+                style={[p04.row, { minHeight: 60, padding: 7, gap: 14, borderRadius: 9, borderColor: HN_UI.border }]}
+              >
+                <View style={[p04.tile,p04Asset.productTile]}>
+                  <ProductPlaceholder/>
+                </View>
+                <View style={p04.rowBody}>
+                  <Text style={p04.rowValue}>
+                    {g.sku ?? 'Chưa xác minh SKU'}
+                  </Text>
+                  <Text style={p04.small}>
+                    {g.codes.length} mã · {isOpen ? 'Thu gọn' : 'Xem mã/serial'}
                   </Text>
                 </View>
-                <Badge label={'SL: ' + String(groupQuantity)} tone="primary" />
+                <View>
+                  <Text style={p04.small}>Số lượng</Text>
+                  <Text style={[p04.rowValue, { textAlign: 'right' }]}>
+                    {quantity}
+                  </Text>
+                </View>
+                <AppIcon name={isOpen?'chevron-down':'chevron-right'} color={HN_UI.textLink} size={18}/>
+              </Pressable>
+            )}
+            {isOpen && (
+              <View
+                style={{
+                  padding: 12,
+                  gap: 8,
+                  backgroundColor: HN_UI.surface,
+                  borderWidth: 1,
+                  borderColor: HN_UI.border,
+                  borderRadius: 8,
+                }}
+              >
+                {g.codes.map(c => (
+                  <View key={c.key} style={{ flexDirection: 'row', gap: 12 }}>
+                    <Text selectable style={[p04.text, { flex: 1 }]}>
+                      {c.item ?? c.raw}
+                    </Text>
+                    <Text style={p04.small}>SL {c.quantity}</Text>
+                  </View>
+                ))}
               </View>
-              <Text variant="cardTitle" tone="strong">
-                {/* Mã không mang SKU vẫn phải hiện — nuốt đi là giấu mất hàng. */}
-                {group.sku ?? 'Không đọc được SKU'}
-              </Text>
-              {skuName === undefined ? null : (
-                <Text variant="caption" tone="muted">
-                  {skuName}
-                </Text>
-              )}
-              <View style={styles.groupHead}>
-                <Text variant="caption" tone="muted">
-                  {componentBoxCount > 0
-                    ? String(componentBoxCount) + ' hộp linh kiện'
-                    : manualCodeCount > 0
-                      ? String(manualCodeCount) + ' mã nhập tay'
-                      : 'Camera'}
-                </Text>
-                <Text variant="caption" tone="muted">
-                  {itemType === 'COMPONENT'
-                    ? 'Linh kiện'
-                    : itemType === 'PRODUCT'
-                      ? 'Sản phẩm'
-                      : String(group.codes.length) + ' mã'}
-                </Text>
-              </View>
-              {recorded || onRemoveNewestSku === undefined ? null : (
-                <Text variant="caption" tone="muted">
-                  {'Mã mới nhất: ' +
-                    (group.codes.at(-1)?.item ?? group.codes.at(-1)?.raw ?? '')}
-                </Text>
-              )}
-            </Box>
-          );
-
-          // Phiếu đã ghi nhận thì dữ liệu thuộc về WMS — không vuốt xoá được nữa.
-          if (recorded || onRemoveNewestSku === undefined) {
-            return <View key={group.sku ?? '(không có SKU)'}>{card}</View>;
-          }
-
-          return (
-            <SwipeToDelete
-              key={group.sku ?? '(không có SKU)'}
-              accessibilityLabel={
-                'SKU ' +
-                (group.sku ?? 'không đọc được') +
-                ', ' +
-                String(group.codes.length) +
-                ' mã'
-              }
-              deleteLabel="Xoá 1"
-              onDelete={() => onRemoveNewestSku(group.sku)}
-            >
-              {card}
-            </SwipeToDelete>
-          );
-        })
-      )}
-
-      {recorded ? (
-        <>
-          <Button label="Đã ghi nhận" onPress={() => undefined} disabled />
-          {onBackToHistory === undefined ? null : (
-            <Button
-              label="Quay lại lịch sử"
-              variant="secondary"
-              onPress={onBackToHistory}
-            />
-          )}
-        </>
-      ) : (
-        <>
-          <Button
-            label="Gửi phiếu lên Web"
-            onPress={onRecord}
-            loading={recording}
-            disabled={empty || recording}
+            )}
+          </View>
+        );
+      })}
+      {!!draft.note && (
+        <View style={{ gap: 4 }}>
+          <Text style={p04.h2}>Ghi chú</Text>
+          <P04ReadableText
+            value={draft.note}
+            label="Ghi chú"
+            textStyle={p04.text}
           />
-          {onBackToScan === undefined ? null : (
-            <Button
-              label="Quay lại quét"
-              variant="secondary"
-              onPress={onBackToScan}
-            />
-          )}
-        </>
+        </View>
       )}
-    </Page>
+      <P04Info title="Tồn kho chưa thay đổi">
+        {
+          'Gửi duyệt không làm thay đổi tồn kho.\nChỉ cập nhật sau khi ghi sổ thành công trên Web.'
+        }
+      </P04Info>
+    </P04Frame>
   );
 }
+

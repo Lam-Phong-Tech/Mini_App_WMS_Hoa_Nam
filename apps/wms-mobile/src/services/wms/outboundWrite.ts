@@ -275,6 +275,7 @@ export interface OutboundRecordInput {
   /** Đã gộp nhóm đối tượng — backend chưa có trường `recipient_type` riêng. */
   readonly note?: string;
   readonly items: readonly OutboundRecordItem[];
+  readonly p03Draft?: { readonly draftId: string; readonly scanSessionId: string; readonly version: number };
 }
 
 export interface RecordedOutboundDocument {
@@ -368,7 +369,14 @@ export async function recordOutbound(
     OUTBOUND_WRITE_PATHS.record,
     body,
     {
-      headers: { 'Idempotency-Key': idempotencyKey },
+      headers: {
+        'Idempotency-Key': idempotencyKey,
+        ...(input.p03Draft ? {
+          'X-Draft-ID': input.p03Draft.draftId,
+          'X-Draft-Scan-Session-ID': input.p03Draft.scanSessionId,
+          'X-Draft-Version': String(input.p03Draft.version),
+        } : {}),
+      },
       signal: options.signal,
       timeoutMs: options.timeoutMs ?? OUTBOUND_RECORD_TIMEOUT_MS,
     },

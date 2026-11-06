@@ -1,3 +1,4 @@
+import {HN_UI} from '../../theme/uiKitV3';
 /**
  * Xuất kho — bước 3: kiểm tra trước khi ghi nhận. Mã màn **OUT-RECORD / OUT-04**.
  *
@@ -72,7 +73,7 @@ const styles = StyleSheet.create({
   metric: { flex: 1 },
   metricDivider: { borderLeftWidth: 1 },
   metricBox: { overflow: 'hidden' },
-  headerStep: { color: '#ffffff', fontWeight: '600' },
+  headerStep: { color: HN_UI.onBrand, fontWeight: '600' },
 });
 
 export interface OutboundReviewScreenProps {
@@ -200,7 +201,7 @@ export function OutboundReviewScreen({
         <Banner
           tone="warning"
           icon={<AppIcon name="clock" color={theme.colors.warningText} />}
-          title="Phiếu xuất đang chờ duyệt"
+          title="Chờ xử lý trên Web"
           message="Hàng xuất đã được ghi nhận lên WMS và chờ Post Issue. Tồn kho chưa giảm cho đến khi duyệt/Post Issue thành công."
         />
       ) : (
@@ -332,7 +333,7 @@ export function OutboundReviewScreen({
       ) : (
         <>
           <Button
-            label="Gửi duyệt"
+            label="Gửi phiếu"
             onPress={onRecord}
             loading={recording}
             disabled={!ready || recording}

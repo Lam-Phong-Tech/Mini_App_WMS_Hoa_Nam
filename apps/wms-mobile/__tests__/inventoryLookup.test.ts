@@ -5,6 +5,29 @@ import {
 import { createApiClient } from '../src/api/client';
 
 describe('truy vết tồn từ QR/Barcode', () => {
+  it.each(['serial', 'serial_no', 'serial_number'])(
+    'hiện SN có nguồn từ resolved_object.%s của đúng lượt trace', field => {
+      const result = mapInventoryTrace('QR-ITEM-TEST', {
+        resolved_type: 'ITEM', resolved_id: 'item-test',
+        resolved_object: {sku_code:'SKU-TEST', [field]:'SN-TEST-001'},
+      });
+      expect(result.serial).toBe('SN-TEST-001');
+      expect(result.qr_code).toBe('QR-ITEM-TEST');
+    },
+  );
+
+  it('giữ SN ở data/item ưu tiên hơn nhánh resolved và không dựng SN từ SKU', () => {
+    expect(mapInventoryTrace('QR', {
+      serial_number:'SN-DATA', item:{serial_number:'SN-ITEM'},
+      resolved_object:{serial_number:'SN-RESOLVED'},
+    }).serial).toBe('SN-DATA');
+    expect(mapInventoryTrace('QR', {
+      item:{serial_number:'SN-ITEM'}, resolved_object:{serial_number:'SN-RESOLVED'},
+    }).serial).toBe('SN-ITEM');
+    expect(mapInventoryTrace('SKU-TEST', {
+      resolved_type:'SKU',resolved_object:{sku_code:'SKU-TEST',serial_number:null},
+    }).serial).toBeUndefined();
+  });
   it('giữ nguyên mã QR vừa quét và dùng trạng thái tồn trước trạng thái object', () => {
     const result = mapInventoryTrace('QR-ITEM-001', {
       sku_code: 'SKU-001',

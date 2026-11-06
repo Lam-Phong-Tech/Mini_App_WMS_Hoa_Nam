@@ -34,6 +34,7 @@ import { Timeline, type TimelineEntry } from '../../ui/Timeline';
 import { DefinitionRow } from '../../ui/DefinitionRow';
 import { AppIcon } from '../../ui/AppIcon';
 import { useTheme } from '../../theme/ThemeProvider';
+import { formatVietnamDateTime } from '../../time/vietnamTime';
 import type { WarrantyCase } from '../../services/wms/types';
 import type { WarrantyComponentHistoryDocument } from '../../services/wms/warrantyComponentRead';
 import {
@@ -108,6 +109,13 @@ const styles = StyleSheet.create({
 
 export interface WarrantyDetailScreenProps {
   warrantyCase: WarrantyCase;
+  detailSteps?: readonly string[];
+  p09Sections?: {
+    components: React.ReactNode;
+    command: React.ReactNode;
+    events: React.ReactNode;
+    attachments: React.ReactNode;
+  };
   timeline?: readonly TimelineEntry[];
   /**
    * Lỗi khi tải timeline. Tách khỏi "timeline rỗng" — hai thứ trông giống nhau
@@ -166,6 +174,8 @@ const ATTACHMENT_TYPE_OPTIONS = ATTACHMENT_TYPES.map(item => ({
 
 export function WarrantyDetailScreen({
   warrantyCase,
+  detailSteps = WARRANTY_DETAIL_STEPS,
+  p09Sections,
   timeline = [],
   timelineError,
   transitionError,
@@ -196,7 +206,9 @@ export function WarrantyDetailScreen({
   // 🔴 `warranty_case_id`, KHÔNG phải `id` — bản ghi bảo hành không có trường
   // `id` (đã ghi ở `queries.ts`). Dùng nhầm sẽ gọi `/attachments` với chuỗi
   // "undefined" và luôn nhận 404.
-  const loadedAttachments = useAttachments(warrantyCase.warranty_case_id);
+  const loadedAttachments = useAttachments(warrantyCase.warranty_case_id, {
+    enabled: !p09Sections,
+  });
   const attachments = attachmentsState ?? loadedAttachments;
   const counts = attachments.counts;
 
@@ -223,18 +235,29 @@ export function WarrantyDetailScreen({
         defaultStatusNote(status, warrantyCase.customer_name, currentStatus);
       onTransition?.(status, nextNote, confirmedDefect.trim() || undefined);
     },
-    [confirmedDefect, currentStatus, note, onTransition, warrantyCase.customer_name],
+    [
+      confirmedDefect,
+      currentStatus,
+      note,
+      onTransition,
+      warrantyCase.customer_name,
+    ],
   );
 
   return (
-    <Page title="Hồ sơ bảo hành" subtitle="Chi tiết bảo hành" onBack={onBack} scroll>
-      <Stepper steps={WARRANTY_DETAIL_STEPS} current={currentStep} />
+    <Page
+      title="Hồ sơ bảo hành"
+      subtitle="Chi tiết bảo hành"
+      onBack={onBack}
+      scroll
+    >
+      <Stepper steps={detailSteps} current={currentStep} />
 
       {created ? (
         <Banner
           tone="success"
           title="Đã tạo hồ sơ bảo hành"
-          message="Hồ sơ ở trạng thái RECEIVED, chưa làm thay đổi tồn kho."
+          message="Đã xác nhận lưu hồ sơ. Thông tin bên dưới là phiên bản hiện tại từ máy chủ."
         />
       ) : null}
 
@@ -273,10 +296,7 @@ export function WarrantyDetailScreen({
           </>
         )}
 
-        <DefinitionRow
-          label="Lỗi báo"
-          value={warrantyCase.reported_defect}
-        />
+        <DefinitionRow label="Lỗi báo" value={warrantyCase.reported_defect} />
         <DefinitionRow
           label="Phụ kiện"
           value={warrantyCase.accessories_received}
@@ -284,372 +304,424 @@ export function WarrantyDetailScreen({
         />
       </Box>
 
-      <Box card padding="lg" gap="md">
-        <View style={styles.sectionHead}>
-          <Text variant="cardTitle" tone="strong">
-            Linh kiện bảo hành
-          </Text>
-          {componentHistoryLoading ? null : (
-            <Badge
-              label={String(componentHistory.length) + ' phiếu đã xuất'}
-              tone={componentHistory.length > 0 ? 'success' : 'neutral'}
-            />
-          )}
-        </View>
-        <Text variant="caption" tone="muted">
-          Danh sách linh kiện đã xuất được lưu theo hồ sơ này. Chỉ các phiếu
-          đã xác nhận xuất kho mới xuất hiện tại đây.
-        </Text>
-
-        {componentHistoryLoading ? (
-          <Text variant="caption" tone="muted">
-            Đang tải danh sách linh kiện đã xuất…
-          </Text>
-        ) : componentHistoryError !== undefined ? (
-          <Banner
-            tone="danger"
-            title="Không tải được lịch sử linh kiện"
-            message={componentHistoryError}
-          >
-            {onReloadComponentHistory === undefined ? null : (
-              <Button
-                label="Tải lại danh sách"
-                variant="secondary"
-                onPress={onReloadComponentHistory}
-              />
-            )}
-          </Banner>
-        ) : componentHistory.length === 0 ? (
-          <Text variant="caption" tone="muted">
-            Chưa có linh kiện nào đã xuất cho hồ sơ này.
-          </Text>
-        ) : (
-          componentHistory.map(document => (
-            <Box
-              key={document.id}
-              padding="md"
-              gap="sm"
-              style={[
-                styles.componentHistoryItem,
-                {
-                  borderColor: theme.colors.divider,
-                  borderRadius: theme.radius.control,
-                },
-              ]}
-            >
-              <View style={styles.sectionHead}>
-                <Text
-                  variant="caption"
-                  tone="strong"
-                  style={styles.documentNumber}
-                >
-                  {document.documentNumber ?? document.id}
-                </Text>
-                <Badge label="Đã xuất" tone="success" />
-              </View>
-              <Text variant="caption" tone="muted">
-                {formatComponentIssueTime(document.postedAt)}
+      {p09Sections ? (
+        p09Sections.components
+      ) : (
+        <>
+          <Box card padding="lg" gap="md">
+            <View style={styles.sectionHead}>
+              <Text variant="cardTitle" tone="strong">
+                Linh kiện bảo hành
               </Text>
-              {document.detailUnavailable ? (
-                <Text variant="caption" tone="muted">
-                  Không tải được chi tiết linh kiện của phiếu này.
-                </Text>
-              ) : (
-                document.lines.map((line, index) => (
-                  <DefinitionRow
-                    key={line.id}
-                    label={componentLineLabel(line)}
-                    value={componentLineQuantity(line)}
-                    last={index === document.lines.length - 1}
-                  />
-                ))
+              {componentHistoryLoading ? null : (
+                <Badge
+                  label={String(componentHistory.length) + ' phiếu đã xuất'}
+                  tone={componentHistory.length > 0 ? 'success' : 'neutral'}
+                />
               )}
-            </Box>
-          ))
-        )}
+            </View>
+            <Text variant="caption" tone="muted">
+              Danh sách linh kiện đã xuất được lưu theo hồ sơ này. Chỉ các phiếu
+              đã xác nhận xuất kho mới xuất hiện tại đây.
+            </Text>
 
-        {componentHistoryHasMore && onLoadMoreComponentHistory !== undefined ? (
-          <Button
-            label={componentHistoryLoadingMore ? 'Đang tải thêm…' : 'Tải thêm lịch sử'}
-            variant="secondary"
-            loading={componentHistoryLoadingMore}
-            disabled={componentHistoryLoadingMore}
-            onPress={onLoadMoreComponentHistory}
-          />
-        ) : null}
+            {componentHistoryLoading ? (
+              <Text variant="caption" tone="muted">
+                Đang tải danh sách linh kiện đã xuất…
+              </Text>
+            ) : componentHistoryError !== undefined ? (
+              <Banner
+                tone="danger"
+                title="Không tải được lịch sử linh kiện"
+                message={componentHistoryError}
+              >
+                {onReloadComponentHistory === undefined ? null : (
+                  <Button
+                    label="Tải lại danh sách"
+                    variant="secondary"
+                    onPress={onReloadComponentHistory}
+                  />
+                )}
+              </Banner>
+            ) : componentHistory.length === 0 ? (
+              <Text variant="caption" tone="muted">
+                Chưa có linh kiện nào đã xuất cho hồ sơ này.
+              </Text>
+            ) : (
+              componentHistory.map(document => (
+                <Box
+                  key={document.id}
+                  padding="md"
+                  gap="sm"
+                  style={[
+                    styles.componentHistoryItem,
+                    {
+                      borderColor: theme.colors.divider,
+                      borderRadius: theme.radius.control,
+                    },
+                  ]}
+                >
+                  <View style={styles.sectionHead}>
+                    <Text
+                      variant="caption"
+                      tone="strong"
+                      style={styles.documentNumber}
+                    >
+                      {document.documentNumber ?? document.id}
+                    </Text>
+                    <Badge label="Đã xuất" tone="success" />
+                  </View>
+                  <Text variant="caption" tone="muted">
+                    {formatComponentIssueTime(document.postedAt)}
+                  </Text>
+                  {document.detailUnavailable ? (
+                    <Text variant="caption" tone="muted">
+                      Không tải được chi tiết linh kiện của phiếu này.
+                    </Text>
+                  ) : (
+                    document.lines.map((line, index) => (
+                      <DefinitionRow
+                        key={line.id}
+                        label={componentLineLabel(line)}
+                        value={componentLineQuantity(line)}
+                        last={index === document.lines.length - 1}
+                      />
+                    ))
+                  )}
+                </Box>
+              ))
+            )}
 
-        {canIssueWarrantyComponents(warrantyCase.status) &&
-        onIssueComponents !== undefined ? (
-          <Button label="Xuất linh kiện" onPress={onIssueComponents} />
-        ) : null}
-      </Box>
+            {componentHistoryHasMore &&
+            onLoadMoreComponentHistory !== undefined ? (
+              <Button
+                label={
+                  componentHistoryLoadingMore
+                    ? 'Đang tải thêm…'
+                    : 'Tải thêm lịch sử'
+                }
+                variant="secondary"
+                loading={componentHistoryLoadingMore}
+                disabled={componentHistoryLoadingMore}
+                onPress={onLoadMoreComponentHistory}
+              />
+            ) : null}
 
-      {/* --- Chuyển trạng thái — ảnh 45 --- */}
-      <Box card padding="lg" gap="md">
-        <Text variant="cardTitle" tone="strong">
-          Chuyển trạng thái
-        </Text>
+            {canIssueWarrantyComponents(warrantyCase.status) &&
+            onIssueComponents !== undefined ? (
+              <Button label="Xuất linh kiện" onPress={onIssueComponents} />
+            ) : null}
+          </Box>
+        </>
+      )}
 
-        <Input
-          label="Ghi chú chuyển trạng thái"
-          placeholder="VD: Bắt đầu kiểm tra sản phẩm"
-          value={note}
-          onChangeText={text => {
-            setNote(text);
-            setNoteError(undefined);
-          }}
-          errorText={noteError}
-          multiline
-        />
+      {p09Sections ? (
+        p09Sections.command
+      ) : (
+        <>
+          {/* --- Chuyển trạng thái — ảnh 45 --- */}
+          <Box card padding="lg" gap="md">
+            <Text variant="cardTitle" tone="strong">
+              Chuyển trạng thái
+            </Text>
 
-        {/* *Kết quả kiểm tra* là trường KHÁC với ghi chú — nó trả lời "kiểm tra
+            <Input
+              label="Ghi chú chuyển trạng thái"
+              placeholder="VD: Bắt đầu kiểm tra sản phẩm"
+              value={note}
+              onChangeText={text => {
+                setNote(text);
+                setNoteError(undefined);
+              }}
+              errorText={noteError}
+              multiline
+            />
+
+            {/* *Kết quả kiểm tra* là trường KHÁC với ghi chú — nó trả lời "kiểm tra
             ra bệnh gì", còn ghi chú trả lời "vì sao chuyển trạng thái". Chỉ hiện
             khi có bước nào đó thật sự cần, để không làm dài form vô ích. */}
-        {available.some(status =>
-          requiresConfirmedDefect(currentStatus, status),
-        ) ? (
-          <Input
-            label="Kết quả kiểm tra*"
-            placeholder="Bệnh đã xác định sau khi kiểm tra"
-            value={confirmedDefect}
-            onChangeText={setConfirmedDefect}
-            multiline
-          />
-        ) : null}
+            {available.some(status =>
+              requiresConfirmedDefect(currentStatus, status),
+            ) ? (
+              <Input
+                label="Kết quả kiểm tra*"
+                placeholder="Bệnh đã xác định sau khi kiểm tra"
+                value={confirmedDefect}
+                onChangeText={setConfirmedDefect}
+                multiline
+              />
+            ) : null}
 
-        <Text variant="caption" tone="muted">
-          Ghi chú bắt buộc khi Hoàn tất, Trả khách hoặc Huỷ hồ sơ.
-        </Text>
+            <Text variant="caption" tone="muted">
+              Ghi chú bắt buộc khi Hoàn tất, Trả khách hoặc Huỷ hồ sơ.
+            </Text>
 
-        {/* 🔧 2026-09-06: nút sinh từ ĐỒ THỊ trạng thái, không còn cứng
+            {/* 🔧 2026-09-06: nút sinh từ ĐỒ THỊ trạng thái, không còn cứng
             "Kiểm tra"/"Huỷ". Bản trước hiện đúng hai nút đó ở mọi hồ sơ — kể cả
             hồ sơ đã Trả khách, nơi không còn bước nào hợp lệ. */}
-        {transitionError === undefined ? null : (
-          <Banner
-            tone="danger"
-            title="Không chuyển được trạng thái"
-            message={transitionError}
-          />
-        )}
+            {transitionError === undefined ? null : (
+              <Banner
+                tone="danger"
+                title="Không chuyển được trạng thái"
+                message={transitionError}
+              />
+            )}
 
-        {available.length === 0 ? (
-          <Text variant="caption" tone="muted">
-            Hồ sơ đã đóng, không còn bước chuyển trạng thái nào.
-          </Text>
-        ) : (
-          <View style={[styles.actions, { gap: theme.spacing.md }]}>
-            {available.map(status => (
-              <Button
-                key={status}
-                label={
-                  transitioning === status
-                    ? 'Đang chuyển…'
-                    : STATUS_ACTION_LABEL[status]
+            {available.length === 0 ? (
+              <Text variant="caption" tone="muted">
+                Hồ sơ đã đóng, không còn bước chuyển trạng thái nào.
+              </Text>
+            ) : (
+              <View style={[styles.actions, { gap: theme.spacing.md }]}>
+                {available.map(status => (
+                  <Button
+                    key={status}
+                    label={
+                      transitioning === status
+                        ? 'Đang chuyển…'
+                        : STATUS_ACTION_LABEL[status]
+                    }
+                    variant={status === 'CANCELLED' ? 'danger' : 'secondary'}
+                    loading={transitioning === status}
+                    // Khoá TẤT CẢ nút khi đang gửi, không chỉ nút vừa bấm: hai
+                    // lệnh chuyển trạng thái chồng nhau sẽ ăn 412 ở lệnh sau.
+                    disabled={transitioning !== undefined}
+                    onPress={transition(status)}
+                    style={styles.half}
+                  />
+                ))}
+              </View>
+            )}
+          </Box>
+        </>
+      )}
+      {p09Sections ? (
+        p09Sections.events
+      ) : (
+        <>
+          {/* --- Timeline --- */}
+          <Box card padding="lg" gap="md">
+            <Text variant="cardTitle" tone="strong">
+              Timeline
+            </Text>
+            {timelineError === undefined ? (
+              <Timeline entries={timeline} />
+            ) : (
+              // 🔴 KHÔNG hiện timeline rỗng khi tải hỏng.
+              <Banner
+                tone="danger"
+                title="Không tải được timeline"
+                message={
+                  timelineError +
+                  ' Hồ sơ vẫn xem được, nhưng CHƯA rõ đã qua những bước nào.'
                 }
-                variant={status === 'CANCELLED' ? 'danger' : 'secondary'}
-                loading={transitioning === status}
-                // Khoá TẤT CẢ nút khi đang gửi, không chỉ nút vừa bấm: hai
-                // lệnh chuyển trạng thái chồng nhau sẽ ăn 412 ở lệnh sau.
-                disabled={transitioning !== undefined}
-                onPress={transition(status)}
-                style={styles.half}
               />
-            ))}
-          </View>
-        )}
-      </Box>
-
-      {/* --- Timeline --- */}
-      <Box card padding="lg" gap="md">
-        <Text variant="cardTitle" tone="strong">
-          Timeline
-        </Text>
-        {timelineError === undefined ? (
-          <Timeline entries={timeline} />
-        ) : (
-          // 🔴 KHÔNG hiện timeline rỗng khi tải hỏng.
-          <Banner
-            tone="danger"
-            title="Không tải được timeline"
-            message={
-              timelineError +
-              ' Hồ sơ vẫn xem được, nhưng CHƯA rõ đã qua những bước nào.'
-            }
-          />
-        )}
-      </Box>
-
-      {/* --- Ảnh & video — ảnh 46 --- */}
-      <Box card padding="lg" gap="md">
-        <View style={styles.sectionHead}>
-          <Text variant="cardTitle" tone="strong">
-            Ảnh & video bảo hành
-          </Text>
-          <Badge
-            label={
-              String(counts.images) +
-              '/' +
-              String(ATTACHMENT_LIMITS.maxImages) +
-              ' ảnh · ' +
-              String(counts.videos) +
-              '/' +
-              String(ATTACHMENT_LIMITS.maxVideos) +
-              ' video'
-            }
-          />
-        </View>
-
-        <Banner
-          tone="info"
-          icon={<AppIcon name="shield-check" color={theme.colors.infoText} />}
-          title="File được gửi tới backend WMS"
-          message="Backend chịu trách nhiệm lưu vào storage đã cấu hình. Ảnh JPG/PNG/WEBP tối đa 10MB; video MP4/MOV/WEBM tối đa 300MB và 5 phút."
-        />
-
-        {/* 🔴 K (xoá file) CHƯA được duyệt. Nói ra trước khi người dùng gửi,
-            không phải sau — sau thì đã muộn. */}
-        <Banner
-          tone="warning"
-          icon={<Text>⚠</Text>}
-          title="Chưa gỡ được file sau khi gửi"
-          message="Kiểm lại danh sách chờ trước khi bấm Tải lên: thao tác xoá file trên WMS chưa được mở cho app."
-        />
-
-        <Select
-          label="Nhóm hình ảnh/video"
-          value={mediaGroup}
-          options={ATTACHMENT_TYPE_OPTIONS}
-          onChange={setMediaGroup}
-        />
-
-        {attachments.error === undefined ? null : (
-          <Banner
-            tone="danger"
-            title="Có lỗi với tệp đính kèm"
-            message={attachments.error}
-          >
-            <Button
-              label="Đóng"
-              variant="secondary"
-              onPress={attachments.dismissMessages}
-            />
-          </Banner>
-        )}
-
-        {attachments.notice === undefined ? null : (
-          <Banner tone="info" title="Ghi nhận" message={attachments.notice}>
-            <Button
-              label="Đóng"
-              variant="secondary"
-              onPress={attachments.dismissMessages}
-            />
-          </Banner>
-        )}
-
-        {visibility.canDownloadAttachments ? (
-          <>
-            <View style={[styles.actions, { gap: theme.spacing.md }]}>
-              <Button
-                label="Chọn từ thư viện"
-                variant="secondary"
-                onPress={attachments.addFromLibrary}
-                disabled={attachments.uploading}
-                style={styles.half}
-              />
-              <Button
-                label="Chụp ảnh"
-                variant="secondary"
-                onPress={attachments.addFromCamera}
-                disabled={attachments.uploading}
-                style={styles.half}
+            )}
+          </Box>
+        </>
+      )}
+      {p09Sections ? (
+        p09Sections.attachments
+      ) : (
+        <>
+          {/* --- Ảnh & video — ảnh 46 --- */}
+          <Box card padding="lg" gap="md">
+            <View style={styles.sectionHead}>
+              <Text variant="cardTitle" tone="strong">
+                Ảnh & video bảo hành
+              </Text>
+              <Badge
+                label={
+                  String(counts.images) +
+                  '/' +
+                  String(ATTACHMENT_LIMITS.maxImages) +
+                  ' ảnh · ' +
+                  String(counts.videos) +
+                  '/' +
+                  String(ATTACHMENT_LIMITS.maxVideos) +
+                  ' video'
+                }
               />
             </View>
 
-            {/* --- Hàng chờ: bỏ được, vì chưa gửi --- */}
-            {attachments.pending.length === 0 ? null : (
-              <>
-                <Text variant="caption" tone="muted">
-                  {'CHỜ TẢI LÊN — ' +
-                    String(attachments.pending.length) +
-                    ' tệp'}
-                </Text>
-                {attachments.pending.map(item => (
-                  <View key={item.file.uri} style={styles.sectionHead}>
-                    <Text variant="caption" tone="muted">
-                      {(item.isVideo ? '🎬 ' : '🖼 ') + item.file.name}
-                    </Text>
-                    <Text
-                      variant="caption"
-                      accessibilityRole="button"
-                      accessibilityLabel={'Bỏ tệp ' + item.file.name}
-                      onPress={() => attachments.removePending(item.file.uri)}
-                      style={{ color: theme.colors.dangerText }}
-                    >
-                      Bỏ
-                    </Text>
-                  </View>
-                ))}
+            <Banner
+              tone="info"
+              icon={
+                <AppIcon name="shield-check" color={theme.colors.infoText} />
+              }
+              title="File được gửi tới backend WMS"
+              message="Backend chịu trách nhiệm lưu vào storage đã cấu hình. Ảnh JPG/PNG/WEBP tối đa 10MB; video MP4/MOV/WEBM tối đa 300MB và 5 phút."
+            />
+
+            {/* 🔴 K (xoá file) CHƯA được duyệt. Nói ra trước khi người dùng gửi,
+            không phải sau — sau thì đã muộn. */}
+            <Banner
+              tone="warning"
+              icon={<Text>⚠</Text>}
+              title="Chưa gỡ được file sau khi gửi"
+              message="Kiểm lại danh sách chờ trước khi bấm Tải lên: thao tác xoá file trên WMS chưa được mở cho app."
+            />
+
+            <Select
+              label="Nhóm hình ảnh/video"
+              value={mediaGroup}
+              options={ATTACHMENT_TYPE_OPTIONS}
+              onChange={setMediaGroup}
+            />
+
+            {attachments.error === undefined ? null : (
+              <Banner
+                tone="danger"
+                title="Có lỗi với tệp đính kèm"
+                message={attachments.error}
+              >
                 <Button
-                  label={
-                    attachments.progress === undefined
-                      ? 'Tải lên ' +
-                        String(attachments.pending.length) +
-                        ' tệp'
-                      : 'Đang tải ' +
-                        String(attachments.progress.done + 1) +
-                        '/' +
-                        String(attachments.progress.total) +
-                        '…'
-                  }
-                  loading={attachments.uploading}
-                  disabled={attachments.uploading}
-                  onPress={() => {
-                    attachments.uploadAll(mediaGroup).catch(() => undefined);
-                  }}
+                  label="Đóng"
+                  variant="secondary"
+                  onPress={attachments.dismissMessages}
                 />
-              </>
+              </Banner>
             )}
 
-            {/* --- Đã tải lên: KHÔNG có nút bỏ, vì K chưa duyệt --- */}
-            {attachments.uploaded.length === 0 ? null : (
+            {attachments.notice === undefined ? null : (
+              <Banner tone="info" title="Ghi nhận" message={attachments.notice}>
+                <Button
+                  label="Đóng"
+                  variant="secondary"
+                  onPress={attachments.dismissMessages}
+                />
+              </Banner>
+            )}
+
+            {visibility.canDownloadAttachments ? (
               <>
-                <Text variant="caption" tone="muted">
-                  {'ĐÃ TẢI LÊN — ' +
-                    String(attachments.uploaded.length) +
-                    ' tệp'}
-                </Text>
-                {attachments.uploaded.map((item, index) => (
-                  <Text
-                    key={item.id ?? String(index)}
-                    variant="caption"
-                    tone="muted"
-                  >
-                    {item.file_name ?? item.id ?? '(không rõ tên)'}
-                  </Text>
-                ))}
+                <View style={[styles.actions, { gap: theme.spacing.md }]}>
+                  <Button
+                    label="Chọn từ thư viện"
+                    variant="secondary"
+                    onPress={attachments.addFromLibrary}
+                    disabled={attachments.uploading}
+                    style={styles.half}
+                  />
+                  <Button
+                    label="Chụp ảnh"
+                    variant="secondary"
+                    onPress={attachments.addFromCamera}
+                    disabled={attachments.uploading}
+                    style={styles.half}
+                  />
+                </View>
+
+                {/* --- Hàng chờ: bỏ được, vì chưa gửi --- */}
+                {attachments.pending.length === 0 ? null : (
+                  <>
+                    <Text variant="caption" tone="muted">
+                      {'CHỜ TẢI LÊN — ' +
+                        String(attachments.pending.length) +
+                        ' tệp'}
+                    </Text>
+                    {attachments.pending.map(item => (
+                      <View key={item.file.uri} style={styles.sectionHead}>
+                        <Text variant="caption" tone="muted">
+                          {(item.isVideo ? '🎬 ' : '🖼 ') + item.file.name}
+                        </Text>
+                        <Text
+                          variant="caption"
+                          accessibilityRole="button"
+                          accessibilityLabel={'Bỏ tệp ' + item.file.name}
+                          onPress={() =>
+                            attachments.removePending(item.file.uri)
+                          }
+                          style={{ color: theme.colors.dangerText }}
+                        >
+                          Bỏ
+                        </Text>
+                        {attachments.unknown?.some(
+                          value => value.uri === item.file.uri,
+                        ) ? (
+                          <Text
+                            variant="caption"
+                            accessibilityRole="button"
+                            accessibilityLabel={
+                              'Đối chiếu tệp ' + item.file.name
+                            }
+                            onPress={() =>
+                              attachments
+                                .reconcile(item.file.uri)
+                                .catch(() => undefined)
+                            }
+                            style={{ color: theme.colors.primary }}
+                          >
+                            Đối chiếu
+                          </Text>
+                        ) : null}
+                      </View>
+                    ))}
+                    <Button
+                      label={
+                        attachments.progress === undefined
+                          ? 'Tải lên ' +
+                            String(attachments.pending.length) +
+                            ' tệp'
+                          : 'Đang tải ' +
+                            String(attachments.progress.done + 1) +
+                            '/' +
+                            String(attachments.progress.total) +
+                            '…'
+                      }
+                      loading={attachments.uploading}
+                      disabled={attachments.uploading}
+                      onPress={() => {
+                        attachments
+                          .uploadAll(mediaGroup)
+                          .catch(() => undefined);
+                      }}
+                    />
+                  </>
+                )}
+
+                {/* --- Đã tải lên: KHÔNG có nút bỏ, vì K chưa duyệt --- */}
+                {attachments.uploaded.length === 0 ? null : (
+                  <>
+                    <Text variant="caption" tone="muted">
+                      {'ĐÃ TẢI LÊN — ' +
+                        String(attachments.uploaded.length) +
+                        ' tệp'}
+                    </Text>
+                    {attachments.uploaded.map((item, index) => (
+                      <Text
+                        key={item.id ?? String(index)}
+                        variant="caption"
+                        tone="muted"
+                      >
+                        {item.file_name ?? item.id ?? '(không rõ tên)'}
+                      </Text>
+                    ))}
+                  </>
+                )}
               </>
+            ) : (
+              // Tệp đã bị xoá vật lý khỏi storage — nút tải chỉ dẫn tới 404.
+              <Text variant="caption" tone="muted">
+                Hồ sơ đã ẩn danh — tệp đính kèm đã được gỡ khỏi hệ thống.
+              </Text>
             )}
-          </>
-        ) : (
-          // Tệp đã bị xoá vật lý khỏi storage — nút tải chỉ dẫn tới 404.
-          <Text variant="caption" tone="muted">
-            Hồ sơ đã ẩn danh — tệp đính kèm đã được gỡ khỏi hệ thống.
-          </Text>
-        )}
 
-        {attachments.loading ? (
-          <Text variant="caption" tone="muted">
-            Đang tải danh sách file…
-          </Text>
-        ) : counts.images === 0 && counts.videos === 0 ? (
-          <Text variant="caption" tone="muted">
-            Chưa có ảnh hoặc video trong hồ sơ.
-          </Text>
-        ) : null}
-      </Box>
+            {attachments.loading ? (
+              <Text variant="caption" tone="muted">
+                Đang tải danh sách file…
+              </Text>
+            ) : counts.images === 0 && counts.videos === 0 ? (
+              <Text variant="caption" tone="muted">
+                Chưa có ảnh hoặc video trong hồ sơ.
+              </Text>
+            ) : null}
+          </Box>
 
-      {onBack === undefined ? null : (
-        <Button label="Quay lại" variant="secondary" onPress={onBack} />
+          {onBack === undefined ? null : (
+            <Button label="Quay lại" variant="secondary" onPress={onBack} />
+          )}
+        </>
       )}
     </Page>
   );
@@ -660,7 +732,9 @@ function statusLabel(status?: string): string {
   return STATUS_LABEL[normalized] ?? status ?? 'Đã tiếp nhận';
 }
 
-function componentLineLabel(line: WarrantyComponentHistoryDocument['lines'][number]): string {
+function componentLineLabel(
+  line: WarrantyComponentHistoryDocument['lines'][number],
+): string {
   const sku = line.skuCode ?? 'SKU chưa xác định';
   return line.skuName === undefined || line.skuName.trim() === ''
     ? sku
@@ -672,29 +746,20 @@ function componentLineQuantity(
 ): string {
   const codeCount = line.scannedCodeCount;
   return (
-    String(line.quantity) +
-    ' linh kiện' +
-    (codeCount > 0 ? ' · ' + String(codeCount) + ' mã/hộp' : '')
+    (line.quantity === null
+      ? 'Chưa xác minh số lượng'
+      : String(line.quantity) + ' ' + (line.unit ?? 'đơn vị chưa xác minh')) +
+    (codeCount === null
+      ? ' · Chưa xác minh mã'
+      : codeCount > 0
+      ? ' · ' + String(codeCount) + ' mã/hộp'
+      : '')
   );
 }
 
-function formatComponentIssueTime(value?: string): string {
-  if (value === undefined || value.trim() === '') return 'Đã xác nhận xuất kho.';
-  // WMS đang trả cả ISO và `YYYY-MM-DD HH:mm:ss+00`; thay khoảng trắng để
-  // máy web/Android parse thống nhất. Nếu dữ liệu cũ không parse được thì giữ
-  // nguyên, không tự bịa thời điểm lịch sử.
-  const date = new Date(value.replace(' ', 'T'));
-  if (!Number.isFinite(date.getTime())) return 'Đã xuất ' + value;
-  return (
-    'Đã xuất ' +
-    date.toLocaleString('vi-VN', {
-      day: '2-digit',
-      month: '2-digit',
-      year: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit',
-    })
-  );
+function formatComponentIssueTime(value?: string | null): string {
+  const time = formatVietnamDateTime(value, { missing: '' });
+  return time ? 'Đã xuất ' + time : 'Đã xuất · Chưa xác minh thời điểm';
 }
 
 function statusTone(

@@ -226,6 +226,9 @@ export function mapInventoryTrace(rawCode: string, payload: unknown): LookupResu
       item.serial,
       item.serial_no,
       item.serial_number,
+      resolved.serial,
+      resolved.serial_no,
+      resolved.serial_number,
     ),
     product_name: firstText(
       data.product_name,

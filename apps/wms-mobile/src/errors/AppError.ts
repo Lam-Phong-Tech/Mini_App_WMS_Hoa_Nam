@@ -6,6 +6,8 @@
  * KHÔNG phải contract đã được chủ sở hữu WMS xác nhận.
  */
 
+import type { PasswordPolicy } from '../contracts/p11Security';
+
 export type AppErrorKind =
   | 'network'
   | 'timeout'
@@ -46,10 +48,15 @@ export interface AppErrorInit {
   route?: string;
   /** X-Request-ID hoặc request_id từ phản hồi WMS, nếu có. */
   requestId?: string;
+  /** Số giây Retry-After đã xác minh từ HTTP 429. */
+  retryAfterSeconds?: number;
   /** Vân tay một chiều của lô mã, chỉ gắn cho conflict inbound/record. */
   scanFingerprint?: string;
   /** Số mã trong lô tạo ra scanFingerprint. */
   scanCount?: number;
+  fieldErrors?: Readonly<Record<string, readonly string[]>>;
+  /** Allowlisted non-secret P11 policy from a 422 error envelope. */
+  passwordPolicy?: PasswordPolicy;
   cause?: unknown;
 }
 
@@ -59,8 +66,11 @@ export class AppError extends Error {
   readonly code?: string;
   readonly route?: string;
   readonly requestId?: string;
+  readonly retryAfterSeconds?: number;
   readonly scanFingerprint?: string;
   readonly scanCount?: number;
+  readonly fieldErrors?: Readonly<Record<string, readonly string[]>>;
+  readonly passwordPolicy?: PasswordPolicy;
   readonly cause?: unknown;
 
   constructor(init: AppErrorInit) {
@@ -71,8 +81,11 @@ export class AppError extends Error {
     this.code = init.code;
     this.route = init.route;
     this.requestId = init.requestId;
+    this.retryAfterSeconds = init.retryAfterSeconds;
     this.scanFingerprint = init.scanFingerprint;
     this.scanCount = init.scanCount;
+    this.fieldErrors = init.fieldErrors;
+    this.passwordPolicy = init.passwordPolicy;
     this.cause = init.cause;
   }
 }
@@ -183,6 +196,10 @@ export function messageForUser(error: AppError): string {
     case 'cancelled':
       return 'Yêu cầu đã bị huỷ.';
     case 'auth':
+      if (error.code === 'AUTH_SESSION_REPLACED')
+        return 'Phiên này đã được thay thế bởi một lần đăng nhập khác. Vui lòng đăng nhập lại; dữ liệu chưa gửi được giữ nguyên.';
+      if (error.code === 'AUTH_SESSION_REQUIRED')
+        return 'Phiên này cần được xác thực lại. Vui lòng đăng nhập; dữ liệu chưa gửi được giữ nguyên.';
       return 'Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.';
     case 'blocked_by_gate':
       return error.message;

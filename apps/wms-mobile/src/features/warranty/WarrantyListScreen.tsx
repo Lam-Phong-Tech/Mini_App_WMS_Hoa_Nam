@@ -1,288 +1,460 @@
-/**
- * Bảo hành — danh sách tiếp nhận.
- *
- * 🎨 Nguồn: ảnh **39, 40**.
- *
- * Bố cục: hai `StatCard` → ba nút nhận hàng → 5 tab trạng thái cuộn ngang →
- * danh sách hồ sơ.
- *
- * ✅ **Đọc thật** qua `GET /api/v1/mini-app/warranty-cases` — một trong 11
- * endpoint đã kiểm chứng trả 200.
- *
- * ## 🔴 PII: hiện đúng thứ máy chủ trả, không tự che
- *
- * Ảnh 40 chụp bằng tài khoản **có** quyền PII nên hiện `Hoàng Văn Nam ·
- * 0912021098`. Cùng màn đó, tài khoản **thủ kho** nhận `H*** V*** N*** ·
- * ******372`. Màn này không biết vai của người đang dùng và **không cần biết** —
- * nó hiển thị nguyên thứ máy chủ trả về.
- *
- * Hồ sơ đã **ẩn danh** (hết hạn lưu trữ) hiện câu riêng do BA chốt, và các thao
- * tác liên hệ / tải tệp bị ẩn.
- */
-
-import React, { useCallback, useEffect, useState } from 'react';
-import { Pressable, StyleSheet, View } from 'react-native';
-import { Page } from '../../ui/Page';
-import { Box } from '../../ui/Box';
-import { Text } from '../../ui/Text';
-import { Button } from '../../ui/Button';
-import { Badge } from '../../ui/Badge';
-import { Banner } from '../../ui/Banner';
-import { StatCard } from '../../ui/StatCard';
-import { EmptyState } from '../../ui/EmptyState';
-import { FilterChipRow } from '../../ui/FilterChipRow';
-import { AppIcon } from '../../ui/AppIcon';
-import { useTheme } from '../../theme/ThemeProvider';
-import { messageForUser, toAppError, type AppError } from '../../errors/AppError';
-import { fetchWarrantyCases } from '../../services/wms/queries';
+import {HN_UI} from '../../theme/uiKitV3';
+import { ScannerNativeText as Text } from '../../ui/ScannerNativeText';
+import React, { useEffect, useMemo, useState } from 'react';
+import { Pressable, View, type ImageSourcePropType } from 'react-native';
+import { Input } from '../../ui/Input';
+import { P09Dialog as Dialog } from './P09Presentation';
+import { p09CommandOwner, createP09Pager } from './p09Controller';
+import { useP09Pager, P09PageFooter, P09Error } from './P09Support';
+import {
+  lockedP09Service,
+  type P09Service,
+  type P09Case,
+  type P09Filters,
+} from '../../services/wms/p09Warranty';
 import type { WarrantyCase } from '../../services/wms/types';
 import {
   MESSAGE_ANONYMIZED,
-  WARRANTY_TABS,
   displayPii,
   isCaseAnonymized,
-  isPiiMasked,
 } from './warrantyPolicy';
+import {
+  P09Frame,
+  P09Photo,
+  P09Status,
+  P09Action,
+  P09Tile,
+  p09,
+  p09Date,
+  p09Status,
+} from './P09Presentation';
+import { useHardwareBack } from '../../app/useHardwareBack';
+import { P04Icon } from '../inbound/P04Icon';
 
-const styles = StyleSheet.create({
-  row: {
-    flexDirection: 'row',
-  },
-  actions: {
-    flexDirection: 'row',
-  },
-  half: {
-    flex: 1,
-  },
-  cardHead: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    justifyContent: 'space-between',
-  },
-  cardHeadBody: {
-    flex: 1,
-  },
-});
-
+const allStatuses = [
+  'ALL',
+  'RECEIVED',
+  'CHECKING',
+  'REPAIRING',
+  'COMPLETED',
+  'RETURNED',
+  'CANCELLED',
+] as const;
+const quickStatuses = ['RECEIVED', 'CHECKING', 'COMPLETED', 'RETURNED'] as const;
 export interface WarrantyListScreenProps {
   onBack?: () => void;
   onScan?: () => void;
   onManualEntry?: () => void;
   onCreateWithoutCode?: () => void;
   onOpenCase?: (warrantyCase: WarrantyCase) => void;
-  /** Tiêm để test không cần mạng. */
-  fetchCases?: typeof fetchWarrantyCases;
+  service?: P09Service;
+  /** Optional verified image provider; offline reference pictures stay outside the runtime adapter. */
+  productImage?: (item: P09Case) => ImageSourcePropType | undefined;
+  footer?: React.ReactNode;
 }
-
 export function WarrantyListScreen({
   onBack,
   onScan,
   onManualEntry,
-  onCreateWithoutCode,
   onOpenCase,
-  fetchCases = fetchWarrantyCases,
-}: WarrantyListScreenProps): React.ReactElement {
-  const theme = useTheme();
-  const [tab, setTab] = useState<string>(WARRANTY_TABS[0].key);
-  const [cases, setCases] = useState<readonly WarrantyCase[]>([]);
-  const [phase, setPhase] = useState<'loading' | 'ready' | 'error'>('loading');
-  const [error, setError] = useState<AppError | undefined>();
-
-  const load = useCallback(
-    async (status: string) => {
-      setPhase('loading');
-      setError(undefined);
-      try {
-        const page = await fetchCases({ query: { status } });
-        setCases(page.items);
-        setPhase('ready');
-      } catch (cause) {
-        setError(toAppError(cause));
-        setPhase('error');
-      }
-    },
-    [fetchCases],
-  );
-
+  service = lockedP09Service,
+  productImage,
+  footer,
+}: WarrantyListScreenProps) {
+  const retained = useMemo(() => listState(service), [service]);
+  const [tab, setTab] = useState<string>(retained.filters.status ?? 'ALL');
+  const [search, setSearch] = useState(retained.filters.search ?? '');
+  const [sort, setSort] = useState(retained.filters.sort ?? 'created_at_desc');
+  const [picker, setPicker] = useState<'filter' | 'sort'>(),
+    [draft, setDraft] = useState('');
+  const state = useP09Pager(retained.pager);
   useEffect(() => {
-    load(tab).catch(() => undefined);
-  }, [load, tab]);
-
+    const command = p09CommandOwner(service).snapshot();
+    const stamp =
+      command.phase === 'succeeded' ? command.command?.requestId : undefined;
+    if (stamp && stamp !== retained.confirmedRequest) {
+      retained.confirmedRequest = stamp;
+      retained.filters.per_page = Math.min(
+        100,
+        Math.max(25, retained.pager.snapshot().items.length),
+      );
+      retained.pager.load().catch(() => undefined);
+    }
+  }, [retained, service]);
+  function load(status: string, query = search, order = sort) {
+    retained.filters = {
+      status: status as P09Filters['status'],
+      search: query,
+      sort: order,
+    };
+    retained.pager.reset();
+    return retained.pager.load();
+  }
+  useEffect(() => {
+    if (search === (retained.filters.search ?? '')) return;
+    const timer = setTimeout(() => {
+      if (search === (retained.filters.search ?? '')) return;
+      retained.filters = { status: tab as P09Filters['status'], search, sort };
+      retained.pager.reset();
+      retained.pager.load().catch(() => undefined);
+    }, 250);
+    return () => clearTimeout(timer);
+  }, [search, sort, tab, retained]);
+  function closePicker() {
+    setPicker(undefined);
+  }
+  useHardwareBack(() => {
+    if (picker) {
+      closePicker();
+      return true;
+    }
+    return false;
+  });
+  const canIntake = service.scope().permissions.includes('warranty.manage');
   return (
-    <Page
-      title="Tiếp nhận bảo hành"
-      subtitle="Mini App · Bảo hành"
+    <P09Frame
+      panel={1}
+      scrollKey={JSON.stringify(retained.filters)}
       onBack={onBack}
-      scroll
+      initialScrollY={state.scroll}
+      onScrollPositionChange={retained.pager.scroll}
+      onEndReached={() => {
+        if (state.meta?.hasMore && !state.loading)
+          retained.pager.load(true).catch(() => undefined);
+      }}
+      headerRight={
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel="Tiếp nhận bảo hành"
+          accessibilityState={{ disabled: !canIntake || !onManualEntry }}
+          disabled={!canIntake || !onManualEntry}
+          onPress={onManualEntry ?? (() => {})}
+          style={{
+            backgroundColor: 'transparent',
+            width: 48,
+            height: 48,
+            alignItems: 'center',
+            justifyContent: 'center',
+          }}
+        >
+          <P04Icon name="plus" size={24} color={canIntake && onManualEntry ? HN_UI.onBrand : HN_UI.disabledForeground} />
+        </Pressable>
+      }
+      footer={footer}
     >
-      <View style={[styles.row, { gap: theme.spacing.md }]}>
-        <StatCard
-          label={warrantyStatusLabel(tab)}
-          value={phase === 'loading' && cases.length === 0 ? '…' : String(cases.length)}
-          icon={<AppIcon name="shield-check" color={theme.colors.primaryStrong} />}
-        />
-        <StatCard
-          label="Luồng tiếp nhận"
-          value="2"
-          footnote="Có mã · mất mã"
-          icon={<AppIcon name="scan" color={theme.colors.primaryStrong} />}
-        />
-      </View>
-
-      <Box card padding="lg" gap="md">
-        <Text variant="cardTitle" tone="strong">
-          Nhận sản phẩm bảo hành
-        </Text>
-        <Text variant="caption" tone="muted">
-          Quét/nhập mã để kiểm tra trước. Nếu mất tem/mã, tạo hồ sơ tạm.
-        </Text>
-        <View style={[styles.actions, { gap: theme.spacing.md }]}>
-          <Button
-            label="Quét mã"
-            onPress={onScan ?? (() => undefined)}
-            style={styles.half}
-          />
-          <Button
-            label="Nhập tay"
-            variant="secondary"
-            onPress={onManualEntry ?? (() => undefined)}
-            style={styles.half}
+      <Pressable
+        accessibilityRole="button"
+        accessibilityLabel="Tiếp nhận và sửa chữa bảo hành"
+        disabled={!canIntake || !(onScan || onManualEntry)}
+        onPress={onScan ?? onManualEntry}
+        style={[
+          p09.card,
+          p09.row,
+          { padding: 10, gap: 10, backgroundColor: HN_UI.canvas },
+        ]}
+      >
+        <P09Tile name="tool" warranty />
+        <View style={p09.fill}>
+          <Text style={[p09.heading, { fontSize: 16, lineHeight: 22 }]}>
+            Tiếp nhận và sửa chữa bảo hành
+          </Text>
+          <Text style={p09.small}>Quét mã hoặc nhập thông tin sản phẩm</Text>
+        </View>
+        <P04Icon name="chevron-right" size={20} color={HN_UI.textLink} />
+      </Pressable>
+      <View style={[p09.row, { alignItems: 'flex-end', gap: 10 }]}>
+        <View style={p09.fill}>
+          <Input
+            accessibilityLabel="Tìm hồ sơ"
+            placeholder="Nhập mã hồ sơ, serial, tên sản phẩm…"
+            fieldHeight={48}
+            leftAdornment={<P04Icon name="search" size={22} color={HN_UI.textLink} />}
+            inputStyle={{ fontSize: 14 }}
+            value={search}
+            maxLength={200}
+            onChangeText={setSearch}
+            onSubmitEditing={() => load(tab).catch(() => undefined)}
           />
         </View>
-        <Button
-          label="Mất tem/mã · Tạo hồ sơ tạm"
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel="Lọc hồ sơ bảo hành"
+          onPress={() => {
+            setDraft(tab);
+            setPicker('filter');
+          }}
+          style={{
+            height: 48,
+            width: 52,
+            alignItems: 'center',
+            justifyContent: 'center',
+            backgroundColor: HN_UI.primary,
+            borderRadius: 8,
+          }}
+        >
+          <P04Icon name="funnel" size={24} color={HN_UI.onBrand} />
+        </Pressable>
+      </View>
+      <View style={p09.row}>
+        <P09Action
+          label={`${p09Status(tab)} (${state.meta?.total ?? '—'})`}
+          accessibilityLabel={`${p09Status(tab)} (${state.meta?.total ?? '—'})`}
           variant="secondary"
-          onPress={onCreateWithoutCode ?? (() => undefined)}
+          trailing={<P04Icon name="chevron-down" size={20} color={HN_UI.textLink} />}
+          onPress={() => {
+            setDraft(tab);
+            setPicker('filter');
+          }}
+          style={[p09.fill, { minHeight: 44, paddingHorizontal: 8 }]}
+          labelStyle={{ fontSize: 14, lineHeight: 21, fontWeight: '400' }}
         />
-      </Box>
-
-      <FilterChipRow
-        chips={WARRANTY_TABS.map(item => ({
-          key: item.key,
-          label: item.label,
-        }))}
-        activeKey={tab}
-        onSelect={setTab}
-      />
-
-      <View style={[styles.cardHead, { gap: theme.spacing.sm }]}>
-        <Text variant="cardTitle" tone="strong" style={styles.cardHeadBody}>
-          {'Hồ sơ ' + warrantyStatusLabel(tab)}
-        </Text>
-        <Button
-          label="Đồng bộ"
+        <P09Action
+          label={
+            sort === 'created_at_desc'
+              ? 'Ngày tạo mới nhất'
+              : 'Ngày tạo cũ nhất'
+          }
+          trailing={<P04Icon name="chevron-down" size={20} color={HN_UI.textLink} />}
           variant="secondary"
           onPress={() => {
-            load(tab).catch(() => undefined);
+            setDraft(sort);
+            setPicker('sort');
           }}
+          style={[
+            p09.fill,
+            { minHeight: 44, borderColor: HN_UI.border, paddingHorizontal: 8 },
+          ]}
+          labelStyle={{ fontSize: 14, lineHeight: 21, fontWeight: '400' }}
         />
       </View>
-
-      {phase === 'error' && error !== undefined ? (
-        <Banner
-          tone="danger"
-          title="Không tải được danh sách bảo hành"
-          message={messageForUser(error)}
-        >
-          <Button
+      <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
+        {quickStatuses.map(status => (
+          <Pressable
+            key={status}
+            accessibilityRole="button"
+            accessibilityLabel={`Lọc ${p09Status(status)} (—)`}
+            accessibilityHint="Chưa có tổng theo trạng thái từ máy chủ"
+            accessibilityState={{ selected: tab === status }}
+            onPress={() => {
+              setTab(status);
+              load(status).catch(() => undefined);
+            }}
+            style={{
+              flexBasis: '48%',
+              flexGrow: 1,
+              minHeight: 44,
+              paddingHorizontal: 10,
+              flexDirection: 'row',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              gap: 6,
+              borderWidth: 1,
+              borderColor: tab === status ? HN_UI.borderSelected : HN_UI.border,
+              borderRadius: 8,
+              backgroundColor: tab === status ? HN_UI.selected : HN_UI.surface,
+            }}
+          >
+            <Text numberOfLines={1} style={[p09.small, { color: HN_UI.textLink, flexShrink: 1 }]}>{p09Status(status)}</Text>
+            {/* P09 list has no server status facets. A page is not a count. */}
+            <Text style={p09.small}>—</Text>
+          </Pressable>
+        ))}
+      </View>
+      {state.error && (
+        <>
+          <P09Error
+            title="Không tải được danh sách bảo hành"
+            error={state.error}
+            onBack={onBack ?? (() => {})}
+          />
+          <P09Action
             label="Thử lại"
             variant="secondary"
+            onPress={() =>
+              retained.pager.load(!!state.meta).catch(() => undefined)
+            }
+          />
+        </>
+      )}
+      {state.loading && !state.meta && (
+        <Text style={p09.small}>Đang tải hồ sơ…</Text>
+      )}
+      {state.meta && state.items.length === 0 && (
+        <View style={p09.card}>
+          <Text style={p09.heading}>Không có hồ sơ phù hợp.</Text>
+          <P09Action
+            label="Xóa bộ lọc"
+            variant="secondary"
             onPress={() => {
-              load(tab).catch(() => undefined);
+              setSearch('');
+              setTab('ALL');
+              load('ALL', '').catch(() => undefined);
             }}
           />
-        </Banner>
-      ) : phase === 'loading' ? (
-        <Box card padding="lg">
-          <Text variant="caption" tone="muted">
-            Đang tải hồ sơ…
-          </Text>
-        </Box>
-      ) : cases.length === 0 ? (
-        <Box card padding="lg">
-          <EmptyState
-            title="Chưa có hồ sơ ở trạng thái này"
-            hint="Chọn tab khác hoặc tiếp nhận sản phẩm mới."
-          />
-        </Box>
-      ) : (
-        cases.map(item => {
-          const anonymized = isCaseAnonymized(item);
-          const masked = isPiiMasked(item);
-          return (
-            <Box key={item.warranty_case_id} card padding="lg" gap="sm">
-              {/* 🔴 Sửa 2026-09-06: trước đây CHỈ dòng tên sản phẩm bấm được.
-                  Bấm vào mã hồ sơ hay nhãn trạng thái thì **không có gì xảy
-                  ra** — đo trên máy thật: chạm (559, 2045) trên mã
-                  `WC-RPTW-0157` im lặng, chạm dòng tên sản phẩm mới mở.
-                  Thủ kho đeo găng nhắm vào mã là chuyện đương nhiên. Bọc cả
-                  thẻ như `ApprovalsScreen` vẫn làm. */}
-              <Pressable
-                accessibilityRole={
-                  onOpenCase === undefined ? undefined : 'button'
-                }
-                accessibilityLabel={
-                  onOpenCase === undefined
-                    ? undefined
-                    : 'Xem chi tiết hồ sơ ' +
-                      String(item.warranty_case_code ?? item.warranty_case_id)
-                }
-                disabled={onOpenCase === undefined}
-                onPress={() => onOpenCase?.(item)}
-                style={{ gap: theme.spacing.sm }}
+        </View>
+      )}
+      {state.items.map(item => (
+        <Pressable
+          key={item.warranty_case_id}
+          accessibilityRole="button"
+          accessibilityLabel={
+            'Xem chi tiết hồ sơ ' +
+            (item.warranty_case_code ?? item.warranty_case_id)
+          }
+          disabled={!onOpenCase}
+          onPress={() => onOpenCase?.(item)}
+          style={[
+            p09.card,
+            p09.row,
+            {
+              alignItems: 'center',
+              gap: 10,
+              paddingHorizontal: 10,
+              paddingVertical: 10,
+            },
+          ]}
+        >
+          <P09Photo compact source={productImage?.(item)} />
+          <View style={[p09.fill, { gap: 3 }]}>
+            <View style={p09.between}>
+              <Text
+                style={[
+                  p09.heading,
+                  p09.fill,
+                  { fontSize: 16, lineHeight: 22 },
+                ]}
               >
-                <View style={[styles.cardHead, { gap: theme.spacing.sm }]}>
-                  <Text
-                    variant="caption"
-                    tone="muted"
-                    style={styles.cardHeadBody}
-                  >
-                    {item.warranty_case_code ?? item.warranty_case_id}
-                  </Text>
-                  <Badge
-                    label={warrantyStatusLabel(item.status)}
-                    tone={anonymized ? 'neutral' : 'success'}
-                    uppercase
-                  />
-                </View>
-
-                <Text variant="cardTitle" tone="strong">
-                  {item.sku_name ??
-                    displayPii(item.manual_product_description) ??
-                    'Sản phẩm chưa xác định'}
+                {item.warranty_case_code ?? item.warranty_case_id}
+              </Text>
+              <P09Status status={item.status} />
+            </View>
+            <Text
+              style={[
+                p09.text,
+                { fontWeight: '600', fontSize: 14, lineHeight: 20 },
+              ]}
+            >
+              {item.sku_name ??
+                displayPii(item.manual_product_description) ??
+                'Sản phẩm chưa xác định'}
+            </Text>
+            <Text style={[p09.small, { fontSize: 12, lineHeight: 18 }]}>
+              SN: {item.serial_number ?? 'Chưa có dữ liệu'}
+              {'  |  '}
+              {isCaseAnonymized(item)
+                ? MESSAGE_ANONYMIZED
+                : 'KH: ' +
+                  (displayPii(item.customer_name) ?? 'Chưa có dữ liệu')}
+            </Text>
+            <Text style={[p09.small, { fontSize: 12 }]}>
+              {p09Date(item.received_at ?? item.created_at)}
+            </Text>
+          </View>
+          <Text style={p09.text}>›</Text>
+        </Pressable>
+      ))}
+      <P09PageFooter
+        showError={false}
+        pager={retained.pager}
+        onBack={onBack ?? (() => {})}
+      />
+      {picker && (
+        <Dialog
+          visible
+          title={picker === 'filter' ? 'Lọc hồ sơ bảo hành' : 'Sắp xếp hồ sơ'}
+          onDismiss={closePicker}
+          dismissOnBackdrop={false}
+          footer={
+            <View style={p09.row}>
+              <P09Action
+                label="Hủy"
+                variant="secondary"
+                onPress={closePicker}
+                style={p09.fill}
+              />
+              <P09Action
+                label="Áp dụng"
+                onPress={() => {
+                  if (picker === 'filter') {
+                    setTab(draft);
+                    load(draft).catch(() => undefined);
+                  } else {
+                    setSort(draft as typeof sort);
+                    load(tab, search, draft as typeof sort).catch(
+                      () => undefined,
+                    );
+                  }
+                  closePicker();
+                }}
+                style={p09.fill}
+              />
+            </View>
+          }
+        >
+          <View style={{ gap: 8 }}>
+            {(picker === 'filter'
+              ? allStatuses
+              : ['created_at_desc', 'created_at_asc']
+            ).map(value => (
+              <Pressable
+                key={value}
+                accessibilityRole="radio"
+                accessibilityState={{ checked: draft === value }}
+                accessibilityLabel={
+                  picker === 'filter'
+                    ? p09Status(value)
+                    : value === 'created_at_desc'
+                    ? 'Ngày tạo mới nhất'
+                    : 'Ngày tạo cũ nhất'
+                }
+                onPress={() => setDraft(value)}
+                style={[
+                  p09.card,
+                  p09.row,
+                  { padding: 12 },
+                  draft === value && { backgroundColor: HN_UI.canvas },
+                ]}
+              >
+                <Text style={p09.text}>
+                  {draft === value ? '◉' : '○'}{' '}
+                  {picker === 'filter'
+                    ? p09Status(value)
+                    : value === 'created_at_desc'
+                    ? 'Ngày tạo mới nhất'
+                    : 'Ngày tạo cũ nhất'}
                 </Text>
               </Pressable>
-
-              {anonymized ? (
-                // Câu nguyên văn BA chốt — không diễn đạt lại.
-                <Text variant="caption" tone="muted">
-                  {MESSAGE_ANONYMIZED}
-                </Text>
-              ) : (
-                <Text variant="caption" tone="muted">
-                  {[displayPii(item.customer_name), displayPii(item.customer_phone)]
-                    .filter(value => value !== undefined)
-                    .join(' · ') || '—'}
-                  {masked ? ' (đã che theo quyền)' : ''}
-                </Text>
-              )}
-            </Box>
-          );
-        })
+            ))}
+          </View>
+        </Dialog>
       )}
-    </Page>
+    </P09Frame>
   );
 }
-
-function warrantyStatusLabel(status?: string): string {
-  const labels: Readonly<Record<string, string>> = {
-    RECEIVED: 'Đã tiếp nhận',
-    CHECKING: 'Đang kiểm tra',
-    REPAIRING: 'Đang sửa',
-    COMPLETED: 'Hoàn tất',
-    RETURNED: 'Đã trả khách',
-    CANCELLED: 'Đã hủy',
-  };
-  const normalized = (status ?? 'RECEIVED').toUpperCase();
-  return labels[normalized] ?? status ?? 'Đã tiếp nhận';
+const lists = new WeakMap<
+  P09Service,
+  {
+    filters: P09Filters;
+    pager: ReturnType<typeof createP09Pager<P09Case>>;
+    scope: string;
+    confirmedRequest?: string;
+  }
+>();
+function listState(service: P09Service) {
+  let entry = lists.get(service);
+  if (!entry || entry.scope !== service.contextKey()) {
+    const state = {
+      filters: { status: 'ALL' } as P09Filters,
+      scope: service.contextKey(),
+      pager: undefined as unknown as ReturnType<typeof createP09Pager<P09Case>>,
+    };
+    state.pager = createP09Pager(
+      page => service.list({ ...state.filters, ...page }),
+      row => row.warranty_case_id,
+      () => service.contextKey() + JSON.stringify(state.filters),
+    );
+    lists.set(service, state);
+    entry = state;
+  }
+  return entry;
 }

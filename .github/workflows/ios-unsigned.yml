@@ -1,0 +1,71 @@
+name: iOS unsigned IPA
+on:
+  push:
+    branches: [codex/ios-unsigned-20261106]
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: ios-unsigned-${{ github.ref }}
+  cancel-in-progress: false
+jobs:
+  native-tests:
+    runs-on: macos-15
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Native helper tests
+        shell: bash
+        run: |
+          mkdir -p ci-output/native-tests
+          xcodebuild -version | tee ci-output/xcode.txt
+          swift --version | tee ci-output/swift.txt
+          result=0
+          set +e
+          for package in apps/wms-mobile/ios/WmsMobile/Native/*Core; do
+            name="$(basename "$package")"
+            swift test --package-path "$package" > "ci-output/native-tests/$name.log" 2>&1
+            status=$?
+            cat "ci-output/native-tests/$name.log"
+            if [ "$status" -ne 0 ]; then result=1; fi
+          done
+          exit "$result"
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: ios-native-tests-${{ github.sha }}
+          path: ci-output/
+          retention-days: 14
+  build:
+    needs: native-tests
+    runs-on: macos-15
+    timeout-minutes: 90
+    defaults:
+      run:
+        working-directory: apps/wms-mobile
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: npm
+          cache-dependency-path: apps/wms-mobile/package-lock.json
+      - name: Dependencies and source checks
+        run: |
+          npm ci --no-audit --no-fund
+          npm run typecheck
+          node node_modules/jest/bin/jest.js --runInBand --runTestsByPath __tests__/iosPushCapability.test.ts __tests__/iosDocuments.test.ts __tests__/iosCameraPermission.test.ts
+          python3 -m unittest discover -s scripts/ios -p 'test_*.py' -v
+      - name: Archive unsigned iphoneos app
+        run: bash scripts/ios/build-unsigned.sh
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: ScannerHNApp-unsigned-iphoneos-${{ github.sha }}
+          path: apps/wms-mobile/ios-output/
+          if-no-files-found: warn
+          retention-days: 14

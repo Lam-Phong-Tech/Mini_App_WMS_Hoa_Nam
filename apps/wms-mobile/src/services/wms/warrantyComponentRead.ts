@@ -1,201 +1,415 @@
-/**
- * Lịch sử linh kiện đã xuất của một hồ sơ bảo hành.
- *
- * Hồ sơ bảo hành và chứng từ xuất linh kiện là hai aggregate riêng: endpoint
- * hồ sơ không nhúng danh sách linh kiện, còn từng chứng từ luôn giữ
- * `warranty_case_id`. Vì vậy lịch sử được dựng từ các phiếu `POSTED` liên kết
- * với đúng hồ sơ, rồi đọc chi tiết từng phiếu để lấy SKU và số lượng thật.
- */
-
+/** P20 GET-only owner: POSTED links + bounded per-ID proof hydration. */
+import { AppError, toAppError } from '../../errors/AppError';
+import { apiClient, type ApiResponse } from '../../api/client';
 import {
-  readOne,
-  readPage,
-  type ReadClient,
-  type ReadOptions,
-} from './readOnlyClient';
-import { WMS_READ_PATHS } from './queries';
-
-const COMPONENT_HISTORY_PAGE_SIZE = 10;
-
-interface RawComponentIssueItem {
-  readonly quantity?: number;
-}
-
-interface RawComponentIssueLine {
-  readonly id?: string;
-  readonly sku_code?: string;
-  readonly sku_name?: string;
-  readonly required_qty?: number;
-  readonly scanned_qty?: number;
-  readonly items?: readonly RawComponentIssueItem[];
-}
-
-interface RawComponentIssueDocument {
-  readonly id?: string;
-  readonly component_issue_no?: string;
-  readonly status?: string;
-  readonly posted_at?: string | null;
-  readonly created_at?: string;
-}
-
-interface RawComponentIssueDetail {
-  readonly document?: RawComponentIssueDocument;
-  readonly lines?: readonly RawComponentIssueLine[];
-}
-
+  captureSessionScope,
+  isSessionScopeCurrent,
+  getActiveSession,
+} from '../../auth/session';
+import type { ReadClient, ReadOptions } from './readOnlyClient';
+export const P20_CONTRACT = 'p20-component-history-v1';
+const uuid = /^[0-9a-f]{8}-(?:[0-9a-f]{4}-){3}[0-9a-f]{12}$/i;
+type Scope = ReturnType<typeof captureSessionScope>;
+export type QuantityStatus = 'CONFIRMED' | 'INCOMPLETE' | 'MISMATCH';
+export type RawCodeStatus =
+  | 'RECORDED'
+  | 'NOT_RECORDED'
+  | 'UNAVAILABLE'
+  | 'IDENTITY_MISMATCH';
 export interface WarrantyComponentIssuedLine {
   readonly id: string;
   readonly skuCode?: string;
   readonly skuName?: string;
-  /** Số lượng đã xuất, ưu tiên bằng chứng quét thực tế. */
-  readonly quantity: number;
-  /** Số tem/hộp đã dùng để cấu thành dòng này, nếu WMS trả về. */
-  readonly scannedCodeCount: number;
+  readonly unit: string | null;
+  readonly unitSource: 'CURRENT_SKU_CATALOG' | 'NOT_RECORDED';
+  readonly quantity: number | null;
+  readonly quantityStatus: QuantityStatus;
+  readonly scannedCodeCount: number | null;
+  readonly codes: readonly { rawCode: string | null; status: RawCodeStatus }[];
 }
-
 export interface WarrantyComponentHistoryDocument {
   readonly id: string;
   readonly documentNumber?: string;
-  readonly postedAt?: string;
+  readonly postedAt: string | null;
   readonly lines: readonly WarrantyComponentIssuedLine[];
-  /** Chi tiết một phiếu không tải được; không giấu cả lịch sử còn lại. */
+  readonly quantityTotal?: number | null;
+  readonly quantityStatus?: QuantityStatus;
+  readonly totalsByUnit?: Readonly<Record<string, number>> | null;
   readonly detailUnavailable?: boolean;
+  readonly detailError?: string;
 }
-
 export interface WarrantyComponentHistoryPage {
   readonly documents: readonly WarrantyComponentHistoryDocument[];
-  readonly page: number;
+  readonly page: number | null;
+  readonly total: number;
   readonly hasMore: boolean;
+  readonly nextPage: number | null;
+  readonly nextCursor: string | null;
 }
-
-function text(value: unknown): string | undefined {
-  return typeof value === 'string' && value.trim() !== '' ? value.trim() : undefined;
+function invalid(message: string): never {
+  throw new AppError({ kind: 'parse', code: 'P20_INVALID_RESPONSE', message });
 }
-
-function nonNegativeNumber(value: unknown): number | undefined {
-  return typeof value === 'number' && Number.isFinite(value) && value >= 0
-    ? value
-    : undefined;
+function obj(v: unknown): Record<string, unknown> {
+  if (!v || typeof v !== 'object' || Array.isArray(v))
+    invalid('Dữ liệu lịch sử chưa được xác minh.');
+  return v as Record<string, unknown>;
 }
-
-function detailPath(documentId: string): string {
-  return WMS_READ_PATHS.componentIssueDocuments + '/' + encodeURIComponent(documentId);
+function number(v: unknown): number {
+  if (typeof v !== 'number' || !Number.isSafeInteger(v) || v < 0)
+    invalid('Số lượng/tổng nguồn không hợp lệ.');
+  return v;
 }
-
-function itemQuantity(line: RawComponentIssueLine): number {
-  const totalFromItems = (line.items ?? []).reduce(
-    (sum, item) => sum + (nonNegativeNumber(item.quantity) ?? 0),
-    0,
-  );
-  return (
-    totalFromItems ||
-    nonNegativeNumber(line.scanned_qty) ||
-    nonNegativeNumber(line.required_qty) ||
-    0
-  );
+function optionalText(v: unknown): string | undefined {
+  return typeof v === 'string' && v !== '' ? v : undefined;
 }
-
-function mapDetail(
-  fallback: RawComponentIssueDocument,
-  payload: RawComponentIssueDetail,
+function nullableText(v: unknown): string | null {
+  if (v === null) return null;
+  if (typeof v !== 'string') invalid('Trường lịch sử không hợp lệ.');
+  return v;
+}
+function status(v: unknown): QuantityStatus {
+  if (v !== 'CONFIRMED' && v !== 'INCOMPLETE' && v !== 'MISMATCH')
+    invalid('Thiếu bằng chứng số lượng.');
+  return v;
+}
+function qty(v: unknown, s: QuantityStatus): number | null {
+  if (s === 'CONFIRMED') return number(v);
+  if (v !== null) invalid('Lượng chưa xác minh phải giữ null.');
+  return null;
+}
+function scope(): Scope {
+  const s = captureSessionScope();
+  if (
+    !getActiveSession() ||
+    !isSessionScopeCurrent(s) ||
+    !s.authSessionId ||
+    !s.userId ||
+    !s.warehouseId ||
+    !uuid.test(s.warehouseId)
+  )
+    throw new AppError({
+      kind: 'blocked_by_gate',
+      code: 'P20_CONTEXT_REQUIRED',
+      message: 'Cần phiên và kho đã xác nhận để đọc lịch sử.',
+    });
+  return s;
+}
+function current(s: Scope) {
+  if (!getActiveSession() || !isSessionScopeCurrent(s))
+    throw new AppError({
+      kind: 'cancelled',
+      code: 'P20_STALE_SCOPE',
+      message: 'Ngữ cảnh lịch sử đã thay đổi.',
+    });
+}
+function envelope(r: ApiResponse<unknown>, s: Scope) {
+  current(s);
+  const body = obj(r.data),
+    meta = obj(body.meta);
+  if (
+    r.status !== 200 ||
+    body.success !== true ||
+    meta.component_history_contract !== P20_CONTRACT ||
+    meta.warehouse_id !== s.warehouseId ||
+    meta.read_only !== true ||
+    meta.operation_receipt !== false
+  )
+    invalid('Thiếu contract lịch sử P20.');
+  return { body, meta };
+}
+function link(
+  value: unknown,
+  caseId: string,
+  s: Scope,
 ): WarrantyComponentHistoryDocument {
-  const document = payload.document ?? fallback;
-  const id = text(document.id) ?? text(fallback.id);
-  if (id === undefined) {
-    throw new Error('Chứng từ xuất linh kiện không có mã định danh.');
-  }
+  const raw = obj(value),
+    id = raw.component_issue_document_id;
+  if (
+    typeof id !== 'string' ||
+    !uuid.test(id) ||
+    raw.warranty_case_id !== caseId ||
+    raw.warehouse_id !== s.warehouseId ||
+    raw.status !== 'POSTED' ||
+    typeof raw.can_open !== 'boolean'
+  )
+    invalid('Phiếu lịch sử không đúng hồ sơ/kho/trạng thái.');
+  if (
+    raw.can_open &&
+    raw.detail_url !== '/api/v1/mini-app/warranty-component-issues/' + id
+  )
+    invalid('URL chi tiết không đúng owner.');
   return {
     id,
-    documentNumber: text(document.component_issue_no) ?? text(fallback.component_issue_no),
-    postedAt: text(document.posted_at) ?? text(fallback.posted_at) ?? text(document.created_at),
-    lines: (payload.lines ?? []).map((line, index) => ({
-      id: text(line.id) ?? id + '-line-' + String(index + 1),
-      skuCode: text(line.sku_code),
-      skuName: text(line.sku_name),
-      quantity: itemQuantity(line),
-      scannedCodeCount: line.items?.length ?? 0,
-    })),
-  };
-}
-
-function fallbackDocument(
-  document: RawComponentIssueDocument,
-): WarrantyComponentHistoryDocument {
-  const id = text(document.id);
-  if (id === undefined) {
-    throw new Error('Chứng từ xuất linh kiện không có mã định danh.');
-  }
-  return {
-    id,
-    documentNumber: text(document.component_issue_no),
-    postedAt: text(document.posted_at) ?? text(document.created_at),
+    documentNumber: optionalText(raw.document_no),
+    postedAt: nullableText(raw.posted_at),
     lines: [],
-    detailUnavailable: true,
+    ...(raw.can_open
+      ? {}
+      : {
+          detailUnavailable: true,
+          detailError: 'Nguồn không cho phép mở chi tiết.',
+        }),
   };
 }
-
-/**
- * Chỉ lấy phiếu đã Post: DRAFT/CANCELLED không phải linh kiện đã dùng cho máy
- * và không được đưa vào hồ sơ lịch sử.
- */
-export async function fetchPostedWarrantyComponentHistoryPage(
-  warrantyCaseId: string,
-  options: ReadOptions = {},
-  client?: ReadClient,
-): Promise<WarrantyComponentHistoryPage> {
-  const page = await readPage<RawComponentIssueDocument>(
-    WMS_READ_PATHS.componentIssueDocuments,
-    {
-      ...options,
-      query: {
-        warranty_case_id: warrantyCaseId,
-        status: 'POSTED',
-        per_page: COMPONENT_HISTORY_PAGE_SIZE,
-        ...options.query,
-      },
-    },
-    client,
-  );
-
-  // Response danh sách không có lines. Tải chi tiết song song cho tối đa 10
-  // phiếu gần nhất; lỗi ở một phiếu không được che lịch sử các phiếu khác.
-  const results = await Promise.allSettled(
-    page.items.map(async summary => {
-      const id = text(summary.id);
-      if (id === undefined) return fallbackDocument(summary);
-      const detail = await readOne<RawComponentIssueDetail>(
-        detailPath(id),
-        options,
-        client,
-      );
-      return mapDetail(summary, detail);
-    }),
-  );
-
-  const documents = results.map((result, index) => {
-    if (result.status === 'fulfilled') return result.value;
-    return fallbackDocument(page.items[index] ?? {});
+function detail(
+  payload: unknown,
+  summary: WarrantyComponentHistoryDocument,
+  caseId: string,
+  s: Scope,
+): WarrantyComponentHistoryDocument {
+  const data = obj(payload),
+    d = obj(data.document),
+    history = obj(data.history);
+  if (
+    d.id !== summary.id ||
+    d.warranty_case_id !== caseId ||
+    d.warehouse_id !== s.warehouseId ||
+    d.status !== 'POSTED' ||
+    !Array.isArray(data.lines) ||
+    history.contract !== P20_CONTRACT ||
+    history.is_operation_receipt !== false ||
+    history.read_stock_effect !== 'NONE'
+  )
+    invalid('Bằng chứng không thuộc phiếu POSTED được yêu cầu.');
+  const lines = data.lines.map(lineValue => {
+    const line = obj(lineValue);
+    if (
+      typeof line.id !== 'string' ||
+      !uuid.test(line.id) ||
+      !Array.isArray(line.items)
+    )
+      invalid('Dòng linh kiện không có ID/bằng chứng nguồn.');
+    const quantityStatus = status(line.quantity_status),
+      quantity = qty(line.issued_qty, quantityStatus);
+    const codes = line.items.map(itemValue => {
+      const item = obj(itemValue),
+        rawStatus = item.raw_code_status;
+      if (
+        item.status !== 'POSTED' ||
+        item.line_id !== line.id ||
+        ![
+          'RECORDED',
+          'NOT_RECORDED',
+          'UNAVAILABLE',
+          'IDENTITY_MISMATCH',
+        ].includes(String(rawStatus))
+      )
+        invalid('Mã quét không đúng dòng POSTED.');
+      const rawCode = nullableText(item.raw_code);
+      if (
+        rawStatus === 'RECORDED'
+          ? rawCode === null || rawCode.length === 0
+          : rawCode !== null
+      )
+        invalid('Mã thiếu/mâu thuẫn bằng chứng nguồn.');
+      return { rawCode, status: rawStatus as RawCodeStatus };
+    });
+    const unit = nullableText(line.unit);
+    if (
+      line.unit_source !==
+      (unit === null ? 'NOT_RECORDED' : 'CURRENT_SKU_CATALOG')
+    )
+      invalid('Đơn vị chưa có nguồn catalog được xác nhận.');
+    return {
+      id: line.id,
+      skuCode: optionalText(line.sku_code),
+      skuName: optionalText(line.sku_name),
+      unit,
+      unitSource: line.unit_source as 'CURRENT_SKU_CATALOG' | 'NOT_RECORDED',
+      quantity,
+      quantityStatus,
+      codes,
+      scannedCodeCount:
+        codes.length && codes.every(c => c.status === 'RECORDED')
+          ? new Set(codes.map(c => c.rawCode)).size
+          : null,
+    };
   });
-  const requestedPage = Number(options.query?.page ?? 1);
-  const currentPage = page.meta?.current_page ??
-    (Number.isSafeInteger(requestedPage) && requestedPage > 0 ? requestedPage : 1);
-  const hasMore = page.links?.next !== undefined && page.links.next !== null
-    ? true
-    : page.meta?.last_page !== undefined
-      ? currentPage < page.meta.last_page
-      : page.items.length >= COMPONENT_HISTORY_PAGE_SIZE;
-  return { documents, page: currentPage, hasMore };
+  if (new Set(lines.map(l => l.id)).size !== lines.length)
+    invalid('Dòng lịch sử bị trùng ID.');
+  const quantityStatus = status(history.quantity_status),
+    quantityTotal = qty(history.quantity_total, quantityStatus);
+  if (
+    quantityStatus === 'CONFIRMED' &&
+    (lines.some(l => l.quantity === null) ||
+      lines.reduce((n, l) => n + (l.quantity ?? 0), 0) !== quantityTotal)
+  )
+    invalid('Tổng đã xác nhận không khớp bằng chứng từng dòng.');
+  const totalsByUnit =
+    history.totals_by_unit === null ? null : obj(history.totals_by_unit);
+  if (totalsByUnit) Object.values(totalsByUnit).forEach(number);
+  return {
+    id: summary.id,
+    documentNumber: optionalText(d.component_issue_no),
+    postedAt: nullableText(d.posted_at),
+    lines,
+    quantityTotal,
+    quantityStatus,
+    totalsByUnit: totalsByUnit as Readonly<Record<string, number>> | null,
+  };
+}
+export async function fetchPostedWarrantyComponentHistoryPage(
+  caseId: string,
+  options: ReadOptions = {},
+  client: ReadClient = apiClient,
+): Promise<WarrantyComponentHistoryPage> {
+  const s = scope();
+  if (!uuid.test(caseId))
+    throw new AppError({ kind: 'config', message: 'Cần ID hồ sơ thật.' });
+  const q = options.query ?? {};
+  if (
+    Object.keys(q).some(
+      k => !['page', 'per_page', 'cursor', 'warehouse_id'].includes(k),
+    ) ||
+    (q.warehouse_id !== undefined && q.warehouse_id !== s.warehouseId) ||
+    ('page' in q && 'cursor' in q)
+  )
+    throw new AppError({
+      kind: 'config',
+      message: 'Query lịch sử không đúng owner/scope.',
+    });
+  const perPage = q.per_page ?? 20,
+    page = 'cursor' in q ? null : q.page ?? 1;
+  if (
+    typeof perPage !== 'number' ||
+    !Number.isInteger(perPage) ||
+    perPage < 1 ||
+    perPage > 100 ||
+    (page !== null &&
+      (typeof page !== 'number' ||
+        !Number.isInteger(page) ||
+        page < 1 ||
+        page > 100000)) ||
+    ('cursor' in q && (typeof q.cursor !== 'string' || !q.cursor))
+  )
+    throw new AppError({
+      kind: 'config',
+      message: 'Phân trang P20 không hợp lệ.',
+    });
+  const headers = { 'X-Component-History-Contract': P20_CONTRACT };
+  const { body, meta } = envelope(
+    await client.get<unknown>(
+      '/api/v1/mini-app/warranty-cases/' + caseId + '/component-issues',
+      {
+        signal: options.signal,
+        timeoutMs: options.timeoutMs,
+        headers,
+        query: {
+          warehouse_id: s.warehouseId,
+          per_page: perPage,
+          ...(page === null ? { cursor: q.cursor } : { page }),
+        },
+      },
+    ),
+    s,
+  );
+  if (
+    !Array.isArray(body.data) ||
+    typeof meta.hasMore !== 'boolean' ||
+    !(meta.nextCursor === null || typeof meta.nextCursor === 'string') ||
+    !(meta.nextPage === null || typeof meta.nextPage === 'number')
+  )
+    invalid('Thiếu metadata phân trang P20.');
+  const total = number(meta.total),
+    nextPage = meta.nextPage === null ? null : number(meta.nextPage),
+    nextCursor = meta.nextCursor as string | null;
+  if (
+    body.data.length > perPage ||
+    body.data.length > total ||
+    (meta.hasMore
+      ? page === null
+        ? !nextCursor || nextCursor === q.cursor
+        : nextPage !== Number(page) + 1
+      : nextPage !== null || nextCursor !== null)
+  )
+    invalid('Phân trang nguồn không nhất quán.');
+  const links = body.data.map(v => link(v, caseId, s));
+  if (new Set(links.map(l => l.id)).size !== links.length)
+    invalid('Phiếu lịch sử bị trùng ID.');
+  const hydrate = async (l: WarrantyComponentHistoryDocument) => {
+    if (l.detailUnavailable) return l;
+    const { body: detailEnvelope } = envelope(
+      await client.get<unknown>(
+        '/api/v1/mini-app/warranty-component-issues/' + l.id,
+        {
+          signal: options.signal,
+          timeoutMs: options.timeoutMs,
+          headers,
+          query: { warehouse_id: s.warehouseId },
+        },
+      ),
+      s,
+    );
+    return detail(detailEnvelope.data, l, caseId, s);
+  };
+  const settled: PromiseSettledResult<WarrantyComponentHistoryDocument>[] = [];
+  for (let offset = 0; offset < links.length; offset += 4) {
+    current(s);
+    const batch = await Promise.allSettled(
+      links.slice(offset, offset + 4).map(hydrate),
+    );
+    current(s);
+    for (const r of batch)
+      if (r.status === 'rejected' && toAppError(r.reason).status === 401)
+        throw toAppError(r.reason);
+    settled.push(...batch);
+  }
+  current(s);
+  const documents = settled.map((r, i) => {
+    if (r.status === 'fulfilled') return r.value;
+    const e = toAppError(r.reason);
+    if (e.kind === 'cancelled' || e.status === 401) throw e;
+    return { ...links[i], detailUnavailable: true, detailError: e.message };
+  });
+  return {
+    documents,
+    page: page as number | null,
+    total,
+    hasMore: meta.hasMore,
+    nextPage,
+    nextCursor,
+  };
+}
+/** Direct owner detail for a selected immutable link, even outside the loaded page. */
+export async function fetchPostedWarrantyComponentHistoryDocument(
+  caseId: string,
+  documentId: string,
+  options: ReadOptions = {},
+  client: ReadClient = apiClient,
+): Promise<WarrantyComponentHistoryDocument> {
+  const s = scope();
+  if (!uuid.test(caseId) || !uuid.test(documentId))
+    throw new AppError({
+      kind: 'config',
+      code: 'P20_CANONICAL_ID_REQUIRED',
+      message: 'Cần đúng ID hồ sơ và phiếu đã xuất.',
+    });
+  const { body } = envelope(
+    await client.get<unknown>(
+      '/api/v1/mini-app/warranty-component-issues/' + documentId,
+      {
+        signal: options.signal,
+        timeoutMs: options.timeoutMs,
+        headers: { 'X-Component-History-Contract': P20_CONTRACT },
+        query: { warehouse_id: s.warehouseId },
+      },
+    ),
+    s,
+  );
+  return detail(
+    body.data,
+    { id: documentId, postedAt: null, lines: [] },
+    caseId,
+    s,
+  );
 }
 
-/** Tương thích các nơi chỉ cần trang đầu của lịch sử đã Post. */
 export async function fetchPostedWarrantyComponentHistory(
-  warrantyCaseId: string,
+  caseId: string,
   options: ReadOptions = {},
-  client?: ReadClient,
+  client: ReadClient = apiClient,
 ): Promise<readonly WarrantyComponentHistoryDocument[]> {
-  return (await fetchPostedWarrantyComponentHistoryPage(
-    warrantyCaseId,
-    options,
-    client,
-  )).documents;
+  return (
+    await fetchPostedWarrantyComponentHistoryPage(caseId, options, client)
+  ).documents;
 }

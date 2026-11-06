@@ -1,3 +1,4 @@
+import {HN_UI} from '../../theme/uiKitV3';
 /**
  * Màn quét mã bằng camera — Prompt 3 §A.
  *
@@ -23,6 +24,7 @@ import { Text } from '../../ui/Text';
 import { Button } from '../../ui/Button';
 import { tokens } from '../../theme/tokens';
 import { logger } from '../../logging/logger';
+import { formatVietnamClock } from '../../time/vietnamTime';
 import {
   allowedCameraKitFormats,
   fromCameraKitFormat,
@@ -54,7 +56,7 @@ const styles = StyleSheet.create({
     height: 460,
     borderRadius: tokens.radius.card,
     overflow: 'hidden',
-    backgroundColor: '#000000',
+    backgroundColor: HN_UI.shell,
   },
   camera: {
     flex: 1,
@@ -300,7 +302,7 @@ export function CameraScanScreen(): React.ReactElement {
             <Row
               key={result.detectedAt + result.code}
               label={
-                new Date(result.detectedAt).toLocaleTimeString('vi-VN') +
+                formatVietnamClock(result.detectedAt, { seconds: true }) +
                 (result.parsed.sku === undefined
                   ? ''
                   : '  ' + result.parsed.sku)

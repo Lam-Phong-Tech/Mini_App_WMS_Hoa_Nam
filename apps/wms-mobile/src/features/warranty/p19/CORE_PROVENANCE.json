@@ -1,0 +1,40 @@
+{
+  "source_commit": "d3d44f07207086cbb18fa0f958d89d50142a5431",
+  "changes": [
+    "ESM .mjs imports become native .js",
+    "JSON-only clone supports Hermes without structuredClone; undefined remains undefined"
+  ],
+  "activation": false,
+  "files": [
+    {
+      "source": "C:\\Users\\TAN MIE\\Downloads\\app_Scanner\\ScannerHNApp\\docs\\flows\\warranty-components\\linked-contract.mjs",
+      "source_sha256": "60574cd1618cf2cb5e99ac53dd90b9796e0964587df477c2dc4aec96073a85f8",
+      "native": "src\\features\\warranty\\p19\\core\\linked-contract.js",
+      "port_sha256_before_format": "c5db0aec972d9c0bfcd61959197e655223ae27b953ab750dbf68a015ed3fac83"
+    },
+    {
+      "source": "C:\\Users\\TAN MIE\\Downloads\\app_Scanner\\ScannerHNApp\\docs\\flows\\warranty-components\\linked-adapter.mjs",
+      "source_sha256": "edb5fc53105efab415c64dd14c57e03b4c73a9cb35f79d6c8a873e068f134cca",
+      "native": "src\\features\\warranty\\p19\\core\\linked-adapter.js",
+      "port_sha256_before_format": "6cf1bb75ef11a0e3f5eeb82ae81dbdae2ef127635241da6f456f443cc405b471"
+    },
+    {
+      "source": "C:\\Users\\TAN MIE\\Downloads\\app_Scanner\\ScannerHNApp\\docs\\flows\\warranty-components\\linked-owner.mjs",
+      "source_sha256": "b41a43b4dbb8d904282642d33a8f039bd93289f61266de12be6c145b5047cc1b",
+      "native": "src\\features\\warranty\\p19\\core\\linked-owner.js",
+      "port_sha256_before_format": "3c9e60de30534a597d8a4fb3d41f241bde3ba416e795d8752c7296e0859d28ab"
+    },
+    {
+      "source": "C:\\Users\\TAN MIE\\Downloads\\app_Scanner\\ScannerHNApp\\docs\\flows\\warranty-components\\linked-preparation.mjs",
+      "source_sha256": "48a25eed4644ee753900d2010acdccd426aadbc4211bf7bfbe00a22f2278d5f6",
+      "native": "src\\features\\warranty\\p19\\core\\linked-preparation.js",
+      "port_sha256_before_format": "92b18e582bc484e6b6bc51d8445dd6b0441caacebd4e52759c22dbdaea42f4f1"
+    },
+    {
+      "source": "C:\\Users\\TAN MIE\\Downloads\\app_Scanner\\ScannerHNApp\\docs\\flows\\warranty-components\\linked-view-bridge.mjs",
+      "source_sha256": "2c3c66a7d5c9e80fefb5850982a3e6ae639f20fb0cc2de0143a7fe80bf08781f",
+      "native": "src\\features\\warranty\\p19\\core\\linked-view-bridge.js",
+      "port_sha256_before_format": "0f393374602ddee1c1dd7409c02dba0a10b92f321ccbca69a4edb5ca7fcd88f4"
+    }
+  ]
+}

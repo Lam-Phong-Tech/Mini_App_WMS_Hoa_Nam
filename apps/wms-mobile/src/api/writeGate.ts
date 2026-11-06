@@ -9,6 +9,9 @@
  *   **K (`DELETE warranty-attachments/{id}`) KHÔNG được duyệt.**
  * 🔓 Change Control `GATE_WMS §2j` (2026-09-07) — luồng NFC: nhận diện QR,
  *   giữ chỗ chip, xác nhận sau khi ghi/đọc lại, tra cứu chip và thu hồi chip.
+ * 🔓 Prompt 10 (2026-09-19) — hồ sơ người dùng: sửa tên/SĐT, đổi mật khẩu và
+ *   thu hồi một phiên đăng nhập khác. Contract đã chốt trong
+ *   `docs/uiux-scanner/source-contract-map.md`; không mở sửa role/quyền/kho.
  *
  * ⇒ Nhập, xuất và bảo hành đã đấu theo danh sách hẹp; các endpoint ghi còn lại
  * vẫn chặn, và
@@ -95,6 +98,13 @@
 
 /** Hai mươi hai thao tác được duyệt. */
 export type ApprovedWrite =
+  | 'p04.saveDraft'
+  | 'p04.validateCode'
+  | 'p04.review'
+  | 'p04.record'
+  | 'p04.cancelDraft'
+  | 'p03.saveDraft'
+  | 'p03.cancelDraft'
   | 'inbound.resolveCode'
   | 'inbound.record'
   // Không có UI/AppShell nào được phép gọi Post; giữ entry cho các adapter cũ
@@ -107,24 +117,37 @@ export type ApprovedWrite =
   | 'warranty.createCase'
   | 'warranty.updateStatus'
   | 'warranty.uploadAttachment'
+  | 'owner.uploadAttachment'
   | 'scan.classify'
   | 'componentIssue.resolveCode'
   | 'componentIssue.create'
   | 'componentIssue.scan'
   | 'componentIssue.post'
+  | 'componentIssue.linkedResolve'
+  | 'componentIssue.linkedRecord'
   | 'nfc.resolveCode'
   | 'nfc.prepare'
+  | 'nfc.release'
   | 'nfc.confirm'
   | 'nfc.resolveTag'
   | 'nfc.deactivate'
   /** Chỉ đổi cờ đã đọc của thông báo thuộc chính tài khoản hiện tại. */
   | 'notifications.markRead'
-  | 'notifications.markAllRead';
+  | 'notifications.markAllRead'
+  | 'notifications.deliveryRegister'
+  | 'notifications.deliveryUnregister'
+  | 'notifications.deliverySelfTest'
+  | 'profile.update'
+  | 'profile.changePassword'
+  | 'profile.revokeSession'
+  /** Tạo hoặc replay đúng ca kỹ thuật của phiên đăng nhập hiện tại. */
+  | 'workShift.start'
+  | 'workShift.end';
 
 interface ApprovedWriteEntry {
   readonly id: ApprovedWrite;
   /** Method duy nhất được duyệt cho đường dẫn này. */
-  readonly method: 'POST' | 'PATCH';
+  readonly method: 'POST' | 'PUT' | 'PATCH' | 'DELETE';
   /**
    * Mẫu đường dẫn, tách sẵn theo đoạn. `'{id}'` khớp đúng một đoạn hợp lệ; mọi
    * đoạn khác phải trùng khít.
@@ -133,10 +156,55 @@ interface ApprovedWriteEntry {
 }
 
 function segmentsOf(path: string): readonly string[] {
-  return (path.split('?')[0] ?? '').split('/').filter(segment => segment !== '');
+  return (path.split('?')[0] ?? '')
+    .split('/')
+    .filter(segment => segment !== '');
 }
 
 const APPROVED_WRITES: readonly ApprovedWriteEntry[] = [
+  {id: 'notifications.deliveryRegister', method: 'PUT', segments: segmentsOf('/api/v1/notification-delivery/installations/{uuid4}')},
+  {id: 'notifications.deliveryUnregister', method: 'DELETE', segments: segmentsOf('/api/v1/notification-delivery/installations/{uuid4}')},
+  {id: 'notifications.deliverySelfTest', method: 'POST', segments: segmentsOf('/api/v1/notification-delivery/test-self')},
+  {
+    id: 'workShift.end',
+    method: 'POST',
+    segments: segmentsOf('/api/v1/mini-app/work-shifts/{id}/end'),
+  },
+  {
+    id: 'p04.saveDraft',
+    method: 'PUT',
+    segments: segmentsOf('/api/v1/mini-app/inbound/drafts/{id}'),
+  },
+  {
+    id: 'p04.validateCode',
+    method: 'POST',
+    segments: segmentsOf('/api/v1/mini-app/inbound/drafts/{id}/validate-code'),
+  },
+  {
+    id: 'p04.review',
+    method: 'POST',
+    segments: segmentsOf('/api/v1/mini-app/inbound/drafts/{id}/review'),
+  },
+  {
+    id: 'p04.record',
+    method: 'POST',
+    segments: segmentsOf('/api/v1/mini-app/inbound/drafts/{id}/record'),
+  },
+  {
+    id: 'p04.cancelDraft',
+    method: 'POST',
+    segments: segmentsOf('/api/v1/mini-app/inbound/drafts/{id}/cancel'),
+  },
+  {
+    id: 'p03.saveDraft',
+    method: 'PUT',
+    segments: segmentsOf('/api/v1/mini-app/drafts/{id}'),
+  },
+  {
+    id: 'p03.cancelDraft',
+    method: 'POST',
+    segments: segmentsOf('/api/v1/mini-app/drafts/{id}/cancel'),
+  },
   {
     id: 'inbound.resolveCode',
     method: 'POST',
@@ -150,7 +218,9 @@ const APPROVED_WRITES: readonly ApprovedWriteEntry[] = [
   {
     id: 'inbound.postReceipt',
     method: 'POST',
-    segments: segmentsOf('/api/v1/mini-app/inbound-documents/{id}/post-receipt'),
+    segments: segmentsOf(
+      '/api/v1/mini-app/inbound-documents/{id}/post-receipt',
+    ),
   },
   {
     id: 'outbound.resolveCode',
@@ -183,9 +253,26 @@ const APPROVED_WRITES: readonly ApprovedWriteEntry[] = [
     segments: segmentsOf('/api/v1/mini-app/warranty-cases/{id}/status'),
   },
   {
+    id: 'warranty.updateStatus',
+    method: 'PATCH',
+    segments: segmentsOf('/api/v1/mini-app/warranty-cases/{id}'),
+  },
+  {
     id: 'warranty.uploadAttachment',
     method: 'POST',
     segments: segmentsOf('/api/v1/mini-app/warranty-cases/{id}/attachments'),
+  },
+  {
+    id: 'owner.uploadAttachment',
+    method: 'POST',
+    segments: segmentsOf('/api/v1/mini-app/inbound-documents/{id}/attachments'),
+  },
+  {
+    id: 'owner.uploadAttachment',
+    method: 'POST',
+    segments: segmentsOf(
+      '/api/v1/mini-app/outbound-documents/{id}/attachments',
+    ),
   },
   // `scan/classify` dùng POST vì cần body, nhưng API contract cam kết chỉ
   // resolve physical code → SKU và stock_effect=NONE. Không tạo chứng từ,
@@ -202,6 +289,18 @@ const APPROVED_WRITES: readonly ApprovedWriteEntry[] = [
     id: 'componentIssue.resolveCode',
     method: 'POST',
     segments: segmentsOf('/api/v1/component-issue-documents/resolve-code'),
+  },
+  {
+    id: 'componentIssue.linkedResolve',
+    method: 'POST',
+    segments: segmentsOf(
+      '/api/v1/mini-app/warranty-component-issues/resolve-code',
+    ),
+  },
+  {
+    id: 'componentIssue.linkedRecord',
+    method: 'POST',
+    segments: segmentsOf('/api/v1/mini-app/warranty-component-issues/record'),
   },
   {
     id: 'componentIssue.create',
@@ -236,6 +335,11 @@ const APPROVED_WRITES: readonly ApprovedWriteEntry[] = [
     segments: segmentsOf('/api/v1/mini-app/items/{id}/nfc'),
   },
   {
+    id: 'nfc.release',
+    method: 'POST',
+    segments: segmentsOf('/api/v1/mini-app/items/{id}/nfc/release'),
+  },
+  {
     id: 'nfc.resolveTag',
     method: 'POST',
     segments: segmentsOf('/api/v1/mini-app/nfc/resolve-tag'),
@@ -253,9 +357,24 @@ const APPROVED_WRITES: readonly ApprovedWriteEntry[] = [
     segments: segmentsOf('/api/v1/notifications/{id}/read'),
   },
   {
-    id: 'notifications.markAllRead',
+    id: 'profile.update',
+    method: 'PATCH',
+    segments: segmentsOf('/api/v1/auth/me'),
+  },
+  {
+    id: 'profile.changePassword',
     method: 'POST',
-    segments: segmentsOf('/api/v1/notifications/read-all'),
+    segments: segmentsOf('/api/v1/auth/change-password'),
+  },
+  {
+    id: 'profile.revokeSession',
+    method: 'DELETE',
+    segments: segmentsOf('/api/v1/auth/sessions/{id}'),
+  },
+  {
+    id: 'workShift.start',
+    method: 'POST',
+    segments: segmentsOf('/api/v1/mini-app/work-shifts/start'),
   },
   // 🔴 `DELETE warranty-attachments/{id}` cố ý VẮNG MẶT — chưa duyệt, và sẽ là
   // method DELETE đầu tiên nếu được mở.
@@ -272,12 +391,24 @@ function isValidIdSegment(segment: string): boolean {
   return segment !== '' && segment !== '.' && segment !== '..';
 }
 
-function matches(entry: ApprovedWriteEntry, actual: readonly string[]): boolean {
+/** P09 command receipt transport only; not a global error-response bypass. */
+export function isP09Command(method: string, path: string): boolean {
+  const operation = approvedWriteFor(method, path);
+  return (
+    operation === 'warranty.createCase' || operation === 'warranty.updateStatus'
+  );
+}
+
+function matches(
+  entry: ApprovedWriteEntry,
+  actual: readonly string[],
+): boolean {
   if (entry.segments.length !== actual.length) {
     return false;
   }
   return entry.segments.every((expected, index) => {
     const segment = actual[index] ?? '';
+    if (expected === '{uuid4}') return /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(segment);
     return expected === '{id}'
       ? isValidIdSegment(segment)
       : expected === segment;
@@ -310,18 +441,38 @@ export function approvedWriteFor(
  * cho chúng, và chúng cũng không tạo gì để mà cần chống trùng.
  */
 export function allowsIdempotencyKey(method: string, path: string): boolean {
+  // P07 416c59b: read the receipt of the SAME confirm; not a new write.
+  const parts = segmentsOf(path);
+  if (
+    method.toUpperCase() === 'GET' &&
+    parts.length === 7 &&
+    parts.slice(0, 4).join('/') === 'api/v1/mini-app/items' &&
+    isValidIdSegment(parts[4] ?? '') &&
+    parts[5] === 'nfc' &&
+    parts[6] === 'confirmation'
+  ) {
+    return true;
+  }
   const approved = approvedWriteFor(method, path);
   return (
     approved === 'inbound.record' ||
+    approved === 'p04.saveDraft' ||
+    approved === 'p04.record' ||
+    approved === 'p04.cancelDraft' ||
     approved === 'inbound.postReceipt' ||
     approved === 'outbound.record' ||
     approved === 'outbound.postIssue' ||
     approved === 'warranty.createCase' ||
     approved === 'warranty.updateStatus' ||
     approved === 'componentIssue.post' ||
+    approved === 'componentIssue.linkedRecord' ||
+    approved === 'workShift.start' ||
+    approved === 'workShift.end' ||
     // `PATCH items/{id}/nfc` có thể timeout sau khi thẻ đã ghi. Khóa chống
     // trùng là bắt buộc để retry không sinh một mapping thứ hai.
-    approved === 'nfc.confirm'
+    approved === 'nfc.confirm' ||
+    approved === 'p03.saveDraft' ||
+    approved === 'p03.cancelDraft'
   );
 }
 
@@ -343,14 +494,24 @@ export function allowsIdempotencyKey(method: string, path: string): boolean {
 export function allowsIfMatch(method: string, path: string): boolean {
   const approved = approvedWriteFor(method, path);
   return (
+    approved === 'notifications.deliveryUnregister' ||
+    approved === 'profile.update' ||
+    approved === 'workShift.end' ||
     approved === 'inbound.postReceipt' ||
+    approved === 'p04.saveDraft' ||
+    approved === 'p04.validateCode' ||
+    approved === 'p04.review' ||
+    approved === 'p04.record' ||
+    approved === 'p04.cancelDraft' ||
     approved === 'outbound.postIssue' ||
     // Chuyển trạng thái hồ sơ bảo hành cũng dùng optimistic locking, dù nó
     // KHÔNG đụng tồn kho: hai người cùng mở một hồ sơ là chuyện thường, và ghi
     // đè kết quả kiểm tra của nhau thì mất hẳn phần hồ sơ kỹ thuật.
     approved === 'warranty.updateStatus' ||
     approved === 'componentIssue.scan' ||
-    approved === 'componentIssue.post'
+    approved === 'componentIssue.post' ||
+    approved === 'p03.saveDraft' ||
+    approved === 'p03.cancelDraft'
   );
 }
 
@@ -362,5 +523,7 @@ export function allowsIfMatch(method: string, path: string): boolean {
  * phải tự sinh `boundary`, và đặt tay là hỏng cả request theo kiểu khó đoán.
  */
 export function usesMultipart(method: string, path: string): boolean {
-  return approvedWriteFor(method, path) === 'warranty.uploadAttachment';
+  return ['warranty.uploadAttachment', 'owner.uploadAttachment'].includes(
+    approvedWriteFor(method, path) ?? '',
+  );
 }

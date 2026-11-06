@@ -357,6 +357,7 @@ describe('đồng hồ máy chủ — máy quét Android chạy sai giờ là ch
 describe('ngoại lệ cổng — hẹp đúng ba đường auth, không hơn', () => {
   it('cho qua đúng ba đường auth', () => {
     expect(isGateExemptAuthPath('/api/v1/auth/login')).toBe(true);
+    expect(isGateExemptAuthPath('/api/v1/auth/mfa/verify')).toBe(true);
     expect(isGateExemptAuthPath('/api/v1/auth/refresh')).toBe(true);
     expect(isGateExemptAuthPath('/api/v1/auth/logout')).toBe(true);
   });

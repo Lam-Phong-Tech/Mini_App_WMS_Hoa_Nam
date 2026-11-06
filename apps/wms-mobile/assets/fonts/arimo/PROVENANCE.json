@@ -1,0 +1,60 @@
+{
+  "at": "2026-10-29",
+  "upstream": "https://github.com/googlefonts/Arimo",
+  "revision": "4a6255f269916ae7ad3fc2706b0935e7621396b8",
+  "license": "SIL Open Font License 1.1",
+  "licenseSha256": "c46fda6859efb80c0a3c1faa868908a3d2fcb26eb7fd9602d73bebeec21bca3a",
+  "fontBytesModified": false,
+  "fontFilesRenamedOnlyForAndroidStyleLookup": true,
+  "files": [
+    {
+      "upstream": "https://raw.githubusercontent.com/googlefonts/Arimo/4a6255f269916ae7ad3fc2706b0935e7621396b8/fonts/ttf/Arimo-Regular.ttf",
+      "sourceFile": "C:\\Users\\TAN MIE\\Documents\\GitHub\\Mini_App_WMS_Hoa_Nam\\apps\\wms-mobile\\assets\\fonts\\arimo\\Arimo-Regular.ttf",
+      "androidAsset": "C:\\Users\\TAN MIE\\Documents\\GitHub\\Mini_App_WMS_Hoa_Nam\\apps\\wms-mobile\\android\\app\\src\\main\\assets\\fonts\\Arimo.ttf",
+      "weight": 400,
+      "italic": false,
+      "bytes": 478712,
+      "sha256": "41b22bc8f0b51f932825d37bc55b5eb6ba67dfe599a626e4aff2b43b624f9f8c",
+      "family": "Arimo",
+      "version": "Version 1.33; ttfautohint (v1.8.4.16-eb64)",
+      "vietnameseGlyphCheck": "PASS"
+    },
+    {
+      "upstream": "https://raw.githubusercontent.com/googlefonts/Arimo/4a6255f269916ae7ad3fc2706b0935e7621396b8/fonts/ttf/Arimo-Bold.ttf",
+      "sourceFile": "C:\\Users\\TAN MIE\\Documents\\GitHub\\Mini_App_WMS_Hoa_Nam\\apps\\wms-mobile\\assets\\fonts\\arimo\\Arimo-Bold.ttf",
+      "androidAsset": "C:\\Users\\TAN MIE\\Documents\\GitHub\\Mini_App_WMS_Hoa_Nam\\apps\\wms-mobile\\android\\app\\src\\main\\assets\\fonts\\Arimo_bold.ttf",
+      "weight": 700,
+      "italic": false,
+      "bytes": 485872,
+      "sha256": "d7a8b187cf8444d4cfee102e8eae9e3043682fd5106d5d33ed677fe268a0e2ba",
+      "family": "Arimo",
+      "version": "Version 1.33; ttfautohint (v1.8.4.16-eb64)",
+      "vietnameseGlyphCheck": "PASS"
+    },
+    {
+      "upstream": "https://raw.githubusercontent.com/googlefonts/Arimo/4a6255f269916ae7ad3fc2706b0935e7621396b8/fonts/ttf/Arimo-Italic.ttf",
+      "sourceFile": "C:\\Users\\TAN MIE\\Documents\\GitHub\\Mini_App_WMS_Hoa_Nam\\apps\\wms-mobile\\assets\\fonts\\arimo\\Arimo-Italic.ttf",
+      "androidAsset": "C:\\Users\\TAN MIE\\Documents\\GitHub\\Mini_App_WMS_Hoa_Nam\\apps\\wms-mobile\\android\\app\\src\\main\\assets\\fonts\\Arimo_italic.ttf",
+      "weight": 400,
+      "italic": true,
+      "bytes": 502332,
+      "sha256": "ffdf690e4357a392e4edcc3df0b3adb0302920f75e54f2e6eec355afbe7edcba",
+      "family": "Arimo",
+      "version": "Version 1.33; ttfautohint (v1.8.4.16-eb64)",
+      "vietnameseGlyphCheck": "PASS"
+    },
+    {
+      "upstream": "https://raw.githubusercontent.com/googlefonts/Arimo/4a6255f269916ae7ad3fc2706b0935e7621396b8/fonts/ttf/Arimo-BoldItalic.ttf",
+      "sourceFile": "C:\\Users\\TAN MIE\\Documents\\GitHub\\Mini_App_WMS_Hoa_Nam\\apps\\wms-mobile\\assets\\fonts\\arimo\\Arimo-BoldItalic.ttf",
+      "androidAsset": "C:\\Users\\TAN MIE\\Documents\\GitHub\\Mini_App_WMS_Hoa_Nam\\apps\\wms-mobile\\android\\app\\src\\main\\assets\\fonts\\Arimo_bold_italic.ttf",
+      "weight": 700,
+      "italic": true,
+      "bytes": 508508,
+      "sha256": "77c967d49d4ef4a63c39fbcd1e27892102e503e35a20983cb058430c4f268b34",
+      "family": "Arimo",
+      "version": "Version 1.33; ttfautohint (v1.8.4.16-eb64)",
+      "vietnameseGlyphCheck": "PASS"
+    }
+  ],
+  "note": "Arimo is an upstream Arial-metric-compatible family; does not claim identical glyph rasterization on Web and Android. Fonts retain original internal names/copyrights. No Microsoft Arial binaries are redistributed."
+}

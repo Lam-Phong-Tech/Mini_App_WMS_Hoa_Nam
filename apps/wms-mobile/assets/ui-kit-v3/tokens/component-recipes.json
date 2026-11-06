@@ -1,0 +1,119 @@
+{
+  "button": {
+    "primary": {
+      "default": "action.primary.bg",
+      "hover": "action.primary.hover",
+      "pressed": "action.primary.pressed",
+      "text": "action.primary.fg"
+    },
+    "secondary": {
+      "default": "action.secondary.bg",
+      "hover": "action.secondary.hover",
+      "pressed": "action.secondary.pressed",
+      "text": "action.secondary.fg",
+      "border": "action.secondary.border"
+    },
+    "danger": {
+      "default": "action.danger.bg",
+      "hover": "action.danger.hover",
+      "pressed": "action.danger.pressed",
+      "text": "action.danger.fg"
+    },
+    "disabled": {
+      "bg": "action.disabled.bg",
+      "text": "action.disabled.fg",
+      "border": "action.disabled.border"
+    },
+    "loading": {
+      "colors": "same enabled variant, not disabled palette",
+      "spinner": "currentColor",
+      "interaction": "handler dedupe; aria-busy=true; aria-disabled when used",
+      "label": "Giữ nhãn action hoặc nhãn đang xử lý, reserve width"
+    },
+    "tertiary": {
+      "default": "action.tertiary.bg",
+      "hover": "action.tertiary.hover",
+      "pressed": "action.tertiary.pressed",
+      "text": "action.tertiary.fg"
+    }
+  },
+  "input": {
+    "default": {
+      "bg": "input.bg",
+      "border": "input.border",
+      "text": "text.primary",
+      "placeholder": "input.placeholder"
+    },
+    "hover": {
+      "border": "input.hoverBorder"
+    },
+    "focus": {
+      "outline": "focus.ring",
+      "offset": "focus.offset"
+    },
+    "invalid": {
+      "border": "input.invalidBorder",
+      "error": "status.danger.fg"
+    },
+    "readonly": {
+      "bg": "input.readonlyBg",
+      "text": "text.primary",
+      "focus": "copy/select retained"
+    },
+    "disabled": {
+      "bg": "action.disabled.bg",
+      "text": "action.disabled.fg"
+    },
+    "helper": "text.secondary"
+  },
+  "table": {
+    "header": "table.headerBg",
+    "row": "surface.default",
+    "hover": "table.rowHover",
+    "selected": "table.rowSelected",
+    "stripe": "table.rowStripe",
+    "divider": "border.subtle",
+    "text": "text.primary",
+    "numeric": "tabular-nums; right aligned",
+    "caption": "text.secondary"
+  },
+  "focus": {
+    "widthPx": 2,
+    "offsetPx": 3,
+    "ring": "focus.ring",
+    "gap": "focus.offset",
+    "rule": "Visible on every keyboard-focusable control; never only shadow on clipped parent"
+  },
+  "badge": {
+    "neutral": {
+      "bg": "status.neutral.bg",
+      "fg": "status.neutral.fg",
+      "border": "status.neutral.border",
+      "icon": "status.neutral.icon"
+    },
+    "info": {
+      "bg": "status.info.bg",
+      "fg": "status.info.fg",
+      "border": "status.info.border",
+      "icon": "status.info.icon"
+    },
+    "success": {
+      "bg": "status.success.bg",
+      "fg": "status.success.fg",
+      "border": "status.success.border",
+      "icon": "status.success.icon"
+    },
+    "warning": {
+      "bg": "status.warning.bg",
+      "fg": "status.warning.fg",
+      "border": "status.warning.border",
+      "icon": "status.warning.icon"
+    },
+    "danger": {
+      "bg": "status.danger.bg",
+      "fg": "status.danger.fg",
+      "border": "status.danger.border",
+      "icon": "status.danger.icon"
+    }
+  }
+}

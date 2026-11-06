@@ -172,7 +172,7 @@ describe('bước 1 — tạo phiếu (ảnh 18)', () => {
       'Thông tin',
       'Quét mã',
       'Kiểm tra',
-      'Gửi duyệt',
+      'Gửi phiếu',
     ]);
   });
 
@@ -844,6 +844,9 @@ describe('đấu luồng quét Mini App', () => {
   });
 
   it('nhập tay mã BOX đóng sheet mã rồi mở ngay sheet số lượng', async () => {
+    // Isolate this UI test from the live health/tier cache. The scanner correctly
+    // blocks submission while deployment tier is unverified.
+    setTierCheckForTesting({ status: 'matched', expected: 'dev-test' });
     const resolveCode = jest.fn().mockResolvedValue({
       raw_code: 'BOX-HN-COMP-BASE-003-002',
       item_type: 'BOX',
@@ -878,7 +881,7 @@ describe('đấu luồng quét Mini App', () => {
 
     const codeInput = tree?.root
       .findAllByType(CodeInput)
-      .find(input => input.props.label === 'Mã sản phẩm / mã tem');
+      .find(input => input.props.label === 'Mã QR/Serial/SKU');
     await ReactTestRenderer.act(() =>
       codeInput?.props.onChangeText('BOX-HN-COMP-BASE-003-002'),
     );
@@ -886,20 +889,20 @@ describe('đấu luồng quét Mini App', () => {
       .findAllByType(Button)
       .find(button => button.props.label === 'Kiểm tra mã');
     await ReactTestRenderer.act(async () => {
-      checkButton?.props.onPress();
-      await Promise.resolve();
+      await checkButton?.props.onPress();
+      await new Promise(resolve => setTimeout(resolve, 50));
     });
 
     const sheets = tree?.root.findAllByType(Sheet) ?? [];
-    expect(
-      sheets.find(sheet => sheet.props.title === 'Nhập mã thủ công')?.props
-        .visible,
-    ).toBe(false);
+    // P04 now uses the approved inline manual form. A BOX requiring input
+    // must hide that form before presenting the quantity sheet.
+    expect(tree?.root.findAllByType(CodeInput)).toHaveLength(0);
     expect(
       sheets.find(sheet => sheet.props.title === 'Hộp linh kiện')?.props
         .visible,
     ).toBe(true);
     await ReactTestRenderer.act(() => tree?.unmount());
+    resetTierCheckForTesting();
   });
 });
 
@@ -943,7 +946,7 @@ describe('ba mốc tồn kho — nói sai là thủ kho tưởng hàng đã vào
     expect(MESSAGE_NOT_POSTED_BODY).toContain('Post Receipt');
   });
 
-  it('trạng thái là "Chờ xử lý trên Web", KHÔNG phải "Hoàn tất"', async () => {
+  it('nhãn Chờ xử lý trên Web không phải Hoàn tất', async () => {
     let tree: ReactTestRenderer.ReactTestRenderer | undefined;
     await ReactTestRenderer.act(() => {
       tree = ReactTestRenderer.create(
@@ -961,11 +964,13 @@ describe('ba mốc tồn kho — nói sai là thủ kho tưởng hàng đã vào
     });
     const text = JSON.stringify(tree?.toJSON());
     expect(text).toContain('Chờ xử lý trên Web');
+    expect(text).not.toContain('Chờ duyệt');
+    expect(text).toContain('Chưa ghi sổ · Chưa đổi tồn.');
     expect(text).not.toContain('Hoàn tất');
     await ReactTestRenderer.act(() => tree?.unmount());
   });
 
-  it('lỗi khi Gửi duyệt hiện đúng phản hồi WMS, không giả là đang chờ gửi', async () => {
+  it('lỗi khi Gửi phiếu hiện đúng phản hồi WMS, không giả là đang chờ gửi', async () => {
     let tree: ReactTestRenderer.ReactTestRenderer | undefined;
     await ReactTestRenderer.act(() => {
       tree = ReactTestRenderer.create(
@@ -1209,9 +1214,8 @@ describe('BusinessScanScreen — bám thiết kế Mini App, không phải màn 
       .findAllByType(Button)
       .find(button => button.props.label === 'Kiểm tra mã');
     await ReactTestRenderer.act(async () => {
-      checkButton?.props.onPress();
-      await Promise.resolve();
-      await Promise.resolve();
+      await checkButton?.props.onPress();
+      await new Promise(resolve => setTimeout(resolve, 50));
     });
 
     expect(JSON.stringify(view.tree?.toJSON())).toContain(

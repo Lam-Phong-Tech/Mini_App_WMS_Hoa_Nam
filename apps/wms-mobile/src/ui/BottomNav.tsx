@@ -1,15 +1,13 @@
+import {HN_UI} from '../theme/uiKitV3';
+import {SCANNER_ARIAL_FAMILY} from '../theme/scannerTypography';
 /**
  * `BottomNav` — thanh điều hướng 5 tab ở đáy màn.
  *
  * Board 02: **Trang chủ · Chứng từ · Quét mã · Lịch sử · Cá nhân**. Chứng từ
  * chỉ mở danh sách/chi tiết; ghi sổ nhập/xuất vẫn thực hiện trên Web WMS.
  *
- * Cách sửa: đặt `minHeight` cố định cho ô tab và căn icon lên trên, nên nhãn dài
- * xuống dòng mà **hàng icon vẫn thẳng**. Cố ý **không** rút gọn chữ thành
- * *"Duyệt"*: rút gọn là đổi từ ngữ nghiệp vụ, mà bộ ảnh là chuẩn.
- *
- * Vùng chạm mỗi tab đạt `touchTarget.comfortable` (48) chứ không phải sàn 44 —
- * thủ kho bấm khi đang đeo găng tay.
+ * Kích thước, màu và vòng quét theo footer LOCK của prototype P02.S01,
+ * scale từ frame494; safe area đáy được thêm ngoài vùng thiết kế.
  */
 
 import React from 'react';
@@ -20,55 +18,32 @@ import {
   type StyleProp,
   type ViewStyle,
 } from 'react-native';
-import { useTheme } from '../theme/ThemeProvider';
+import { useWindowDimensions, Platform } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { HnHomeIcon, type HnHomeIconName } from './HnHomeIcon';
+import { HN_HOME, homeScale } from './hnHomeTokens';
 import { Text } from './Text';
-import { AppIcon, type AppIconName } from './AppIcon';
+import type { AppIconName } from './AppIcon';
 
+// Geometry is owned by the P02.S01 LOCK reference, scaled from frame494.
 const styles = StyleSheet.create({
-  bar: {
-    flexDirection: 'row',
-    borderTopWidth: 1,
-  },
-  tab: {
-    flex: 1,
-    alignItems: 'center',
-    // Căn lên trên để hàng icon thẳng kể cả khi một nhãn xuống 2 dòng — đây là
-    // phần sửa V-05.
-    justifyContent: 'flex-start',
-  },
-  iconBox: {
+  bar: { flexDirection: 'row', backgroundColor: HN_HOME.nav },
+  tab: { flex: 1, minWidth: 0, alignItems: 'center', justifyContent: 'center' },
+  circle: {
+    flexShrink: 0,
     alignItems: 'center',
     justifyContent: 'center',
-  },
-  iconBoxInactive: {
-    backgroundColor: 'transparent',
-  },
-  scanDock: {
-    width: 54,
-    height: 54,
-    minWidth: 54,
-    marginTop: -27,
-    borderRadius: 27,
-    borderWidth: 4,
-    borderColor: '#ffffff',
-    paddingHorizontal: 0,
-    paddingVertical: 0,
-    shadowColor: '#073b52',
-    shadowOpacity: 0.18,
-    shadowRadius: 7,
-    shadowOffset: { width: 0, height: 3 },
-    elevation: 5,
-  },
-  scanLabel: {
-    marginTop: -3,
+    backgroundColor: HN_HOME.scan,
+    borderColor: HN_UI.surface,
   },
   label: {
-    fontSize: 11,
     textAlign: 'center',
+    fontFamily: SCANNER_ARIAL_FAMILY,
+    includeFontPadding: false,
+    fontWeight: '400',
   },
-  labelActive: {
-    fontWeight: '600',
-  },
+  labelStrong: { fontWeight: '600' },
+  circleTab: { justifyContent: 'flex-end' },
 });
 
 export interface BottomNavItem {
@@ -92,6 +67,14 @@ export interface BottomNavProps {
   onSelect: (key: string) => void;
   items?: readonly BottomNavItem[];
   style?: StyleProp<ViewStyle>;
+  /** Embedded native preview/split panes keep the same locked frame494 geometry. */
+  layoutWidth?: number;
+  /** P06 keeps the selected scan tile from its locked footer; defaults stay unchanged. */
+  highlightScan?: boolean;
+  /** P12 Note keeps the active label/icon but no filled selection tile. */
+  highlightActive?: boolean;
+  /** P03.S04 confirmation locks navigation while retaining the Home visual. */
+  disabled?: boolean;
 }
 
 export function BottomNav({
@@ -99,87 +82,100 @@ export function BottomNav({
   onSelect,
   items = BOTTOM_NAV_ITEMS,
   style,
+  layoutWidth,
+  highlightScan = false,
+  highlightActive = true,
+  disabled = false,
 }: BottomNavProps): React.ReactElement {
-  const theme = useTheme();
-
+  const { width } = useWindowDimensions(),
+    insets = useSafeAreaInsets(),
+    scale = homeScale(layoutWidth ?? width),
+    px = (n: number) => n * scale;
+  const glyphs: Record<string, HnHomeIconName> = {
+    home: 'house',
+    documents: 'document',
+    scan: 'scan',
+    history: 'history',
+    profile: 'user',
+  };
   return (
     <View
+      testID="hn-locked-footer"
       accessibilityRole="tablist"
       style={[
         styles.bar,
         {
-          backgroundColor: theme.colors.surface,
-          borderTopColor: theme.colors.divider,
-          paddingTop: theme.spacing.sm,
-          paddingBottom: theme.spacing.sm,
+          minHeight: px(75) + insets.bottom,
+          paddingTop: px(8),
+          paddingHorizontal: px(8),
+          paddingBottom: px(8) + insets.bottom,
+          borderTopLeftRadius: px(23),
+          borderTopRightRadius: px(23),
         },
         style,
       ]}
     >
       {items.map(item => {
-        const active = item.key === activeKey;
-        const scannerTab = item.key === 'scan';
+        const active = item.key === activeKey,
+          scanner = item.key === 'scan',
+          color = scanner ? HN_UI.textPrimary : active ? HN_HOME.navInk : HN_UI.textMuted;
         return (
           <Pressable
             key={item.key}
             accessibilityRole="tab"
-            accessibilityState={{ selected: active }}
+            accessibilityState={{ selected: active, disabled }}
             accessibilityLabel={item.label}
-            onPress={() => onSelect(item.key)}
+            disabled={disabled}
+            onPress={() => {
+              if (!disabled) onSelect(item.key);
+            }}
             style={({ pressed }) => [
               styles.tab,
               {
-                // Chiều cao cố định: nhãn 2 dòng không đẩy tab cao hơn tab khác.
-                minHeight: theme.touchTarget.comfortable,
-                gap: theme.spacing.xs,
-                opacity: pressed ? 0.6 : 1,
+                height: px(59),
+                gap: px(5),
+                borderRadius: px(12),
+                backgroundColor:
+                  active && highlightActive && (!scanner || highlightScan)
+                    ? HN_HOME.navSelected
+                    : 'transparent',
+                opacity: pressed ? 0.93 : 1,
               },
+              scanner ? styles.circleTab : undefined,
             ]}
           >
-            <View
-              style={[
-                styles.iconBox,
-                active || scannerTab ? undefined : styles.iconBoxInactive,
-                {
-                  minWidth: theme.touchTarget.min,
-                  paddingHorizontal: theme.spacing.md,
-                  paddingVertical: theme.spacing.xs,
-                  borderRadius: theme.radius.control,
-                  ...(active || scannerTab
-                    ? { backgroundColor: theme.colors.primarySoft }
-                    : null),
-                },
-                scannerTab
-                  ? [
-                      styles.scanDock,
-                      { backgroundColor: theme.colors.primaryStrong },
-                    ]
-                  : undefined,
-              ]}
-            >
-              <AppIcon
-                name={item.icon}
-                size={scannerTab ? 22 : 20}
-                color={
-                  scannerTab
-                    ? '#ffffff'
-                    : active
-                      ? theme.colors.primaryStrong
-                      : theme.colors.textMuted
-                }
+            {scanner ? (
+              <View
+                style={[
+                  styles.circle,
+                  {
+                    width: px(62),
+                    height: px(62),
+                    marginTop: px(-31),
+                    borderRadius: px(31),
+                    borderWidth: px(3),
+                  },
+                ]}
+              >
+                <HnHomeIcon name="scan" size={px(31)} color={HN_UI.onBrand} />
+              </View>
+            ) : (
+              <HnHomeIcon
+                name={glyphs[item.key] ?? 'document'}
+                size={px(25)}
+                color={color}
               />
-            </View>
-
+            )}
             <Text
               variant="caption"
+              numberOfLines={1}
               style={[
                 styles.label,
-                active ? styles.labelActive : undefined,
-                scannerTab ? styles.scanLabel : undefined,
+                active || scanner ? styles.labelStrong : undefined,
                 {
-                  color: active
-                    ? theme.colors.primaryStrong
-                    : theme.colors.textMuted,
+                  fontSize: px(12),
+                  lineHeight: px(17),
+                  color,
                 },
               ]}
             >

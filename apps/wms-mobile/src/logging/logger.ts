@@ -17,7 +17,7 @@ const LEVEL_ORDER: Record<LogLevel, number> = {
 
 /** Khoá bị che hoàn toàn khi xuất hiện trong object/header/query. */
 const SENSITIVE_KEY_PATTERN =
-  /(authorization|token|password|passwd|secret|api[-_]?key|cookie|set-cookie|session|credential|otp|pin)/i;
+  /(authorization|token|password|passwd|secret|installation[-_]?proof|api[-_]?key|idempotency[-_]?key|nfc[-_]?recovery[-_]?key|cookie|set-cookie|session|credential|otp|pin)/i;
 
 export const REDACTED = '[ĐÃ CHE]';
 

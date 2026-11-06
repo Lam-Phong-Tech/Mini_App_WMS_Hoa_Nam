@@ -8,9 +8,20 @@
 
 // Mock chính thức của thư viện đặt toàn bộ export dưới `default`,
 // nên phải lấy `.default` thì các named export mới hiện ra.
-jest.mock('react-native-safe-area-context', () =>
-  require('react-native-safe-area-context/jest/mock').default,
+jest.mock(
+  'react-native-safe-area-context',
+  () => require('react-native-safe-area-context/jest/mock').default,
 );
+
+// Native view only; no decoder/permission/optical success is simulated here.
+// Individual camera tests still inject and assert native callback behaviour.
+jest.mock('react-native-camera-kit', () => {
+  const React = require('react');
+  return {
+    Camera: props => React.createElement('NativeCameraBridge', props),
+    CameraType: { Back: 'back', Front: 'front' },
+  };
+});
 
 /**
  * `react-native-image-picker` la module native — nap trong Node se vo.
