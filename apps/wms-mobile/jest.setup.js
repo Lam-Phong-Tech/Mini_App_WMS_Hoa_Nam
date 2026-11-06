@@ -1,4 +1,16 @@
 /* eslint-env jest */
+// Node cannot load Keychain/Keystore. Keep only the native storage boundary in
+// memory; the real JS session/refresh/serialization logic remains under test.
+// A missing-module test deletes this port and still exercises the native guard.
+{
+  const {NativeModules}=require('react-native');
+  let refreshToken=null;
+  NativeModules.WmsSecureSession={
+    getRefreshToken:async()=>refreshToken,
+    setRefreshToken:async value=>{refreshToken=value;},
+    clearRefreshToken:async()=>{refreshToken=null;},
+  };
+}
 /**
  * Thiết lập Jest.
  *

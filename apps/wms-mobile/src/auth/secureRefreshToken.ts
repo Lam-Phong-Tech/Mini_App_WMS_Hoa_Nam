@@ -26,9 +26,8 @@ function nativeModule(): NativeSecureSessionModule | undefined {
 function requireNative(): NativeSecureSessionModule | undefined {
   const module = nativeModule();
   if (module !== undefined) return module;
-  // Jest and the web implementation do not have an Android bridge. Do not
-  // silently downgrade a real Android installation to plaintext storage.
-  if (Platform.OS === 'android') {
+  // Native platforms must provide Keychain/Keystore; Web stays volatile only.
+  if (Platform.OS === 'android' || Platform.OS === 'ios') {
     throw new AppError({
       kind: 'config',
       code: 'SECURE_SESSION_MODULE_UNAVAILABLE',
